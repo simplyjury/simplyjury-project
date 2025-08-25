@@ -21,8 +21,12 @@ Le boilerplate inclut déjà :
 - Hachage bcrypt + sessions JWT
 - Gestion d'équipes multi-tenant
 - Server Actions Next.js
+- **Table `users` avec colonnes de base (id, name, email, password_hash, role, created_at, updated_at, deleted_at)**
 
 ### 🔧 Extensions à Tester
+- **Migration ALTER TABLE pour ajouter colonnes SimplyJury**
+- **Création des nouvelles tables (training_centers, jury_profiles, etc.)**
+- **Implémentation des politiques RLS avec contexte d'auth personnalisé**
 - Intégration Resend pour emails transactionnels
 - Vérification d'email obligatoire
 - Réinitialisation de mot de passe
@@ -498,7 +502,142 @@ Le boilerplate inclut déjà :
 
 ---
 
-### TEST-01-015 : Sécurité - Injection SQL
+### TEST-01-015 : Sécurité RLS - Isolation des Données
+
+**Objectif :** Valider que les politiques RLS empêchent l'accès non autorisé aux données
+
+**Prérequis :**
+- Base de données avec RLS activé
+- Plusieurs utilisateurs créés (centre1, centre2, jury1, jury2, admin)
+- Profils créés pour chaque utilisateur
+- Service RLS context configuré
+
+**Étapes :**
+1. Se connecter en tant que centre1
+2. Tenter d'accéder aux données du centre2 via API
+3. Tenter de modifier le profil du jury1
+4. Se connecter en tant que jury1
+5. Tenter d'accéder aux données du jury2
+6. Tenter de voir un profil jury non validé
+7. Se connecter en tant qu'admin
+8. Vérifier l'accès à toutes les données
+
+**Résultats attendus :**
+- ✅ **Centre1 ne peut voir que ses propres données**
+- ✅ **Centre1 ne peut pas modifier les données d'autres utilisateurs**
+- ✅ **Jury1 ne peut voir que son propre profil**
+- ✅ **Jury1 peut voir les centres mais pas les autres jurys**
+- ✅ **Centres ne voient que les jurys validés**
+- ✅ **Admin a accès à toutes les données**
+- ✅ **Erreurs 403 Forbidden pour accès non autorisés**
+
+**Critères de validation :**
+- [ ] **Politiques RLS correctement appliquées**
+- [ ] **Contexte utilisateur correctement défini**
+- [ ] **Isolation complète des données par utilisateur**
+- [ ] **Accès admin fonctionnel**
+- [ ] **Messages d'erreur appropriés**
+
+---
+
+### TEST-01-016 : Sécurité RLS - Contexte d'Authentification
+
+**Objectif :** Valider le bon fonctionnement du contexte RLS personnalisé
+
+**Prérequis :**
+- Service `withRLSContext` implémenté
+- Middleware d'authentification configuré
+
+**Étapes :**
+1. Analyser les logs de base de données pendant une session utilisateur
+2. Vérifier que `app.current_user_id` est correctement défini
+3. Tester le nettoyage du contexte après déconnexion
+4. Tester les requêtes simultanées de différents utilisateurs
+5. Vérifier la fonction `getCurrentUserId()`
+
+**Résultats attendus :**
+- ✅ **Variable `app.current_user_id` définie pour chaque requête**
+- ✅ **Contexte nettoyé après chaque requête**
+- ✅ **Pas d'interférence entre sessions utilisateur**
+- ✅ **`getCurrentUserId()` retourne l'ID correct**
+- ✅ **Gestion des erreurs si contexte non défini**
+
+**Critères de validation :**
+- [ ] **Contexte RLS correctement géré**
+- [ ] **Isolation des sessions utilisateur**
+- [ ] **Nettoyage automatique du contexte**
+- [ ] **Fonctions helper opérationnelles**
+- [ ] **Logs de sécurité appropriés**
+
+---
+
+### TEST-01-017 : Migration Base de Données - Extension Table Users
+
+**Objectif :** Valider la migration ALTER TABLE pour étendre la table users existante
+
+**Prérequis :**
+- Table `users` existante avec données de test
+- Script de migration préparé
+
+**Étapes :**
+1. Sauvegarder les données existantes de la table `users`
+2. Exécuter la migration ALTER TABLE
+3. Vérifier l'ajout des nouvelles colonnes
+4. Tester les contraintes et valeurs par défaut
+5. Vérifier que les données existantes sont préservées
+6. Tester l'insertion de nouveaux utilisateurs avec les nouvelles colonnes
+
+**Résultats attendus :**
+- ✅ **Nouvelles colonnes ajoutées : user_type, email_verified, validation_status, etc.**
+- ✅ **Contraintes CHECK appliquées correctement**
+- ✅ **Valeurs par défaut fonctionnelles**
+- ✅ **Données existantes préservées**
+- ✅ **Nouveaux utilisateurs créés avec succès**
+- ✅ **Index et relations maintenus**
+
+**Critères de validation :**
+- [ ] **Migration sans perte de données**
+- [ ] **Nouvelles colonnes conformes aux spécifications**
+- [ ] **Contraintes de validation actives**
+- [ ] **Compatibilité avec le code existant**
+- [ ] **Performance maintenue**
+
+---
+
+### TEST-01-018 : Création des Nouvelles Tables
+
+**Objectif :** Valider la création des tables training_centers, jury_profiles et tables de référence
+
+**Prérequis :**
+- Scripts de création des tables préparés
+- Table users étendue
+
+**Étapes :**
+1. Exécuter les scripts de création des tables
+2. Vérifier la structure de chaque table
+3. Tester les relations foreign key
+4. Vérifier les contraintes et index
+5. Insérer des données de test dans chaque table
+6. Tester les requêtes de jointure
+
+**Résultats attendus :**
+- ✅ **Tables créées : training_centers, jury_profiles, certification_domains, french_regions, france_competence_certifications**
+- ✅ **Relations foreign key fonctionnelles**
+- ✅ **Contraintes de validation actives**
+- ✅ **Index de performance créés**
+- ✅ **Insertion de données réussie**
+- ✅ **Requêtes de jointure performantes**
+
+**Critères de validation :**
+- [ ] **Structure des tables conforme aux spécifications**
+- [ ] **Relations entre tables correctes**
+- [ ] **Contraintes de données appliquées**
+- [ ] **Performance des requêtes acceptable**
+- [ ] **Intégrité référentielle maintenue**
+
+---
+
+### TEST-01-019 : Sécurité - Injection SQL
 
 **Objectif :** Vérifier la protection contre les injections SQL
 
@@ -525,7 +664,7 @@ Le boilerplate inclut déjà :
 
 ---
 
-### TEST-01-016 : Sécurité - XSS (Cross-Site Scripting)
+### TEST-01-020 : Sécurité - XSS (Cross-Site Scripting)
 
 **Objectif :** Vérifier la protection contre les attaques XSS
 
@@ -550,7 +689,7 @@ Le boilerplate inclut déjà :
 
 ---
 
-### TEST-01-017 : Performance - Temps de Réponse
+### TEST-01-021 : Performance - Temps de Réponse
 
 **Objectif :** Valider les performances des endpoints critiques
 
@@ -577,7 +716,7 @@ Le boilerplate inclut déjà :
 
 ---
 
-### TEST-01-018 : Tests d'Emails Resend - Délivrabilité
+### TEST-01-022 : Tests d'Emails Resend - Délivrabilité
 
 **Objectif :** Valider la délivrabilité et le rendu des emails Resend
 
@@ -610,7 +749,7 @@ Le boilerplate inclut déjà :
 
 ---
 
-### TEST-01-019 : Tests d'Emails - Gestion des Erreurs
+### TEST-01-023 : Tests d'Emails - Gestion des Erreurs
 
 **Objectif :** Valider la gestion des erreurs d'envoi d'emails
 
@@ -641,7 +780,7 @@ Le boilerplate inclut déjà :
 
 ---
 
-### TEST-01-020 : Compatibilité Navigateurs
+### TEST-01-024 : Compatibilité Navigateurs
 
 **Objectif :** Valider le fonctionnement sur différents navigateurs
 
@@ -689,12 +828,16 @@ Le boilerplate inclut déjà :
 | TEST-01-012 | Refus Admin | ⏳ À tester | |
 | TEST-01-013 | API SIRET | ⏳ À tester | |
 | TEST-01-014 | API France Compétence | ⏳ À tester | |
-| TEST-01-015 | Sécurité SQL | ⏳ À tester | |
-| TEST-01-016 | Sécurité XSS | ⏳ À tester | |
-| TEST-01-017 | Performance | ⏳ À tester | |
-| TEST-01-018 | Emails Délivrabilité | ⏳ À tester | |
-| TEST-01-019 | Emails Erreurs | ⏳ À tester | |
-| TEST-01-020 | Compatibilité | ⏳ À tester | |
+| TEST-01-015 | Sécurité RLS Isolation | ⏳ À tester | Tests d'isolation des données |
+| TEST-01-016 | Sécurité RLS Contexte | ⏳ À tester | Tests du contexte d'auth |
+| TEST-01-017 | Migration Users | ⏳ À tester | Extension table existante |
+| TEST-01-018 | Création Tables | ⏳ À tester | Nouvelles tables SimplyJury |
+| TEST-01-019 | Sécurité SQL | ⏳ À tester | |
+| TEST-01-020 | Sécurité XSS | ⏳ À tester | |
+| TEST-01-021 | Performance | ⏳ À tester | |
+| TEST-01-022 | Emails Délivrabilité | ⏳ À tester | |
+| TEST-01-023 | Emails Erreurs | ⏳ À tester | |
+| TEST-01-024 | Compatibilité | ⏳ À tester | |
 
 ### Légende des Statuts
 - ✅ **Réussi** : Test passé avec succès
@@ -710,8 +853,9 @@ Le boilerplate inclut déjà :
 ### Configuration Requise
 - **Node.js** : v18+
 - **pnpm** : dernière version
-- **Base de données** : Supabase PostgreSQL
+- **Base de données** : Supabase PostgreSQL (projet: vbnnjwgfbadvqavqnlhh)
 - **Service d'emails** : Resend configuré
+- **⚠️ IMPORTANT** : Base existante avec tables du boilerplate SaaS
 - **Variables d'environnement** :
   ```env
   DATABASE_URL=postgresql://...
@@ -740,14 +884,17 @@ Le boilerplate inclut déjà :
 # Démarrer l'application
 pnpm dev
 
-# Réinitialiser la base de données
-pnpm db:reset
+# Appliquer les migrations (ATTENTION: ne pas reset, étendre l'existant)
+pnpm db:migrate
 
-# Générer des données de test
-pnpm db:seed
+# Générer des données de test SimplyJury
+pnpm db:seed:simplyjury
 
 # Lancer les tests automatisés
 pnpm test
+
+# Vérifier le statut RLS
+pnpm db:check-rls
 ```
 
 ---
@@ -755,6 +902,10 @@ pnpm test
 ## 📝 Notes de Test
 
 ### Points d'Attention
+- **⚠️ CRITIQUE : Ne pas supprimer les données existantes lors des migrations**
+- **Vérifier que les politiques RLS utilisent `current_setting('app.current_user_id')` et non `auth.uid()`**
+- **Tester l'isolation des données entre utilisateurs**
+- **Valider le contexte d'authentification personnalisé**
 - Vérifier les logs de sécurité pour toute tentative malveillante
 - Tester avec des données réelles pour les APIs externes
 - Valider l'accessibilité WCAG AA
@@ -765,6 +916,9 @@ pnpm test
 - **Valider la gestion des bounces et plaintes**
 
 ### Améliorations Suggérées
+- **Créer des tests automatisés pour les politiques RLS**
+- **Implémenter des tests de performance avec RLS activé**
+- **Ajouter des tests de concurrence pour le contexte d'auth**
 - Ajouter des tests automatisés E2E avec Playwright
 - Implémenter des tests de charge avec k6
 - Créer des snapshots visuels pour les tests de régression

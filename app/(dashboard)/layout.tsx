@@ -39,8 +39,14 @@ function UserMenu() {
         >
           Pricing
         </Link>
+        <Link
+          href="/sign-in"
+          className="text-sm font-medium text-gray-700 hover:text-gray-900"
+        >
+          Se connecter
+        </Link>
         <Button asChild className="rounded-full">
-          <Link href="/sign-up">Sign Up</Link>
+          <Link href="/sign-up">Créer un compte</Link>
         </Button>
       </>
     );
