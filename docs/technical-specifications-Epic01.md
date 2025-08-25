@@ -67,6 +67,7 @@ export const users = pgTable('users', {
 });
 ```
 
+
 ### 2. Table des profils centres de formation **[Complexité: 4/10]**
 
 ```sql
@@ -170,11 +171,231 @@ CREATE TABLE france_competence_certifications (
 );
 ```
 
+### **CRITIQUE : Sécurité RLS (Row Level Security)** **[Complexité: 8/10]**
+
+Le système actuel **ne possède aucune politique RLS**, ce qui représente une **vulnérabilité de sécurité majeure**. L'implémentation des politiques RLS est **obligatoire** avant toute mise en production.
+
+#### **1. Politiques pour la table `users`**
+
+```sql
+-- Activation RLS sur la table users
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Les utilisateurs ne peuvent voir que leur propre profil
+CREATE POLICY "users_select_own" ON users 
+FOR SELECT USING (id = current_setting('app.current_user_id', true)::integer);
+
+CREATE POLICY "users_update_own" ON users 
+FOR UPDATE USING (id = current_setting('app.current_user_id', true)::integer);
+
+-- Les admins peuvent tout voir/modifier
+CREATE POLICY "users_admin_all" ON users 
+FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM users 
+    WHERE id = current_setting('app.current_user_id', true)::integer AND user_type = 'admin'
+  )
+);
+```
+
+#### **2. Politiques pour `training_centers`**
+
+```sql
+ALTER TABLE training_centers ENABLE ROW LEVEL SECURITY;
+
+-- Les centres ne peuvent accéder qu'à leur propre profil
+CREATE POLICY "training_centers_own" ON training_centers 
+FOR ALL USING (user_id = current_setting('app.current_user_id', true)::integer);
+
+-- Les jurys peuvent consulter les centres (pour recherche/contact)
+CREATE POLICY "training_centers_jury_view" ON training_centers 
+FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM users 
+    WHERE id = current_setting('app.current_user_id', true)::integer AND user_type = 'jury'
+  )
+);
+
+-- Les admins peuvent tout voir
+CREATE POLICY "training_centers_admin_all" ON training_centers 
+FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM users 
+    WHERE id = current_setting('app.current_user_id', true)::integer AND user_type = 'admin'
+  )
+);
+```
+
+#### **3. Politiques pour `jury_profiles`**
+
+```sql
+ALTER TABLE jury_profiles ENABLE ROW LEVEL SECURITY;
+
+-- Les jurys ne peuvent accéder qu'à leur propre profil
+CREATE POLICY "jury_profiles_own" ON jury_profiles 
+FOR ALL USING (user_id = current_setting('app.current_user_id', true)::integer);
+
+-- Les centres peuvent voir les profils jurys validés (pour recherche)
+CREATE POLICY "jury_profiles_center_view" ON jury_profiles 
+FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM users u
+    JOIN jury_profiles jp ON jp.user_id = u.id
+    WHERE u.id = current_setting('app.current_user_id', true)::integer 
+    AND u.user_type = 'centre'
+    AND jp.validation_status = 'validated'
+  )
+);
+
+-- Les admins peuvent tout voir
+CREATE POLICY "jury_profiles_admin_all" ON jury_profiles 
+FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM users 
+    WHERE id = current_setting('app.current_user_id', true)::integer AND user_type = 'admin'
+  )
+);
+```
+
+#### **4. Politiques pour tables de référence**
+
+```sql
+-- Tables de référence : lecture seule pour tous les utilisateurs authentifiés
+ALTER TABLE certification_domains ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "certification_domains_read_all" ON certification_domains 
+FOR SELECT USING (current_setting('app.current_user_id', true) IS NOT NULL);
+
+ALTER TABLE french_regions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "french_regions_read_all" ON french_regions 
+FOR SELECT USING (current_setting('app.current_user_id', true) IS NOT NULL);
+
+-- France Compétence : seuls les centres certificateurs peuvent voir leurs certifications
+ALTER TABLE france_competence_certifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "fc_certifications_own_center" ON france_competence_certifications 
+FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM training_centers tc
+    WHERE tc.id = training_center_id 
+    AND tc.user_id = current_setting('app.current_user_id', true)::integer
+    AND tc.is_certificateur = true
+  )
+);
+```
+
+#### **5. Migration RLS - Script d'implémentation**
+
+**Fichier :** `lib/db/migrations/001_enable_rls.sql`
+
+```sql
+-- Migration pour activer RLS sur toutes les tables
+-- ATTENTION : À exécuter APRÈS la création des tables
+
+BEGIN;
+
+-- Extension de la table users existante (ALTER TABLE)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS user_type VARCHAR(20) DEFAULT 'centre';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS validation_status VARCHAR(20) DEFAULT 'pending';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS validation_comment TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;
+
+-- Contraintes CHECK pour validation
+ALTER TABLE users ADD CONSTRAINT check_user_type CHECK (user_type IN ('centre', 'jury', 'admin'));
+ALTER TABLE users ADD CONSTRAINT check_validation_status CHECK (validation_status IN ('pending', 'validated', 'rejected'));
+
+-- Activation RLS sur toutes les tables utilisateurs
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE training_centers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE jury_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE certification_domains ENABLE ROW LEVEL SECURITY;
+ALTER TABLE french_regions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE france_competence_certifications ENABLE ROW LEVEL SECURITY;
+
+-- Politiques users
+CREATE POLICY "users_select_own" ON users FOR SELECT USING (id = current_setting('app.current_user_id', true)::integer);
+CREATE POLICY "users_update_own" ON users FOR UPDATE USING (id = current_setting('app.current_user_id', true)::integer);
+CREATE POLICY "users_admin_all" ON users FOR ALL USING (
+  EXISTS (SELECT 1 FROM users WHERE id = current_setting('app.current_user_id', true)::integer AND user_type = 'admin')
+);
+
+-- Politiques training_centers
+CREATE POLICY "training_centers_own" ON training_centers FOR ALL USING (user_id = current_setting('app.current_user_id', true)::integer);
+CREATE POLICY "training_centers_jury_view" ON training_centers FOR SELECT USING (
+  EXISTS (SELECT 1 FROM users WHERE id = current_setting('app.current_user_id', true)::integer AND user_type = 'jury')
+);
+CREATE POLICY "training_centers_admin_all" ON training_centers FOR ALL USING (
+  EXISTS (SELECT 1 FROM users WHERE id = current_setting('app.current_user_id', true)::integer AND user_type = 'admin')
+);
+
+-- Politiques jury_profiles
+CREATE POLICY "jury_profiles_own" ON jury_profiles FOR ALL USING (user_id = current_setting('app.current_user_id', true)::integer);
+CREATE POLICY "jury_profiles_center_view" ON jury_profiles FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM users u
+    WHERE u.id = current_setting('app.current_user_id', true)::integer AND u.user_type = 'centre'
+  ) AND validation_status = 'validated'
+);
+CREATE POLICY "jury_profiles_admin_all" ON jury_profiles FOR ALL USING (
+  EXISTS (SELECT 1 FROM users WHERE id = current_setting('app.current_user_id', true)::integer AND user_type = 'admin')
+);
+
+-- Politiques tables de référence
+CREATE POLICY "certification_domains_read_all" ON certification_domains FOR SELECT USING (current_setting('app.current_user_id', true) IS NOT NULL);
+CREATE POLICY "french_regions_read_all" ON french_regions FOR SELECT USING (current_setting('app.current_user_id', true) IS NOT NULL);
+CREATE POLICY "fc_certifications_own_center" ON france_competence_certifications FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM training_centers tc
+    WHERE tc.id = training_center_id AND tc.user_id = current_setting('app.current_user_id', true)::integer AND tc.is_certificateur = true
+  )
+);
+
+COMMIT;
+```
+
+#### **6. Authentification Context pour RLS**
+
+**Fichier :** `lib/auth/rls-context.ts`
+
+```typescript
+// Service pour définir le contexte utilisateur pour RLS
+export async function setRLSContext(userId: number): Promise<void> {
+  // Cette fonction doit être appelée après l'authentification JWT
+  // pour définir le contexte utilisateur pour les politiques RLS
+  
+  // Définir l'utilisateur actuel pour les politiques RLS
+  await db.execute(sql`SELECT set_config('app.current_user_id', ${userId.toString()}, true)`);
+}
+
+// Utilisation dans le middleware d'authentification
+export async function withRLSContext<T>(userId: number, callback: () => Promise<T>): Promise<T> {
+  await setRLSContext(userId);
+  try {
+    return await callback();
+  } finally {
+    // Nettoyer le contexte après utilisation
+    await db.execute(sql`SELECT set_config('app.current_user_id', '', true)`);
+  }
+}
+
+// Helper pour obtenir l'ID utilisateur actuel depuis le contexte RLS
+export async function getCurrentUserId(): Promise<number | null> {
+  const result = await db.execute(sql`SELECT current_setting('app.current_user_id', true) as user_id`);
+  const userId = result[0]?.user_id;
+  return userId && userId !== '' ? parseInt(userId) : null;
+}
+```
+
 ---
 
 ## Implémentation Technique
 
 ### 1. Configuration Drizzle ORM **[Complexité: 3/10]**
+
+**En résumé :** Cette étape consiste à "enseigner" à l'application la structure des nouvelles tables que nous avons créées en base de données. Drizzle ORM est l'outil qui permet à notre code JavaScript/TypeScript de communiquer avec la base de données PostgreSQL. Actuellement, il ne connaît que les anciennes tables (users, teams, etc.) mais pas les nouvelles tables spécialisées pour SimplyJury (centres de formation, jurys, certifications). Cette configuration est essentielle car elle définit les types de données, les relations entre tables, et garantit la sécurité du code en évitant les erreurs de programmation.
 
 **Fichier :** `lib/db/schema.ts`
 
@@ -246,6 +467,8 @@ export const juryProfiles = pgTable('jury_profiles', {
 ```
 
 ### 2. Services d'authentification **[Complexité: 4/10]**
+
+**En résumé :** Le système d'authentification actuel du boilerplate est générique et basique (inscription, connexion, sessions). Pour SimplyJury, nous devons l'étendre avec des fonctionnalités spécialisées : distinction entre types d'utilisateurs (centres/jurys/admins), vérification email obligatoire, validation des profils par les administrateurs, réinitialisation sécurisée de mot de passe, et emails automatiques. Ces extensions sont cruciales car SimplyJury ne peut pas fonctionner avec un système d'authentification standard - nous avons besoin de workflows spécifiques pour gérer la mise en relation sécurisée entre centres de formation et jurys professionnels, avec validation des identités et des compétences.
 
 **Fichier :** `lib/auth/auth-service.ts`
 
@@ -562,6 +785,7 @@ export async function verifyEmailToken(token: string): Promise<boolean> {
 }
 ```
 
+
 ---
 
 ## Points de Test
@@ -583,6 +807,17 @@ export async function verifyEmailToken(token: string): Promise<boolean> {
    - Génération du token de réinitialisation
    - Envoi de l'email de réinitialisation
    - Validation du token et mise à jour du mot de passe
+
+### Tests de sécurité RLS
+1. **Isolation des données utilisateurs**
+   - Vérifier qu'un centre ne peut pas voir les données d'un autre centre
+   - Vérifier qu'un jury ne peut pas modifier le profil d'un autre jury
+   - Tester l'accès admin sur toutes les tables
+
+2. **Politiques de visibilité**
+   - Centres peuvent voir uniquement les jurys validés
+   - Jurys peuvent voir les centres pour recherche
+   - Tables de référence accessibles à tous les utilisateurs authentifiés
 
 ### Tests des profils
 1. **Profil centre de formation**

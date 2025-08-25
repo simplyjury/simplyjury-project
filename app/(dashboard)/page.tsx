@@ -1,5 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Search, MessageCircle, CheckCircle, Users, Clock, TrendingUp, Shield, Zap, MessageSquare, Trophy, Star } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Users, CheckCircle, Star, Shield, Search, MessageSquare, MessageCircle, Zap, Trophy } from 'lucide-react';
+import Image from 'next/image';
 
 export default function HomePage() {
   return (
@@ -64,12 +65,15 @@ export default function HomePage() {
             
             <div className="mt-12 lg:mt-0 lg:col-span-5 flex justify-center">
               <div className="relative">
-                {/* Main illustration placeholder */}
-                <div className="w-96 h-96 bg-gradient-to-br from-[#13d090]/20 to-[#bea1e5]/20 rounded-3xl flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute top-8 right-8 w-16 h-16 bg-[#fdce0f] rounded-full flex items-center justify-center">
-                    <div className="w-8 h-8 border-4 border-white rounded-full"></div>
-                  </div>
-                  <Users className="w-32 h-32 text-[#0d4a70] opacity-80" />
+                {/* Main illustration */}
+                <div className="w-96 h-96 rounded-3xl relative overflow-hidden">
+                  <Image
+                    src="/images/hero-section/simplyjury-illustration-V2.png"
+                    alt="SimplyJury - Plateforme de mise en relation entre centres de formation et jurys qualifiés"
+                    width={384}
+                    height={384}
+                    className="w-full h-full object-contain rounded-3xl"
+                  />
                 </div>
                 
                 {/* Floating cards */}
