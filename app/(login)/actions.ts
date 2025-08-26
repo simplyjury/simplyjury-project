@@ -97,6 +97,15 @@ export const signIn = validatedAction(signInSchema, async (data, formData) => {
     return createCheckoutSession({ team: foundTeam, priceId });
   }
 
+  // Check if user needs to complete profile
+  if (!foundUser.profileCompleted) {
+    if (foundUser.userType === 'centre') {
+      redirect('/profile/center');
+    } else if (foundUser.userType === 'jury') {
+      redirect('/profile/jury');
+    }
+  }
+
   redirect('/dashboard');
 });
 

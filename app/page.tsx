@@ -1,10 +1,46 @@
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Users, CheckCircle, Star, Shield, Search, MessageSquare, MessageCircle, Zap, Trophy } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function HomePage() {
   return (
     <main className="font-jakarta">
+      {/* Navigation Header */}
+      <header className="border-b border-gray-200 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <Link href="/" className="flex items-center">
+            <Image 
+              src="/images/logos/SimplyJury_Logo-Horizontal-Bicolore-Bleu-Jaune.svg"
+              alt="SimplyJury"
+              width={140}
+              height={40}
+              className="h-8 w-auto"
+            />
+          </Link>
+          <div className="flex items-center space-x-4">
+            <Button className="bg-[#0d4a70] hover:bg-[#0c608a] text-white">
+              Passer au Pro
+            </Button>
+            <Link
+              href="/pricing"
+              className="text-sm font-medium text-gray-700 hover:text-gray-900"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/sign-in"
+              className="text-sm font-medium text-gray-700 hover:text-gray-900"
+            >
+              Se connecter
+            </Link>
+            <Button asChild className="rounded-full">
+              <Link href="/sign-up">Créer un compte</Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="relative py-20 bg-gradient-to-br from-[#edf6f9] via-white to-[#e8faf5] overflow-hidden">
         {/* Decorative elements */}
@@ -37,10 +73,13 @@ export default function HomePage() {
               <div className="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0 flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
+                  asChild
                   className="bg-[#0d4a70] hover:bg-[#0c608a] text-white px-8 py-4 text-lg rounded-full font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
-                  Commencer gratuitement
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <Link href="/sign-up">
+                    Commencer gratuitement
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
                 </Button>
                 <Button
                   size="lg"
@@ -242,8 +281,8 @@ export default function HomePage() {
                   <p className="text-gray-600 mb-8">
                     Découvrez SimplyJury sans engagement. Testez toutes nos fonctionnalités pendant 30 jours.
                   </p>
-                  <Button size="lg" className="bg-[#13d090] hover:bg-[#10b87a] text-white px-8 py-3 rounded-xl font-semibold">
-                    Commencer l'essai gratuit
+                  <Button size="lg" asChild className="bg-[#13d090] hover:bg-[#10b87a] text-white px-8 py-3 rounded-xl font-semibold">
+                    <Link href="/sign-up">Commencer l'essai gratuit</Link>
                   </Button>
                 </div>
               </div>
@@ -265,9 +304,11 @@ export default function HomePage() {
             Rejoignez les centres de formation qui font confiance à SimplyJury pour trouver leurs jurys qualifiés.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-[#13d090] hover:bg-[#10b87a] text-white px-8 py-4 rounded-xl font-semibold text-lg">
-              Commencer gratuitement
-              <ArrowRight className="ml-2 h-5 w-5" />
+            <Button size="lg" asChild className="bg-[#13d090] hover:bg-[#10b87a] text-white px-8 py-4 rounded-xl font-semibold text-lg">
+              <Link href="/sign-up">
+                Commencer gratuitement
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
             <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-[#0d4a70] px-8 py-4 rounded-xl font-semibold text-lg">
               Planifier une démo

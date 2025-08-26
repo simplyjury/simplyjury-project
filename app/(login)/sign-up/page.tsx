@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
-import { Login } from '../login';
+import { SimplyJuryLogin } from '../simplyjury-login';
 
 export default function SignUpPage() {
   return (
     <Suspense>
-      <Login mode="signup" />
+      <SimplyJuryLogin mode="signup" />
     </Suspense>
   );
 }

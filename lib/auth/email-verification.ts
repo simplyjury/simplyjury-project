@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { EmailService } from '@/lib/email/resend-service';
 
 export function generateVerificationToken(): string {
   return crypto.randomBytes(32).toString('hex');
@@ -18,6 +19,15 @@ export async function sendVerificationEmail(email: string, name: string): Promis
       updatedAt: new Date(),
     })
     .where(eq(users.email, email));
+  
+  // Envoyer l'email via Resend
+  try {
+    await EmailService.sendVerificationEmail(email, name, token);
+    console.log(`Email de vérification envoyé à ${email}`);
+  } catch (error) {
+    console.error('Erreur envoi email de vérification:', error);
+    throw new Error('Impossible d\'envoyer l\'email de vérification');
+  }
     
   return token;
 }
@@ -61,6 +71,15 @@ export async function resendVerificationEmail(email: string): Promise<string | n
       updatedAt: new Date(),
     })
     .where(eq(users.id, user.id));
+
+  // Envoyer l'email via Resend
+  try {
+    await EmailService.sendResendVerificationEmail(email, user.name || 'Utilisateur', token);
+    console.log(`Email de vérification renvoyé à ${email}`);
+  } catch (error) {
+    console.error('Erreur renvoi email de vérification:', error);
+    throw new Error('Impossible de renvoyer l\'email de vérification');
+  }
 
   return token;
 }
