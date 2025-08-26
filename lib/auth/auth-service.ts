@@ -176,4 +176,41 @@ export class AuthService {
       })
       .where(eq(users.id, userId));
   }
+
+  static async authenticateUser(email: string, password: string): Promise<{ success: boolean; user?: any; error?: string }> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (!user) {
+      return { success: false, error: 'Utilisateur non trouvé' };
+    }
+
+    const isPasswordValid = await this.comparePassword(password, user.passwordHash);
+    
+    if (!isPasswordValid) {
+      return { success: false, error: 'Mot de passe incorrect' };
+    }
+
+    // Debug log to check the user object
+    console.log('AuthService.authenticateUser - User object:', {
+      id: user.id,
+      email: user.email,
+      emailVerified: user.emailVerified
+    });
+
+    return { success: true, user };
+  }
+
+  static async getUserByEmail(email: string) {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    return user;
+  }
 }

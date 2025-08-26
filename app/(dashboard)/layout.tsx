@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SidebarNavigation } from '@/components/ui/sidebar-navigation';
 import { signOut } from '@/app/(login)/actions';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/db/schema';
@@ -87,18 +88,15 @@ function UserMenu() {
 
 function Header() {
   return (
-    <header className="border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-        <Link href="/" className="flex items-center">
-          <Image 
-            src="/images/logos/SimplyJury_Logo-Horizontal-Bicolore-Bleu-Jaune.svg"
-            alt="SimplyJury"
-            width={140}
-            height={40}
-            className="h-8 w-auto"
-          />
-        </Link>
+    <header className="border-b border-gray-200 bg-white">
+      <div className="ml-64 px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="flex items-center">
+          <h1 className="text-xl font-semibold text-[#0d4a70]">Rechercher un jury</h1>
+        </div>
         <div className="flex items-center space-x-4">
+          <Button className="bg-[#0d4a70] hover:bg-[#0c608a] text-white">
+            Passer au Pro
+          </Button>
           <Suspense fallback={<div className="h-9" />}>
             <UserMenu />
           </Suspense>
@@ -110,9 +108,14 @@ function Header() {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <section className="flex flex-col min-h-screen">
-      <Header />
-      {children}
-    </section>
+    <div className="flex min-h-screen bg-gray-50">
+      <SidebarNavigation />
+      <div className="flex-1 flex flex-col">
+        <Header />
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }
