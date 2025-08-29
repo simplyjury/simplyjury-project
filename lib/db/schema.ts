@@ -94,10 +94,15 @@ export const trainingCenters = pgTable('training_centers', {
   city: varchar('city', { length: 100 }),
   postalCode: varchar('postal_code', { length: 10 }),
   region: varchar('region', { length: 50 }),
+  sector: text('sector'),
   contactPersonName: varchar('contact_person_name', { length: 255 }),
   contactPersonRole: varchar('contact_person_role', { length: 100 }),
   isCertificateur: boolean('is_certificateur').default(false),
   certificationDomains: text('certification_domains').array(),
+  subscriptionTier: varchar('subscription_tier', { length: 20 }).default('gratuit'),
+  qualiopiCertified: boolean('qualiopi_certified').default(false),
+  qualiopiStatus: text('qualiopi_status'),
+  qualiopiLastChecked: timestamp('qualiopi_last_checked'),
   franceCompetenceSyncEnabled: boolean('france_competence_sync_enabled').default(false),
   franceCompetenceLastSync: timestamp('france_competence_last_sync'),
   createdAt: timestamp('created_at').defaultNow(),
@@ -157,6 +162,19 @@ export const franceCompetenceCertifications = pgTable('france_competence_certifi
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const certificationStats = pgTable('certification_stats', {
+  id: serial('id').primaryKey(),
+  franceCompetenceCertificationId: integer('france_competence_certification_id')
+    .references(() => franceCompetenceCertifications.id, { onDelete: 'cascade' }),
+  year: integer('year').notNull(),
+  candidatesCount: integer('candidates_count').default(0),
+  successfulCandidates: integer('successful_candidates').default(0),
+  totalSessions: integer('total_sessions').default(0),
+  lastSessionDate: timestamp('last_session_date'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export const teamsRelations = relations(teams, ({ many }) => ({
   teamMembers: many(teamMembers),
   activityLogs: many(activityLogs),
@@ -185,10 +203,18 @@ export const juryProfilesRelations = relations(juryProfiles, ({ one }) => ({
   }),
 }));
 
-export const franceCompetenceCertificationsRelations = relations(franceCompetenceCertifications, ({ one }) => ({
+export const franceCompetenceCertificationsRelations = relations(franceCompetenceCertifications, ({ one, many }) => ({
   trainingCenter: one(trainingCenters, {
     fields: [franceCompetenceCertifications.trainingCenterId],
     references: [trainingCenters.id],
+  }),
+  certificationStats: many(certificationStats),
+}));
+
+export const certificationStatsRelations = relations(certificationStats, ({ one }) => ({
+  franceCompetenceCertification: one(franceCompetenceCertifications, {
+    fields: [certificationStats.franceCompetenceCertificationId],
+    references: [franceCompetenceCertifications.id],
   }),
 }));
 
@@ -248,6 +274,8 @@ export type FrenchRegion = typeof frenchRegions.$inferSelect;
 export type NewFrenchRegion = typeof frenchRegions.$inferInsert;
 export type FranceCompetenceCertification = typeof franceCompetenceCertifications.$inferSelect;
 export type NewFranceCompetenceCertification = typeof franceCompetenceCertifications.$inferInsert;
+export type CertificationStats = typeof certificationStats.$inferSelect;
+export type NewCertificationStats = typeof certificationStats.$inferInsert;
 
 // Complex types
 export type TeamDataWithMembers = Team & {
