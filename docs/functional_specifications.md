@@ -55,39 +55,68 @@ SimplyJury vise à simplifier et accélérer la recherche de jurys qualifiés po
 - Sessions sécurisées avec timeout automatique
 
 #### Feature 1.2 : Profils Centres de Formation
-**Description :** Permettre aux centres de compléter et gérer leur profil institutionnel
+**Description :** Permettre aux centres de compléter et gérer leur profil institutionnel avec auto-complétion SIRET et détection automatique Qualiopi
 
 **User Stories :**
-- En tant que centre, je peux saisir mes informations (nom, SIRET, email, téléphone)
-- *En tant que centre, je peux auto-compléter mes informations via l'API SIRET INSEE*
-- En tant que centre, je peux indiquer mes domaines de certification
+- En tant que centre de formation, je peux renseigner mes informations via SIRET avec auto-complétion
+- En tant que centre de formation, je vois automatiquement si mon organisme possède Qualiopi
+- En tant que centre de formation, je peux modifier mes informations de contact
 - **En tant que centre, je peux préciser si je suis certificateur via une checkbox**
 - **En tant que centre certificateur, je peux rattacher mes certifications via l'API France Compétence**
 - En tant que centre, je peux modifier mon profil à tout moment
 
+**Spécifications techniques :**
+- **API Pappers** pour auto-complétion via SIRET/SIREN
+  - Récupération automatique : nom, adresse, secteur d'activité
+- **API Entreprise (Qualiopi & habilitations France compétences)** pour certification
+  - Endpoint : `/carif_oref/certifications_qualiopi_france_competences`
+  - Récupération : statut Qualiopi actuel, types de qualification, habilitations France Compétences
+  - Nécessite inscription et authentification pour usage production
+- **Stratégie d'intégration :**
+  1. Saisie SIRET → API Pappers (informations entreprise)
+  2. SIRET → API Entreprise (statut Qualiopi)
+  3. Combinaison des réponses pour profil complet
+- **Fallback :** Déclaration manuelle Qualiopi si API indisponible
+- Champs : nom établissement, SIRET, email, téléphone, contact référent
+
 **Critères d'acceptation :**
-- *Intégration API SIRET INSEE pour auto-complétion des données entreprise*
+- Auto-complétion SIRET avec API Pappers (nom, adresse, secteur)
+- Détection automatique du statut Qualiopi via API Entreprise
+- Gestion des limitations d'API (rate limits, authentification)
+- Mécanisme de fallback en cas d'indisponibilité API
 - **Intégration API France Compétence pour les centres certificateurs**
 - Validation SIRET obligatoire
-- Champs obligatoires : nom, SIRET, email, personne responsable
+- Champs obligatoires : nom établissement, SIRET, email, téléphone, contact référent
 - **Checkbox "Centre certificateur" avec accès conditionnel aux certifications**
 - Possibilité de sélectionner plusieurs domaines de certification
 - **Liste des certifications rattachées visible pour les centres certificateurs**
+- Interface utilisateur fluide malgré les appels API multiples
 
 #### Feature 1.3 : Profils Jurys Professionnels
-**Description :** Permettre aux jurys de créer et gérer leur profil professionnel
+**Description :** Permettre aux jurys de créer et gérer leur profil professionnel complet avec validation administrative
 
 **User Stories :**
-- En tant que jury, je peux créer mon profil avec photo, nom, région, domaines d'expertise
-- En tant que jury, je peux indiquer mes certifications et expériences
-- En tant que jury, je peux définir mes disponibilités
-- En tant que jury, je peux choisir mes modalités de travail (visio/présentiel)
+- En tant que jury, je peux créer un profil complet avec photo, expériences et certifications
+- En tant que jury, je peux définir mes disponibilités et modalités (visio/présentiel)
+- En tant que jury, je peux visualiser mes avis et ma note moyenne
+- En tant que jury, mon profil doit être validé par un admin avant d'être visible
 - *En tant que jury, je peux sélectionner ma région administrative française*
 - En tant que jury, je peux modifier mon profil après validation
 
+**Spécifications techniques :**
+- Informations requises : nom, photo, région, domaines d'expertise
+- Expériences : diplômes ET expériences avec années (validation manuelle admin)
+- Disponibilités : système de checkboxes ou calendrier simple
+- Modalités : visio/présentiel/les deux
+- Zone d'intervention : départements/régions si mobile
+- Statut : En attente validation / Validé / Suspendu
+
 **Critères d'acceptation :**
+- Upload et redimensionnement photo jury
+- Système de validation admin pour jurys
+- Notification email validation/refus avec motifs
+- Profils modifiables après validation
 - *Utilisation de la liste officielle des 13 régions administratives françaises*
-- Photo optionnelle mais recommandée
 - *Statut initial "En attente de validation" par l'administration*
 - Possibilité de sélectionner plusieurs domaines d'expertise
 - Calendrier de disponibilités simple (checkbox ou similaire)

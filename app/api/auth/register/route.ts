@@ -25,8 +25,10 @@ export async function POST(request: NextRequest) {
         EmailService.sendWelcomeEmail(user.email, user.name || 'Utilisateur', validatedData.userType),
         EmailService.sendVerificationEmail(user.email, user.name || 'Utilisateur', verificationToken)
       ]);
+      console.log(`Email de vérification envoyé à ${user.email}`);
     } catch (emailError) {
       console.error('Email sending failed:', emailError);
+      console.error('Email error details:', JSON.stringify(emailError, null, 2));
       // Continue même si l'email échoue - l'utilisateur peut toujours utiliser le token
     }
 

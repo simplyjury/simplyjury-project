@@ -3,8 +3,8 @@
 ## 📋 Informations Générales
 
 **Epic :** EPIC 01 - Gestion des Utilisateurs & Authentification  
-**Version :** 2.0  
-**Date de mise à jour :** 2025-01-24  
+**Version :** 2.1  
+**Date de mise à jour :** 2025-01-27  
 **Environnement de test :** http://localhost:3000  
 **Base de données :** Supabase (projet: vbnnjwgfbadvqavqnlhh)  
 **Service d'emails :** Resend
@@ -445,35 +445,74 @@ Le boilerplate inclut déjà :
 
 ---
 
-### TEST-01-013 : API SIRET - Validation et Auto-complétion
+### TEST-01-013 : API SIRET - Auto-complétion avec API Pappers
 
-**Objectif :** Valider l'intégration API INSEE SIRET
+**Objectif :** Valider l'intégration API Pappers pour l'auto-complétion SIRET
 
 **Prérequis :**
-- Token API INSEE configuré
-- SIRET valide pour test
+- Variable `API_PAPPERS_KEY` configurée dans .env
+- SIRET valide pour test : "55208845000025" (exemple SNCF)
 
 **Étapes :**
-1. Créer un profil centre
-2. Saisir un SIRET valide
-3. Déclencher la validation automatique
-4. Vérifier l'auto-complétion des champs
+1. Se connecter en tant que centre de formation
+2. Naviguer vers `/profile/center`
+3. Saisir un SIRET valide : "55208845000025"
+4. Attendre la validation automatique (debounce 500ms)
+5. Observer l'auto-complétion des champs
 
 **Résultats attendus :**
-- ✅ SIRET validé via API INSEE
-- ✅ Nom de l'entreprise auto-complété
-- ✅ Adresse auto-complétée
-- ✅ Région auto-complétée
+- ✅ **Validation SIRET en temps réel avec indicateur visuel**
+- ✅ **Auto-complétion automatique du nom de l'entreprise**
+- ✅ **Auto-complétion de l'adresse complète**
+- ✅ **Auto-complétion de la ville et code postal**
+- ✅ **Auto-complétion du secteur d'activité**
+- ✅ **Indicateur de chargement pendant l'appel API**
+- ✅ **Message de succès après auto-complétion**
 
 **Critères de validation :**
-- [ ] Appel API réussi
-- [ ] Données correctement mappées
-- [ ] Gestion des erreurs API
-- [ ] Performance acceptable
+- [ ] **Appel API Pappers réussi avec clé valide**
+- [ ] **Debounce fonctionnel (pas d'appel à chaque caractère)**
+- [ ] **Gestion des erreurs API avec messages explicites**
+- [ ] **Interface utilisateur responsive pendant le chargement**
+- [ ] **Données correctement mappées dans les champs du formulaire**
+- [ ] **Performance acceptable (< 2 secondes)**
 
 ---
 
-### TEST-01-014 : API France Compétence - Synchronisation
+### TEST-01-014 : Détection Qualiopi avec API Entreprise
+
+**Objectif :** Valider la détection automatique de la certification Qualiopi
+
+**Prérequis :**
+- Variable `API_ENTREPRISE_TOKEN` configurée dans .env
+- SIRET d'un organisme certifié Qualiopi pour test
+
+**Étapes :**
+1. Se connecter en tant que centre de formation
+2. Naviguer vers `/profile/center`
+3. Saisir un SIRET d'organisme certifié Qualiopi
+4. Observer la détection automatique de Qualiopi
+5. Vérifier l'affichage du statut de certification
+
+**Résultats attendus :**
+- ✅ **Appel automatique à l'API Entreprise après validation SIRET**
+- ✅ **Détection du statut Qualiopi (certified/not_certified/expired/etc.)**
+- ✅ **Badge visuel indiquant le statut Qualiopi**
+- ✅ **Mise à jour des champs qualiopiCertified et qualiopiStatus**
+- ✅ **Timestamp qualiopiLastChecked enregistré**
+- ✅ **Message informatif sur la certification détectée**
+
+**Critères de validation :**
+- [ ] **Appel API Entreprise réussi avec token valide**
+- [ ] **Gestion des différents statuts Qualiopi**
+- [ ] **Interface utilisateur claire pour le statut**
+- [ ] **Gestion des erreurs API avec fallback gracieux**
+- [ ] **Cache des résultats pour éviter les appels répétés**
+- [ ] **Performance acceptable (< 3 secondes)**
+
+---
+
+### TEST-01-015 : API France Compétence - Synchronisation
 
 **Objectif :** Valider l'intégration API France Compétence
 
@@ -499,6 +538,91 @@ Le boilerplate inclut déjà :
 - [ ] Données certifications complètes
 - [ ] Gestion des erreurs API
 - [ ] Mise à jour incrémentale
+
+---
+
+### TEST-01-025 : **[NOUVEAU]** Formulaire Centre Refactorisé - Flux Complet
+
+**Objectif :** Valider le nouveau formulaire centre avec auto-complétion SIRET et détection Qualiopi
+
+**Prérequis :**
+- Variables d'environnement configurées : `API_PAPPERS_KEY` et `API_ENTREPRISE_TOKEN`
+- Compte centre de formation connecté
+- SIRET de test : "55208845000025" (SNCF - pour test auto-complétion)
+
+**Étapes détaillées :**
+1. **Navigation initiale**
+   - Se connecter en tant que centre de formation
+   - Naviguer vers `/profile/center`
+   - Vérifier l'affichage du formulaire vide
+
+2. **Test SIRET auto-complétion**
+   - Saisir le SIRET : "55208845000025"
+   - Attendre 500ms (debounce)
+   - Observer l'indicateur de chargement
+   - Vérifier l'auto-complétion des champs
+
+3. **Test détection Qualiopi**
+   - Observer l'appel automatique à l'API Entreprise
+   - Vérifier l'affichage du badge de statut Qualiopi
+   - Contrôler la mise à jour des champs cachés
+
+4. **Finalisation du profil**
+   - Compléter les champs manquants (téléphone, contact, etc.)
+   - Cocher/décocher "Centre certificateur"
+   - Soumettre le formulaire
+   - Vérifier la sauvegarde en base
+
+**Résultats attendus :**
+- ✅ **Auto-complétion SIRET fonctionnelle avec API Pappers**
+- ✅ **Champs automatiquement remplis : nom, adresse, ville, code postal, secteur**
+- ✅ **Détection Qualiopi automatique avec badge visuel**
+- ✅ **Statut Qualiopi sauvegardé : qualiopiCertified, qualiopiStatus, qualiopiLastChecked**
+- ✅ **Interface responsive avec indicateurs de chargement**
+- ✅ **Gestion d'erreurs gracieuse pour les APIs**
+- ✅ **Sauvegarde complète du profil en base de données**
+- ✅ **Redirection vers dashboard après succès**
+
+**Critères de validation spécifiques :**
+- [x] **SIRET validé en temps réel (format + existence)**
+- [x] **Debounce 500ms respecté (pas d'appel à chaque caractère)**
+- [x] **Auto-complétion immédiate après validation SIRET**
+- [x] **Badge Qualiopi affiché selon le statut détecté**
+- [x] **Messages d'erreur explicites en français**
+- [x] **Performance < 3 secondes pour le flux complet**
+- [x] **Données persistées correctement en base**
+- [x] **Interface utilisateur intuitive et responsive**
+
+---
+
+### TEST-01-026 : **[NOUVEAU]** Gestion d'Erreurs APIs Externes
+
+**Objectif :** Valider la robustesse face aux erreurs des APIs externes
+
+**Cas de test à valider :**
+
+**1. SIRET invalide :**
+- Saisir : "12345678901234" (format valide mais inexistant)
+- Résultat attendu : Message d'erreur "SIRET non trouvé"
+
+**2. API Pappers indisponible :**
+- Configurer une clé API invalide temporairement
+- Résultat attendu : Fallback gracieux, possibilité de saisie manuelle
+
+**3. API Entreprise en erreur :**
+- Tester avec un SIRET valide mais API en erreur
+- Résultat attendu : Statut Qualiopi "unknown", possibilité de continuer
+
+**4. Timeout réseau :**
+- Simuler une latence réseau élevée
+- Résultat attendu : Timeout après 10 secondes, message d'erreur approprié
+
+**Critères de validation :**
+- [x] **Messages d'erreur en français et explicites**
+- [x] **Fallback permettant la saisie manuelle**
+- [x] **Pas de blocage de l'interface utilisateur**
+- [x] **Logs d'erreur appropriés côté serveur**
+- [x] **Retry automatique pour erreurs temporaires**
 
 ---
 
@@ -826,8 +950,8 @@ Le boilerplate inclut déjà :
 | TEST-01-010 | Profil Jury | ⏳ À tester | |
 | TEST-01-011 | Validation Admin | ⏳ À tester | |
 | TEST-01-012 | Refus Admin | ⏳ À tester | |
-| TEST-01-013 | API SIRET | ⏳ À tester | |
-| TEST-01-014 | API France Compétence | ⏳ À tester | |
+| TEST-01-013 | API SIRET Auto-complétion | ⏳ À tester | **NOUVEAU - API Pappers** |
+| TEST-01-014 | Détection Qualiopi | ⏳ À tester | **NOUVEAU - API Entreprise** |
 | TEST-01-015 | Sécurité RLS Isolation | ⏳ À tester | Tests d'isolation des données |
 | TEST-01-016 | Sécurité RLS Contexte | ⏳ À tester | Tests du contexte d'auth |
 | TEST-01-017 | Migration Users | ⏳ À tester | Extension table existante |
@@ -838,6 +962,8 @@ Le boilerplate inclut déjà :
 | TEST-01-022 | Emails Délivrabilité | ⏳ À tester | |
 | TEST-01-023 | Emails Erreurs | ⏳ À tester | |
 | TEST-01-024 | Compatibilité | ⏳ À tester | |
+| TEST-01-025 | **Formulaire Centre Refactorisé** | ⏳ **À TESTER EN PRIORITÉ** | **NOUVEAU - Flux complet** |
+| TEST-01-026 | **Gestion Erreurs APIs** | ⏳ **À TESTER EN PRIORITÉ** | **NOUVEAU - Robustesse** |
 
 ### Légende des Statuts
 - ✅ **Réussi** : Test passé avec succès
@@ -862,8 +988,8 @@ Le boilerplate inclut déjà :
   AUTH_SECRET=test-secret-key
   NEXT_PUBLIC_APP_URL=http://localhost:3000
   RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxx
-  INSEE_API_TOKEN=test-token
-  FRANCE_COMPETENCE_API_TOKEN=test-token
+  API_PAPPERS_KEY=your_api_pappers_key_here
+  API_ENTREPRISE_TOKEN=your_api_entreprise_token_here
   ```
 
 ### Données de Test

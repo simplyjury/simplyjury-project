@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const CERTIFICATION_DOMAINS = [
   'Informatique',
@@ -46,6 +47,11 @@ export default function CenterProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [userData, setUserData] = useState<any>(null);
+  const [siretLoading, setSiretLoading] = useState(false);
+  const [qualiopiLoading, setQualiopiLoading] = useState(false);
+  const [siretValidated, setSiretValidated] = useState(false);
+  const [siretError, setSiretError] = useState('');
+  const [qualiopiChecked, setQualiopiChecked] = useState(false);
   
   const [formData, setFormData] = useState({
     siret: '',
@@ -56,9 +62,12 @@ export default function CenterProfilePage() {
     postalCode: '',
     city: '',
     region: '',
+    sector: '',
     responsiblePerson: '',
     responsibleRole: '',
     isCertificateur: false,
+    qualiopiCertified: false,
+    qualiopiStatus: '',
     description: ''
   });
 
@@ -91,6 +100,104 @@ export default function CenterProfilePage() {
       ...prev,
       [field]: value
     }));
+    
+    // Reset validation states when SIRET changes
+    if (field === 'siret') {
+      setSiretValidated(false);
+      setSiretError('');
+      setQualiopiChecked(false);
+      setFormData(prev => ({
+        ...prev,
+        qualiopiCertified: false,
+        qualiopiStatus: '',
+        establishmentName: '',
+        address: '',
+        city: '',
+        postalCode: '',
+        sector: ''
+      }));
+    }
+  };
+
+  // Auto-complete SIRET with API Pappers
+  const handleSiretAutoComplete = async (siret: string) => {
+    if (!/^\d{14}$/.test(siret.replace(/\s/g, ''))) return;
+    
+    setSiretLoading(true);
+    try {
+      const response = await fetch('/api/siret/autocomplete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siret })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(prev => ({
+          ...prev,
+          establishmentName: data.name || '',
+          address: data.address || '',
+          city: data.city || '',
+          postalCode: data.postalCode || '',
+          sector: data.sector || ''
+        }));
+        setSiretValidated(true);
+        setSiretError('');
+        
+        // Check Qualiopi status
+        await checkQualiopiStatus(siret);
+      } else {
+        setSiretError('SIRET non trouvé - Vous pouvez continuer la saisie manuellement');
+        setSiretValidated(false);
+      }
+    } catch (error) {
+      console.error('Erreur auto-complétion SIRET:', error);
+      setSiretError('Erreur de vérification - Vous pouvez continuer la saisie manuellement');
+    } finally {
+      setSiretLoading(false);
+    }
+  };
+
+  // Check Qualiopi status with API Entreprise
+  const checkQualiopiStatus = async (siret: string) => {
+    setQualiopiLoading(true);
+    try {
+      const response = await fetch(`/api/qualiopi/check?siret=${encodeURIComponent(siret)}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Qualiopi check response:', data);
+
+        const isCertified = data.status === 'certified';
+        const statusText = isCertified 
+          ? `Certifié (${data.qualifications?.join(', ') || 'Formation'})` 
+          : data.message || 'Non certifié';
+
+        setFormData(prev => ({
+          ...prev,
+          qualiopiCertified: isCertified,
+          qualiopiStatus: statusText
+        }));
+        setQualiopiChecked(true);
+      }
+    } catch (error) {
+      console.error('Erreur vérification Qualiopi:', error);
+      setFormData(prev => ({
+        ...prev,
+        qualiopiStatus: 'Vérification impossible'
+      }));
+      setQualiopiChecked(true);
+    } finally {
+      setQualiopiLoading(false);
+    }
+  };
+
+  // Handle SIRET blur event
+  const handleSiretBlur = () => {
+    const cleanSiret = formData.siret.replace(/\s/g, '');
+    if (cleanSiret.length === 14 && !siretValidated) {
+      handleSiretAutoComplete(cleanSiret);
+    }
   };
 
   const handleDomainToggle = (domain: string) => {
@@ -105,14 +212,49 @@ export default function CenterProfilePage() {
     setSelectedDomains(prev => prev.filter(d => d !== domain));
   };
 
+  const validateForm = (): string | null => {
+    if (!formData.siret.trim()) return 'Le SIRET est obligatoire';
+    if (!formData.establishmentName.trim()) return 'Le nom de l\'établissement est obligatoire';
+    if (!formData.email.trim()) return 'L\'email est obligatoire';
+    if (!formData.phone.trim()) return 'Le téléphone est obligatoire';
+    if (!formData.address.trim()) return 'L\'adresse est obligatoire';
+    if (!formData.postalCode.trim()) return 'Le code postal est obligatoire';
+    if (!formData.city.trim()) return 'La ville est obligatoire';
+    if (!formData.region.trim()) return 'La région est obligatoire';
+    if (!formData.responsiblePerson.trim()) return 'La personne responsable est obligatoire';
+    if (!formData.responsibleRole.trim()) return 'Le rôle du responsable est obligatoire';
+    if (selectedDomains.length === 0) return 'Au moins un domaine de certification est obligatoire';
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) return 'L\'adresse email n\'est pas valide';
+    
+    // SIRET validation (14 digits)
+    if (!/^\d{14}$/.test(formData.siret.replace(/\s/g, ''))) return 'Le SIRET doit contenir exactement 14 chiffres';
+    
+    // Postal code validation (5 digits)
+    if (!/^\d{5}$/.test(formData.postalCode)) return 'Le code postal doit contenir exactement 5 chiffres';
+    
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Custom validation with French messages
+    const validationError = validateForm();
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
       const profileData = {
         ...formData,
-        certificationDomains: selectedDomains
+        certificationDomains: selectedDomains,
+        qualiopiLastChecked: qualiopiChecked ? new Date() : null
       };
 
       const response = await fetch('/api/profile/center', {
@@ -130,7 +272,7 @@ export default function CenterProfilePage() {
       }
     } catch (error) {
       console.error('Erreur:', error);
-      // TODO: Add proper error handling with toast
+      alert('Erreur lors de la création du profil. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +286,7 @@ export default function CenterProfilePage() {
             Complétez votre profil Centre de Formation
           </h1>
           <p className="text-gray-600">
-            Ces informations nous permettront de mieux vous accompagner dans vos recherches de jurys.
+            Renseignez votre SIRET pour une auto-complétion automatique des informations et la vérification Qualiopi.
           </p>
         </div>
 
@@ -154,79 +296,159 @@ export default function CenterProfilePage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* SIRET */}
-              <div>
+              {/* SIRET avec auto-complétion */}
+              <div className="space-y-2">
                 <Label htmlFor="siret">SIRET *</Label>
-                <Input
-                  id="siret"
-                  value={formData.siret}
-                  onChange={(e) => handleInputChange('siret', e.target.value)}
-                  placeholder="12345678901234"
-                  maxLength={14}
-                  required
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  14 chiffres sans espaces
-                </p>
+                <div className="relative">
+                  <Input
+                    id="siret"
+                    value={formData.siret}
+                    onChange={(e) => handleInputChange('siret', e.target.value)}
+                    onBlur={handleSiretBlur}
+                    placeholder="12345678901234"
+                    maxLength={14}
+                    className={siretValidated ? 'border-green-500' : ''}
+                  />
+                  {siretLoading && (
+                    <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-gray-400" />
+                  )}
+                  {siretValidated && (
+                    <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-green-500" />
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">
+                    14 chiffres sans espaces - Auto-complétion automatique
+                  </p>
+                  {siretValidated && (
+                    <p className="text-sm text-green-600 font-medium">
+                      ✓ SIRET validé
+                    </p>
+                  )}
+                </div>
+                {siretError && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+                    <p className="text-sm text-orange-700 flex items-center">
+                      <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {siretError}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Nom établissement */}
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="establishmentName">Nom de l'établissement *</Label>
                 <Input
                   id="establishmentName"
                   value={formData.establishmentName}
                   onChange={(e) => handleInputChange('establishmentName', e.target.value)}
                   placeholder="Centre Formation Test"
-                  required
+                  className={siretValidated && formData.establishmentName ? 'bg-green-50' : ''}
                 />
+                {siretValidated && formData.establishmentName && (
+                  <p className="text-sm text-green-600">
+                    ✓ Complété automatiquement via SIRET
+                  </p>
+                )}
               </div>
 
-              {/* Contact */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="email">Email de contact professionnel *</Label>
+              {/* Statut Qualiopi */}
+              {qualiopiChecked && (
+                <Alert className={formData.qualiopiCertified ? 'border-green-500 bg-green-50' : 'border-yellow-500 bg-yellow-50'}>
+                  <div className="flex items-center gap-2">
+                    {qualiopiLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : formData.qualiopiCertified ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    )}
+                    <div>
+                      <p className="font-medium">
+                        Certification Qualiopi : {formData.qualiopiStatus}
+                      </p>
+                      <AlertDescription className="mt-1">
+                        {formData.qualiopiCertified 
+                          ? "Votre organisme possède la certification Qualiopi."
+                          : "Votre organisme ne possède pas la certification Qualiopi ou elle n'est pas détectée."}
+                      </AlertDescription>
+                    </div>
+                  </div>
+                </Alert>
+              )}
+
+              {/* Contact référent */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-[#0d4a70]">Contact référent</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      placeholder="contact@centre-test.fr"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      {userData?.email === formData.email ? 
+                        "Utilise votre email de connexion" : 
+                        "Email professionnel pour les contacts jurys"
+                      }
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Téléphone *</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      placeholder="0123456789"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Secteur d'activité */}
+              {formData.sector && (
+                <div className="space-y-2">
+                  <Label htmlFor="sector">Secteur d'activité</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="contact@centre-test.fr"
-                    required
+                    id="sector"
+                    value={formData.sector}
+                    onChange={(e) => handleInputChange('sector', e.target.value)}
+                    placeholder="Secteur d'activité"
+                    className="bg-green-50"
+                    readOnly
                   />
-                  <p className="text-sm text-gray-500 mt-1">
-                    {userData?.email === formData.email ? 
-                      "Utilise votre email de connexion" : 
-                      "Email professionnel pour les contacts jurys"
-                    }
+                  <p className="text-sm text-green-600">
+                    ✓ Complété automatiquement via SIRET
                   </p>
                 </div>
-                <div>
-                  <Label htmlFor="phone">Téléphone *</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="0123456789"
-                    required
-                  />
-                </div>
-              </div>
+              )}
 
               {/* Adresse */}
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="address">Adresse *</Label>
                 <Input
                   id="address"
                   value={formData.address}
                   onChange={(e) => handleInputChange('address', e.target.value)}
                   placeholder="123 Rue de la Formation"
-                  required
+                  className={siretValidated && formData.address ? 'bg-green-50' : ''}
                 />
+                {siretValidated && formData.address && (
+                  <p className="text-sm text-green-600">
+                    ✓ Complété automatiquement via SIRET
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="postalCode">Code postal *</Label>
                   <Input
                     id="postalCode"
@@ -234,20 +456,26 @@ export default function CenterProfilePage() {
                     onChange={(e) => handleInputChange('postalCode', e.target.value)}
                     placeholder="75001"
                     maxLength={5}
-                    required
+                    className={siretValidated && formData.postalCode ? 'bg-green-50' : ''}
                   />
+                  {siretValidated && formData.postalCode && (
+                    <p className="text-sm text-green-600">✓ Auto-complété</p>
+                  )}
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="city">Ville *</Label>
                   <Input
                     id="city"
                     value={formData.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
                     placeholder="Paris"
-                    required
+                    className={siretValidated && formData.city ? 'bg-green-50' : ''}
                   />
+                  {siretValidated && formData.city && (
+                    <p className="text-sm text-green-600">✓ Auto-complété</p>
+                  )}
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="region">Région *</Label>
                   <Select onValueChange={(value: string) => handleInputChange('region', value)}>
                     <SelectTrigger>
@@ -266,14 +494,13 @@ export default function CenterProfilePage() {
 
               {/* Responsable */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="responsiblePerson">Personne responsable *</Label>
                   <Input
                     id="responsiblePerson"
                     value={formData.responsiblePerson}
                     onChange={(e) => handleInputChange('responsiblePerson', e.target.value)}
                     placeholder="Marie Martin"
-                    required
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     {userData?.name === formData.responsiblePerson ? 
@@ -282,35 +509,32 @@ export default function CenterProfilePage() {
                     }
                   </p>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="responsibleRole">Rôle du responsable *</Label>
                   <Input
                     id="responsibleRole"
                     value={formData.responsibleRole}
                     onChange={(e) => handleInputChange('responsibleRole', e.target.value)}
                     placeholder="Directrice pédagogique"
-                    required
                   />
                 </div>
               </div>
 
               {/* Domaines de certification */}
-              <div>
+              <div className="space-y-2">
                 <Label>Domaines de certification *</Label>
-                <div className="mt-2">
-                  <Select onValueChange={handleDomainToggle}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Ajouter un domaine" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CERTIFICATION_DOMAINS.filter(domain => !selectedDomains.includes(domain)).map((domain) => (
-                        <SelectItem key={domain} value={domain}>
-                          {domain}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select onValueChange={handleDomainToggle}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Ajouter un domaine" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CERTIFICATION_DOMAINS.filter(domain => !selectedDomains.includes(domain)).map((domain) => (
+                      <SelectItem key={domain} value={domain}>
+                        {domain}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {selectedDomains.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {selectedDomains.map((domain) => (
@@ -342,7 +566,7 @@ export default function CenterProfilePage() {
               </div>
 
               {/* Description */}
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="description">Description de l'établissement (optionnel)</Label>
                 <Textarea
                   id="description"
