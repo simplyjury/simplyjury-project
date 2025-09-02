@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimplyJury - Complétez votre profil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, rgba(19,208,144,0.05) 100%);
+            color: #0d4a70;
+            min-height: 100vh;
+        }
+
+        /* En-tête */
+        .header {
+            background: white;
+            padding: 16px 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: #13d090;
+            border-radius: 50%;
+            position: relative;
+            margin-right: 12px;
+        }
+
+        .logo-icon::after {
+            content: '👌';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0d4a70;
+        }
+
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 120px;
+            height: 6px;
+            background: #f1f5f9;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #13d090, #0fb378);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Contenu principal */
+        .main-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+
+        .welcome-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0d4a70;
+            margin-bottom: 16px;
+        }
+
+        .welcome-subtitle {
+            font-size: 18px;
+            color: #64748b;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .status-banner {
+            background: linear-gradient(135deg, #fdce0f, #fee88c);
+            color: #0d4a70;
+            padding: 20px 24px;
+            border-radius: 12px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 24px;
+        }
+
+        .status-text {
+            flex: 1;
+        }
+
+        .status-text h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .status-text p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Formulaire */
+        .profile-form {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .form-section {
+            padding: 40px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .section-number {
+            width: 32px;
+            height: 32px;
+            background: #13d090;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0d4a70;
+        }
+
+        .section-description {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* Photo de profil */
+        .photo-upload-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            padding: 40px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px dashed #e2e8f0;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .photo-upload-area:hover {
+            border-color: #13d090;
+            background: rgba(19,208,144,0.05);
+        }
+
+        .photo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #bea1e5, #cfbaed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .upload-text {
+            text-align: center;
+        }
+
+        .upload-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0d4a70;
+            margin-bottom: 8px;
+        }
+
+        .upload-subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Champs de formulaire */
+        .form-grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        .form-grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0d4a70;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #ef4444;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #13d090;
+            box-shadow: 0 0 0 3px rgba(19,208,144,0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* Tags d'expertise */
+        .expertise-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .expertise-tag {
+            padding: 8px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            color: #64748b;
+        }
+
+        .expertise-tag:hover {
+            border-color: #13d090;
+            color: #13d090;
+        }
+
+        .expertise-tag.selected {
+            background: #13d090;
+            border-color: #13d090;
+            color: white;
+        }
+
+        /* Modalités */
+        .modality-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .modality-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .modality-option:hover {
+            border-color: #13d090;
+            background: rgba(19,208,144,0.05);
+        }
+
+        .modality-option.selected {
+            border-color: #13d090;
+            background: rgba(19,208,144,0.1);
+        }
+
+        .modality-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .modality-option.selected .modality-checkbox {
+            background: #13d090;
+            border-color: #13d090;
+        }
+
+        .modality-option.selected .modality-checkbox::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .modality-icon {
+            width: 24px;
+            height: 24px;
+            color: #13d090;
+        }
+
+        .modality-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0d4a70;
+        }
+
+        /* Zone d'intervention */
+        .zone-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .zone-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .zone-option:hover {
+            border-color: #13d090;
+        }
+
+        .zone-option.selected {
+            background: rgba(19,208,144,0.1);
+            border-color: #13d090;
+        }
+
+        /* Boutons d'action */
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 32px 40px;
+            background: #f8fafc;
+            margin: 0;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+        }
+
+        .btn-primary {
+            background: #13d090;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0fb378;
+            transform: translateY(-1px);
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 32px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #f1f5f9;
+            color: #0d4a70;
+        }
+
+        .modal-body {
+            padding: 32px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 24px 32px;
+            border-top: 1px solid #f1f5f9;
+            background: #f8fafc;
+        }
+
+        /* Availability builder */
+        .availability-builder {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            background: white;
+        }
+
+        .availability-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .availability-list {
+            min-height: 100px;
+        }
+
+        .availability-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .availability-item:hover {
+            background: #f1f5f9;
+        }
+
+        .availability-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: rgba(19,208,144,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #13d090;
+            flex-shrink: 0;
+        }
+
+        .availability-info {
+            flex: 1;
+        }
+
+        .availability-dates {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0d4a70;
+            margin-bottom: 4px;
+        }
+
+        .availability-modality {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .availability-note {
+            font-size: 12px;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .availability-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: #f8fafc;
+            border-color: #13d090;
+            color: #13d090;
+        }
+
+        .btn-icon.danger:hover {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 24px 16px;
+            }
+
+            .form-section {
+                padding: 24px;
+            }
+
+            .form-grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .modality-options {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                gap: 16px;
+                padding: 24px;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- En-tête -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <div class="logo-text">SimplyJury</div>
+            </div>
+            <div class="progress-indicator">
+                <span class="progress-text">Étape 1 sur 1</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 25%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <main class="main-container">
+        <!-- En-tête de bienvenue -->
+        <div class="welcome-header">
+            <h1 class="welcome-title">Bienvenue sur SimplyJury !</h1>
+            <p class="welcome-subtitle">
+                Pour commencer à recevoir des demandes de mission, complétez votre profil jury. 
+                Ces informations seront visibles par les centres de formation.
+            </p>
+        </div>
+
+        <!-- Bannière de statut -->
+        <div class="status-banner">
+            <div class="status-icon">⏳</div>
+            <div class="status-text">
+                <h3>Profil en cours de création</h3>
+                <p>Une fois terminé, votre profil sera soumis pour validation par notre équipe (24-48h)</p>
+            </div>
+        </div>
+
+        <!-- Formulaire de profil -->
+        <form class="profile-form" id="profileForm">
+            <!-- Section 1: Photo et informations de base -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-number">1</div>
+                    <div>
+                        <h2 class="section-title">Photo et informations personnelles</h2>
+                        <p class="section-description">Ajoutez une photo professionnelle et complétez vos informations</p>
+                    </div>
+                </div>
+
+                <div class="photo-upload-area" onclick="document.getElementById('photoInput').click()">
+                    <div class="photo-preview" id="photoPreview">👤</div>
+                    <div class="upload-text">
+                        <div class="upload-title">Ajoutez votre photo de profil</div>
+                        <div class="upload-subtitle">Format JPG, PNG. Taille max : 2MB</div>
+                    </div>
+                    <input type="file" id="photoInput" class="file-input" accept="image/*">
+                </div>
+
+                <div class="form-grid form-grid-2" style="margin-top: 32px;">
+                    <div class="form-group">
+                        <label class="form-label required">Prénom</label>
+                        <input type="text" class="form-input" placeholder="Votre prénom" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Nom</label>
+                        <input type="text" class="form-input" placeholder="Votre nom" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Région</label>
+                        <select class="form-select" required>
+                            <option value="">Sélectionnez votre région</option>
+                            <option value="paca">PACA</option>
+                            <option value="ile-de-france">Île-de-France</option>
+                            <option value="auvergne-rhone-alpes">Auvergne-Rhône-Alpes</option>
+                            <option value="nouvelle-aquitaine">Nouvelle-Aquitaine</option>
+                            <option value="occitanie">Occitanie</option>
+                            <option value="hauts-de-france">Hauts-de-France</option>
+                            <option value="grand-est">Grand Est</option>
+                            <option value="pays-de-la-loire">Pays de la Loire</option>
+                            <option value="bretagne">Bretagne</option>
+                            <option value="normandie">Normandie</option>
+                            <option value="centre-val-de-loire">Centre-Val de Loire</option>
+                            <option value="bourgogne-franche-comte">Bourgogne-Franche-Comté</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ville</label>
+                        <input type="text" class="form-input" placeholder="Votre ville">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Domaines d'expertise -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-number">2</div>
+                    <div>
+                        <h2 class="section-title">Domaines d'expertise</h2>
+                        <p class="section-description">Sélectionnez vos domaines de compétence</p>
+                    </div>
+                </div>
+
+                <div class="expertise-selection">
+                    <div class="expertise-tag" data-expertise="web-dev">Développement Web</div>
+                    <div class="expertise-tag" data-expertise="management">Management</div>
+                    <div class="expertise-tag" data-expertise="commercial">Commercial</div>
+                    <div class="expertise-tag" data-expertise="marketing">Marketing Digital</div>
+                    <div class="expertise-tag" data-expertise="comptabilite">Comptabilité</div>
+                    <div class="expertise-tag" data-expertise="rh">Ressources Humaines</div>
+                    <div class="expertise-tag" data-expertise="formation">Formation</div>
+                    <div class="expertise-tag" data-expertise="communication">Communication</div>
+                    <div class="expertise-tag" data-expertise="logistique">Logistique</div>
+                    <div class="expertise-tag" data-expertise="immobilier">Immobilier</div>
+                    <div class="expertise-tag" data-expertise="banque">Banque/Assurance</div>
+                    <div class="expertise-tag" data-expertise="tourisme">Tourisme</div>
+                    <div class="expertise-tag" data-expertise="sante">Santé/Social</div>
+                    <div class="expertise-tag" data-expertise="artisanat">Artisanat</div>
+                </div>
+            </div>
+
+            <!-- Section 3: Expérience professionnelle -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-number">3</div>
+                    <div>
+                        <h2 class="section-title">Expérience professionnelle</h2>
+                        <p class="section-description">Décrivez votre parcours professionnel actuel</p>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label required">Poste actuel</label>
+                        <input type="text" class="form-input" placeholder="Ex: Directeur Commercial" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Entreprise</label>
+                        <input type="text" class="form-input" placeholder="Nom de votre entreprise" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">Années d'expérience</label>
+                        <select class="form-select" required>
+                            <option value="">Sélectionnez</option>
+                            <option value="1-3">1-3 ans</option>
+                            <option value="4-7">4-7 ans</option>
+                            <option value="8-15">8-15 ans</option>
+                            <option value="15+">Plus de 15 ans</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Diplôme principal</label>
+                        <input type="text" class="form-input" placeholder="Ex: Master Management Commercial">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 24px;">
+                    <label class="form-label">Présentation professionnelle</label>
+                    <textarea class="form-textarea" placeholder="Décrivez brièvement votre parcours et vos compétences principales..."></textarea>
+                </div>
+            </div>
+
+            <!-- Section 4: Modalités et disponibilités -->
+            <div class="form-section">
+                <div class="section-header">
+                    <div class="section-number">4</div>
+                    <div>
+                        <h2 class="section-title">Modalités et disponibilités</h2>
+                        <p class="section-description">Indiquez vos préférences pour les sessions de certification</p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">Modalités acceptées</label>
+                    <div class="modality-options">
+                        <div class="modality-option" data-modality="presentiel">
+                            <div class="modality-checkbox"></div>
+                            <svg class="modality-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20 6h-2.5l-1.5-1.5h-5L9.5 6H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h13c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+                            </svg>
+                            <div class="modality-text">Présentiel</div>
+                        </div>
+                        <div class="modality-option" data-modality="visio">
+                            <div class="modality-checkbox"></div>
+                            <svg class="modality-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                            </svg>
+                            <div class="modality-text">Visioconférence</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 24px;">
+                    <label class="form-label required">Zone d'intervention (si présentiel)</label>
+                    <div class="zone-selection">
+                        <div class="zone-option" data-zone="local">
+                            <input type="checkbox"> Département local uniquement
+                        </div>
+                        <div class="zone-option" data-zone="regional">
+                            <input type="checkbox"> Région complète
+                        </div>
+                        <div class="zone-option" data-zone="national">
+                            <input type="checkbox"> National (frais couverts)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 24px;">
+                    <label class="form-label required">Vos disponibilités spécifiques</label>
+                    <div class="availability-builder">
+                        <div class="availability-header">
+                            <p style="font-size: 14px; color: #64748b; margin-bottom: 16px;">
+                                Ajoutez vos créneaux de disponibilité pour que les centres puissent connaître vos dates libres
+                            </p>
+                            <button type="button" class="btn btn-primary btn-small" id="addAvailabilityBtn">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                </svg>
+                                Ajouter une période
+                            </button>
+                        </div>
+                        
+                        <div class="availability-list" id="availabilityList">
+                            <div class="empty-state" id="emptyAvailability">
+                                <div style="text-align: center; padding: 40px; background: #f8fafc; border-radius: 8px; border: 2px dashed #e2e8f0;">
+                                    <svg width="48" height="48" fill="#94a3b8" viewBox="0 0 24 24" style="margin-bottom: 16px;">
+                                        <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>
+                                    </svg>
+                                    <div style="font-size: 16px; color: #64748b; margin-bottom: 8px;">Aucune disponibilité ajoutée</div>
+                                    <div style="font-size: 14px; color: #94a3b8;">Cliquez sur "Ajouter une période" pour commencer</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal pour ajouter une disponibilité -->
+                <div class="modal-overlay" id="availabilityModal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 style="font-size: 18px; font-weight: 700; color: #0d4a70;">Ajouter une période de disponibilité</h3>
+                            <button type="button" class="modal-close" id="closeModal">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-grid form-grid-2">
+                                <div class="form-group">
+                                    <label class="form-label required">Date de début</label>
+                                    <input type="date" class="form-input" id="startDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label required">Date de fin</label>
+                                    <input type="date" class="form-input" id="endDate" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 20px;">
+                                <label class="form-label required">Modalités acceptées pour cette période</label>
+                                <div class="modality-options">
+                                    <div class="modality-option" data-modal-modality="presentiel">
+                                        <div class="modality-checkbox"></div>
+                                        <svg class="modality-icon" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M20 6h-2.5l-1.5-1.5h-5L9.5 6H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h13c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+                                        </svg>
+                                        <div class="modality-text">Présentiel</div>
+                                    </div>
+                                    <div class="modality-option" data-modal-modality="visio">
+                                        <div class="modality-checkbox"></div>
+                                        <svg class="modality-icon" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                                        </svg>
+                                        <div class="modality-text">Visioconférence</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 20px;">
+                                <label class="form-label">Note (optionnelle)</label>
+                                <input type="text" class="form-input" id="availabilityNote" placeholder="Ex: Préférence matin, région PACA uniquement...">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" id="cancelModal">Annuler</button>
+                            <button type="button" class="btn btn-primary" id="saveAvailability">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/>
+                                </svg>
+                                Ajouter cette période
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <div>
+                    <button type="button" class="btn btn-secondary">Sauvegarder le brouillon</button>
+                    <div class="save-draft-text">Vous pourrez terminer plus tard</div>
+                </div>
+                <button type="submit" class="btn btn-primary" disabled id="submitBtn">
+                    Soumettre mon profil pour validation
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        // Variables globales
+        let selectedExpertises = [];
+        let selectedModalities = [];
+        let availabilityPeriods = [];
+        let formProgress = 0;
+
+        // Gestion de l'upload photo
+        document.getElementById('photoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('photoPreview');
+                    preview.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                };
+                reader.readAsDataURL(file);
+                updateProgress();
+            }
+        });
+
+        // Gestion des tags d'expertise
+        document.querySelectorAll('.expertise-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                const expertise = this.dataset.expertise;
+                
+                if (this.classList.contains('selected')) {
+                    this.classList.remove('selected');
+                    selectedExpertises = selectedExpertises.filter(e => e !== expertise);
+                } else {
+                    this.classList.add('selected');
+                    selectedExpertises.push(expertise);
+                }
+                
+                updateProgress();
+            });
+        });
+
+        // Gestion des modalités
+        document.querySelectorAll('.modality-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const modality = this.dataset.modality;
+                
+                if (this.classList.contains('selected')) {
+                    this.classList.remove('selected');
+                    selectedModalities = selectedModalities.filter(m => m !== modality);
+                } else {
+                    this.classList.add('selected');
+                    selectedModalities.push(modality);
+                }
+                
+                updateProgress();
+            });
+        });
+
+        // Gestion des zones d'intervention
+        document.querySelectorAll('.zone-option').forEach(zone => {
+            zone.addEventListener('click', function() {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                this.classList.toggle('selected');
+                updateProgress();
+            });
+        });
+
+        // Gestion du modal de disponibilités
+        const modal = document.getElementById('availabilityModal');
+        const addBtn = document.getElementById('addAvailabilityBtn');
+        const closeBtn = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelModal');
+        const saveBtn = document.getElementById('saveAvailability');
+
+        addBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        saveBtn.addEventListener('click', saveAvailability);
+
+        // Gestion des modalités dans le modal
+        document.querySelectorAll('[data-modal-modality]').forEach(option => {
+            option.addEventListener('click', function() {
+                this.classList.toggle('selected');
+            });
+        });
+
+        function openModal() {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+            
+            // Reset form
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('availabilityNote').value = '';
+            document.querySelectorAll('[data-modal-modality]').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+        }
+
+        function closeModal() {
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        function saveAvailability() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const note = document.getElementById('availabilityNote').value;
+            
+            const selectedModalModalities = Array.from(document.querySelectorAll('[data-modal-modality].selected'))
+                .map(el => el.dataset.modalModality);
+            
+            if (!startDate || !endDate || selectedModalModalities.length === 0) {
+                alert('Veuillez remplir tous les champs obligatoires');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('La date de début doit être antérieure à la date de fin');
+                return;
+            }
+            
+            const period = {
+                id: Date.now(),
+                startDate,
+                endDate,
+                modalities: selectedModalModalities,
+                note
+            };
+            
+            availabilityPeriods.push(period);
+            renderAvailabilityList();
+            closeModal();
+            updateProgress();
+        }
+
+        function renderAvailabilityList() {
+            const list = document.getElementById('availabilityList');
+            const emptyState = document.getElementById('emptyAvailability');
+            
+            if (availabilityPeriods.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            
+            const sortedPeriods = availabilityPeriods.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            
+            list.innerHTML = sortedPeriods.map(period => {
+                const startDate = new Date(period.startDate).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                const endDate = new Date(period.endDate).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                const modalityText = period.modalities.includes('presentiel') && period.modalities.includes('visio') 
+                    ? 'Présentiel ou Visio'
+                    : period.modalities.includes('presentiel') 
+                    ? 'Présentiel uniquement'
+                    : 'Visio uniquement';
+                
+                return `
+                    <div class="availability-item">
+                        <div class="availability-icon">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>
+                            </svg>
+                        </div>
+                        <div class="availability-info">
+                            <div class="availability-dates">${startDate} - ${endDate}</div>
+                            <div class="availability-modality">${modalityText}</div>
+                            ${period.note ? `<div class="availability-note">${period.note}</div>` : ''}
+                        </div>
+                        <div class="availability-actions">
+                            <button type="button" class="btn-icon" onclick="editAvailability(${period.id})" title="Modifier">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-icon danger" onclick="deleteAvailability(${period.id})" title="Supprimer">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function editAvailability(id) {
+            const period = availabilityPeriods.find(p => p.id === id);
+            if (!period) return;
+            
+            document.getElementById('startDate').value = period.startDate;
+            document.getElementById('endDate').value = period.endDate;
+            document.getElementById('availabilityNote').value = period.note || '';
+            
+            document.querySelectorAll('[data-modal-modality]').forEach(opt => {
+                if (period.modalities.includes(opt.dataset.modalModality)) {
+                    opt.classList.add('selected');
+                } else {
+                    opt.classList.remove('selected');
+                }
+            });
+            
+            // Supprimer l'ancien et sauvegarder le nouvel
+            deleteAvailability(id);
+            openModal();
+        }
+
+        function deleteAvailability(id) {
+            availabilityPeriods = availabilityPeriods.filter(p => p.id !== id);
+            renderAvailabilityList();
+            updateProgress();
+        }
+
+        // Fermer le modal en cliquant sur l'overlay
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Mise à jour de la barre de progression
+        function updateProgress() {
+            const requiredFields = document.querySelectorAll('input[required], select[required]');
+            let completedFields = 0;
+            
+            requiredFields.forEach(field => {
+                if (field.value.trim() !== '') {
+                    completedFields++;
+                }
+            });
+            
+            // Vérifications supplémentaires
+            const hasPhoto = document.getElementById('photoInput').files.length > 0;
+            const hasExpertise = selectedExpertises.length > 0;
+            const hasModality = selectedModalities.length > 0;
+            const hasAvailability = availabilityPeriods.length > 0;
+            
+            let bonusPoints = 0;
+            if (hasPhoto) bonusPoints += 10;
+            if (hasExpertise) bonusPoints += 10;
+            if (hasModality) bonusPoints += 10;
+            if (hasAvailability) bonusPoints += 15;
+            
+            const totalProgress = Math.min(100, ((completedFields / requiredFields.length) * 55) + bonusPoints);
+            
+            // Mettre à jour la barre de progression
+            const progressFill = document.querySelector('.progress-fill');
+            progressFill.style.width = totalProgress + '%';
+            
+            // Activer/désactiver le bouton de soumission
+            const submitBtn = document.getElementById('submitBtn');
+            const isFormValid = completedFields >= requiredFields.length - 2 && hasExpertise && hasModality && hasAvailability;
+            
+            submitBtn.disabled = !isFormValid;
+            if (isFormValid) {
+                submitBtn.style.opacity = '1';
+            } else {
+                submitBtn.style.opacity = '0.6';
+            }
+        }
+
+        // Validation en temps réel des champs
+        document.querySelectorAll('input, select, textarea').forEach(field => {
+            field.addEventListener('input', updateProgress);
+            field.addEventListener('change', updateProgress);
+        });
+
+        // Gestion de la soumission du formulaire
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validation finale
+            if (selectedExpertises.length === 0) {
+                alert('Veuillez sélectionner au moins un domaine d\'expertise.');
+                return;
+            }
+            
+            if (selectedModalities.length === 0) {
+                alert('Veuillez sélectionner au moins une modalité.');
+                return;
+            }
+            
+            // Simulation de l'envoi
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;">
+                    <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6z"/>
+                    <path d="M18.76 7.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/>
+                </svg>
+                Envoi en cours...
+            `;
+            
+            // Simuler l'envoi (2 secondes)
+            setTimeout(() => {
+                // Afficher un message de succès
+                const form = document.querySelector('.profile-form');
+                form.innerHTML = `
+                    <div style="padding: 80px 40px; text-align: center;">
+                        <div style="width: 80px; height: 80px; background: #13d090; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 32px;">✅</div>
+                        <h2 style="font-size: 24px; font-weight: 700; color: #0d4a70; margin-bottom: 16px;">Profil soumis avec succès !</h2>
+                        <p style="font-size: 16px; color: #64748b; margin-bottom: 32px; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                            Votre profil a été transmis à notre équipe pour validation. Vous recevrez une notification par email dans les 24-48h.
+                        </p>
+                        <div style="background: rgba(19,208,144,0.1); border-radius: 12px; padding: 24px; margin-bottom: 32px;">
+                            <h3 style="font-size: 16px; font-weight: 600; color: #0d4a70; margin-bottom: 8px;">Prochaines étapes :</h3>
+                            <div style="text-align: left; max-width: 400px; margin: 0 auto;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <div style="width: 20px; height: 20px; background: #13d090; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">1</div>
+                                    <span style="font-size: 14px; color: #64748b;">Validation par notre équipe</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <div style="width: 20px; height: 20px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px; font-weight: bold;">2</div>
+                                    <span style="font-size: 14px; color: #64748b;">Notification de validation</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 20px; height: 20px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px; font-weight: bold;">3</div>
+                                    <span style="font-size: 14px; color: #64748b;">Réception des premières demandes</span>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="#" class="btn btn-primary" style="text-decoration: none;">
+                            Accéder à mon tableau de bord
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                            </svg>
+                        </a>
+                    </div>
+                `;
+                
+                // Mettre à jour la barre de progression à 100%
+                document.querySelector('.progress-fill').style.width = '100%';
+                document.querySelector('.progress-text').textContent = 'Terminé';
+            }, 2000);
+        });
+
+        // Animation CSS pour le spinner
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialiser la progression
+        updateProgress();
+    </script>
+</body>
+</html>

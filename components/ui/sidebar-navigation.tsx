@@ -14,7 +14,10 @@ import {
   Crown,
   Award,
   Menu,
-  X
+  X,
+  CheckCircle,
+  User,
+  HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
@@ -34,76 +37,139 @@ interface NavigationSection {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-function getNavigationSections(isCertificateur: boolean): NavigationSection[] {
-  const baseMainNavigation = [
-    {
-      name: 'Tableau de bord',
-      href: '/dashboard',
-      icon: LayoutDashboard,
-    },
-    {
-      name: 'Rechercher un jury',
-      href: '/dashboard/search',
-      icon: Search,
-    },
-    {
-      name: 'Messagerie',
-      href: '/dashboard/messages',
-      icon: MessageSquare,
-      badge: 3,
-    },
-    {
-      name: 'Mes demandes',
-      href: '/dashboard/requests',
-      icon: FileText,
-    },
-  ];
+function getNavigationSections(userType: 'jury' | 'center', isCertificateur: boolean): NavigationSection[] {
+  if (userType === 'jury') {
+    // Navigation for jury profiles
+    return [
+      {
+        title: 'NAVIGATION PRINCIPALE',
+        items: [
+          {
+            name: 'Tableau de bord',
+            href: '/dashboard',
+            icon: LayoutDashboard,
+          },
+          {
+            name: 'Mes demandes',
+            href: '/dashboard/requests',
+            icon: FileText,
+            badge: 2,
+          },
+          {
+            name: 'Messagerie',
+            href: '/dashboard/messages',
+            icon: MessageSquare,
+          },
+        ],
+      },
+      {
+        title: 'MES MISSIONS',
+        items: [
+          {
+            name: 'Missions réalisées',
+            href: '/dashboard/missions',
+            icon: CheckCircle,
+          },
+          {
+            name: 'Mes évaluations',
+            href: '/dashboard/evaluations',
+            icon: Star,
+          },
+        ],
+      },
+      {
+        title: 'MON COMPTE',
+        items: [
+          {
+            name: 'Mon profil',
+            href: '/dashboard/profile',
+            icon: User,
+          },
+          {
+            name: 'Paramètres',
+            href: '/dashboard/settings',
+            icon: Settings,
+          },
+          {
+            name: 'Aide & Support',
+            href: '/dashboard/help',
+            icon: HelpCircle,
+          },
+        ],
+      },
+    ];
+  } else {
+    // Navigation for training centers
+    const baseMainNavigation = [
+      {
+        name: 'Tableau de bord',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+      },
+      {
+        name: 'Rechercher un jury',
+        href: '/dashboard/search',
+        icon: Search,
+      },
+      {
+        name: 'Messagerie',
+        href: '/dashboard/messages',
+        icon: MessageSquare,
+        badge: 3,
+      },
+      {
+        name: 'Mes demandes',
+        href: '/dashboard/requests',
+        icon: FileText,
+      },
+    ];
 
-  // Add "Mes certifications" for certificateur centers only
-  if (isCertificateur) {
-    baseMainNavigation.push({
-      name: 'Mes certifications',
-      href: '/dashboard/certifications',
-      icon: Award,
-    });
+    // Add "Mes certifications" for certificateur centers only
+    if (isCertificateur) {
+      baseMainNavigation.push({
+        name: 'Mes certifications',
+        href: '/dashboard/certifications',
+        icon: Award,
+      });
+    }
+
+    return [
+      {
+        title: 'NAVIGATION PRINCIPALE',
+        items: baseMainNavigation,
+      },
+      {
+        title: 'HISTORIQUE',
+        items: [
+          {
+            name: 'Sessions réalisées',
+            href: '/dashboard/sessions',
+            icon: Calendar,
+          },
+          {
+            name: 'Avis donnés',
+            href: '/dashboard/reviews',
+            icon: Star,
+          },
+        ],
+      },
+      {
+        title: 'MON COMPTE',
+        items: [
+          {
+            name: 'Paramètres',
+            href: '/dashboard/settings',
+            icon: Settings,
+          },
+          {
+            name: 'Passer au Pro',
+            href: '/dashboard/upgrade',
+            icon: Crown,
+          },
+        ],
+      },
+    ];
   }
-
-  return [
-    {
-      title: 'NAVIGATION PRINCIPALE',
-      items: baseMainNavigation,
-    },
-    {
-      title: 'HISTORIQUE',
-      items: [
-        {
-          name: 'Sessions réalisées',
-          href: '/dashboard/sessions',
-          icon: Calendar,
-        },
-        {
-          name: 'Avis donnés',
-          href: '/dashboard/reviews',
-          icon: Star,
-        },
-      ],
-    },
-    {
-      title: 'MON COMPTE',
-      items: [
-        {
-          name: 'Paramètres',
-          href: '/dashboard/settings',
-          icon: Settings,
-        },
-        {
-          name: 'Passer au Pro',
-          href: '/dashboard/upgrade',
-          icon: Crown,
-        },
-      ],
-    },
-  ];
 }
 
 interface SidebarNavigationProps {
@@ -115,12 +181,14 @@ interface SidebarNavigationProps {
 export function SidebarNavigation({ isOpen = true, onClose, className }: SidebarNavigationProps) {
   const pathname = usePathname();
   const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
+  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
   
-  // Determine if the current user is a certificateur
+  // Determine user type and certificateur status
+  const userType: 'jury' | 'center' = juryProfile?.data ? 'jury' : 'center';
   const isCertificateur = centerProfile?.data?.isCertificateur || false;
   
-  // Get navigation sections based on certificateur status
-  const navigationSections = getNavigationSections(isCertificateur);
+  // Get navigation sections based on user type and certificateur status
+  const navigationSections = getNavigationSections(userType, isCertificateur);
 
   // Close mobile menu when clicking on a link
   const handleLinkClick = () => {
