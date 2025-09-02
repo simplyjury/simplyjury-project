@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { use, useState, Suspense } from 'react';
+import { use, useState, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { CircleIcon, Home, LogOut, X, Menu } from 'lucide-react';
 import Image from 'next/image';
@@ -14,8 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNavigation } from '@/components/ui/sidebar-navigation';
 import { signOut } from '@/app/(login)/actions';
-import { useRouter, usePathname } from 'next/navigation';
-import { User } from '@/lib/db/schema';
+import { usePathname } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -71,8 +71,9 @@ function FreemiumBanner({ onClose }: { onClose: () => void }) {
 
 function UserMenu() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { data: user } = useSWR<User>('/api/user', fetcher);
+  const { data: user } = useSWR('/api/user', fetcher);
   const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
+  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
   const router = useRouter();
 
   async function handleSignOut() {
@@ -103,14 +104,42 @@ function UserMenu() {
     );
   }
 
+  // Determine which profile to display based on what's available
+  const activeProfile = juryProfile?.data || centerProfile?.data;
+  const profileName = activeProfile?.firstName && activeProfile?.lastName 
+    ? `${activeProfile.firstName} ${activeProfile.lastName}`
+    : activeProfile?.name;
+  const profileImage = activeProfile?.logoUrl; // Only use logoUrl for training centers
+  
+  // For jury profiles, we need to fetch signed URL
+  const [juryPhotoUrl, setJuryPhotoUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (juryProfile?.data?.profilePhotoUrl) {
+      fetch('/api/profile/jury/photo-url')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setJuryPhotoUrl(data.url);
+          }
+        })
+        .catch(err => console.error('Failed to get jury photo URL:', err));
+    }
+  }, [juryProfile?.data?.profilePhotoUrl]);
+  
+  const displayImage = juryPhotoUrl || profileImage;
+
   return (
     <div className="flex items-center space-x-4">
       <div className="text-right">
-        {centerProfile?.data?.name && (
+        {profileName && (
           <div className="text-sm font-medium text-gray-900">
-            {centerProfile.data.name}
+            {profileName}
           </div>
         )}
+        <div className="text-xs text-gray-500">
+          {user.email}
+        </div>
         <div className="flex items-center space-x-2 text-xs text-gray-500">
           <span>✅ Compte vérifié</span>
         </div>
@@ -118,10 +147,10 @@ function UserMenu() {
       <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DropdownMenuTrigger>
           <Avatar className="cursor-pointer size-10">
-            <AvatarImage alt={user.name || ''} />
+            <AvatarImage src={displayImage} alt={profileName || user.email} />
             <AvatarFallback className="bg-[#13d090] text-white font-semibold">
-              {centerProfile?.data?.name 
-                ? centerProfile.data.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+              {profileName 
+                ? profileName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
                 : user.email.split('@')[0].substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>

@@ -117,6 +117,7 @@ export const juryProfiles = pgTable('jury_profiles', {
   lastName: varchar('last_name', { length: 100 }).notNull(),
   profilePhotoUrl: text('profile_photo_url'),
   region: varchar('region', { length: 50 }).notNull(),
+  city: varchar('city', { length: 100 }),
   expertiseDomains: text('expertise_domains').array().notNull(),
   certifications: text('certifications').array(),
   experienceYears: integer('experience_years'),

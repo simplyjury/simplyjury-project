@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimplyJury - Mon profil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f8fafc;
+            color: #0d4a70;
+            line-height: 1.6;
+        }
+
+        /* Layout principal */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Navigation latérale */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #0d4a70, #1a5a8a);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: #13d090;
+            border-radius: 8px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .nav-section {
+            padding: 24px 0;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.6);
+            padding: 0 24px 12px 24px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+            border-right: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-right-color: #13d090;
+        }
+
+        .nav-item-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+
+        .nav-badge {
+            background: #fdce0f;
+            color: #0d4a70;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+
+        .user-info {
+            position: absolute;
+            bottom: 20px;
+            left: 24px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #13d090;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .user-details h4 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-plan {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* Contenu principal */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 24px;
+        }
+
+        /* En-tête */
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0d4a70;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: #64748b;
+        }
+
+        /* Section photo de profil */
+        .profile-photo-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0d4a70;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-description {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+
+        .photo-upload-area {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .current-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #bea1e5, #cfbaed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+            font-weight: 600;
+            flex-shrink: 0;
+            border: 4px solid #f1f5f9;
+        }
+
+        .photo-controls {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .photo-info {
+            margin-bottom: 16px;
+        }
+
+        .photo-info h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0d4a70;
+            margin-bottom: 4px;
+        }
+
+        .photo-specs {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .photo-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #0d4a70;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0a3a5a;
+        }
+
+        .btn-secondary {
+            background: #f8fafc;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .btn-danger:hover {
+            background: #fecaca;
+        }
+
+        /* Formulaire principal */
+        .profile-form {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            padding: 32px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group-full {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0d4a70;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #0d4a70;
+            background: white;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #13d090;
+            box-shadow: 0 0 0 3px rgba(19, 208, 144, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+
+        /* Zones géographiques */
+        .zones-section {
+            margin-bottom: 24px;
+        }
+
+        .zones-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .zone-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .zone-checkbox:hover {
+            background: #f1f5f9;
+        }
+
+        .zone-checkbox input {
+            margin-right: 8px;
+        }
+
+        .zone-checkbox.checked {
+            background: rgba(19, 208, 144, 0.1);
+            border-color: #13d090;
+        }
+
+        /* Compétences */
+        .skills-section {
+            margin-bottom: 24px;
+        }
+
+        .skills-input-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .skills-input {
+            flex: 1;
+        }
+
+        .add-skill-btn {
+            padding: 12px 16px;
+            background: #13d090;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skill-tag {
+            background: rgba(190, 161, 229, 0.1);
+            color: #0d4a70;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .remove-skill {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-skill:hover {
+            background: rgba(100, 116, 139, 0.1);
+        }
+
+        /* Actions footer */
+        .form-actions {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 24px;
+            margin-top: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .save-status {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* File upload overlay */
+        .upload-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .upload-modal {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .upload-zone {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 32px;
+            margin: 24px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-zone:hover {
+            border-color: #13d090;
+            background: rgba(19, 208, 144, 0.05);
+        }
+
+        .upload-zone.dragover {
+            border-color: #13d090;
+            background: rgba(19, 208, 144, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .photo-upload-area {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .action-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .zones-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Navigation latérale -->
+        <nav class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">🎯</div>
+                <div class="logo-text">SimplyJury</div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Navigation principale</div>
+                <a href="#" class="nav-item">
+                    <svg class="nav-item-icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                    </svg>
+                    Tableau de bord
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-item-icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                    </svg>
+                    Mes demandes
+                    <span class="nav-badge">2</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-item-icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                    </svg>
+                    Messagerie
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Mes missions</div>
+                <a href="#" class="nav-item">
+                    <svg class="nav-item-icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    Missions réalisées
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-item-icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                    Mes évaluations
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Mon compte</div>
+                <a href="#" class="nav-item active">
+                    <svg class="nav-item-icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    Mon profil
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-item-icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.82,11.69,4.82,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                    </svg>
+                    Paramètres
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-item-icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                    </svg>
+                    Aide & Support
+                </a>
+            </div>
+
+            <div class="user-info">
+                <div class="user-avatar">JM</div>
+                <div class="user-details">
+                    <h4>Jean Martin</h4>
+                    <div class="user-plan">Jury Professionnel</div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Contenu principal -->
+        <main class="main-content">
+            <!-- En-tête -->
+            <div class="page-header">
+                <h1 class="page-title">Mon profil</h1>
+                <p class="page-subtitle">Gérez vos informations personnelles et professionnelles</p>
+            </div>
+
+            <!-- Section photo de profil -->
+            <div class="profile-photo-section">
+                <div class="section-title">
+                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v1h16v-1c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                    Photo de profil
+                </div>
+                <p class="section-description">Votre photo de profil aide les centres de formation à mieux vous identifier.</p>
+                
+                <div class="photo-upload-area">
+                    <div class="current-photo">JM</div>
+                    <div class="photo-controls">
+                        <div class="photo-info">
+                            <h4>Photo actuelle</h4>
+                            <p class="photo-specs">Format recommandé : JPG, PNG • Taille maximale : 5 MB • Dimensions : 400x400 px minimum</p>
+                        </div>
+                        <div class="photo-buttons">
+                            <button class="btn btn-primary" onclick="openUploadModal()">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                </svg>
+                                Changer la photo
+                            </button>
+                            <button class="btn btn-secondary">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.5 6L11 12.5 9.5 11 8 12.5l4 4 8-8L18.5 8z"/>
+                                </svg>
+                                Prévisualiser
+                            </button>
+                            <button class="btn btn-danger">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
+                                </svg>
+                                Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulaire principal -->
+            <div class="profile-form">
+                <h2 class="section-title">
+                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,5 21,3.89 19,3Z"/>
+                    </svg>
+                    Informations personnelles
+                </h2>
+                
+                <form id="profileForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="firstName">Prénom *</label>
+                            <input type="text" id="firstName" class="form-input" value="Jean" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="lastName">Nom de famille *</label>
+                            <input type="text" id="lastName" class="form-input" value="Martin" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="email">Adresse e-mail *</label>
+                            <input type="email" id="email" class="form-input" value="jean.martin@email.com" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="phone">Téléphone</label>
+                            <input type="tel" id="phone" class="form-input" value="06 12 34 56 78">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="city">Ville *</label>
+                            <input type="text" id="city" class="form-input" value="Paris" required>
+                        </div>

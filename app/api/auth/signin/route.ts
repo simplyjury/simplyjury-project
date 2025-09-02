@@ -19,13 +19,7 @@ function getRedirectPath(user: any): string {
     }
   }
   
-  // According to functional specs and test plan, redirect to /dashboard for centres
-  // and /jury-dashboard for jury users after successful authentication
-  if (user.userType === 'jury') {
-    return '/jury-dashboard';
-  }
-  
-  // For centres, redirect to main dashboard
+  // Both user types redirect to /dashboard with adaptive UI based on userType
   return '/dashboard';
 }
 
