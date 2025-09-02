@@ -180,8 +180,22 @@ interface SidebarNavigationProps {
 
 export function SidebarNavigation({ isOpen = true, onClose, className }: SidebarNavigationProps) {
   const pathname = usePathname();
-  const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
-  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
+  const { data: user } = useSWR('/api/user', fetcher);
+  
+  // Only fetch profiles based on user type to avoid 404 errors
+  const shouldFetchCenter = user?.user_type === 'centre';
+  const shouldFetchJury = user?.user_type === 'jury';
+  
+  const { data: centerProfile } = useSWR(
+    shouldFetchCenter ? '/api/profile/center' : null, 
+    fetcher,
+    { shouldRetryOnError: false }
+  );
+  const { data: juryProfile } = useSWR(
+    shouldFetchJury ? '/api/profile/jury' : null, 
+    fetcher,
+    { shouldRetryOnError: false }
+  );
   
   // Determine user type and certificateur status
   const userType: 'jury' | 'center' = juryProfile?.data ? 'jury' : 'center';
