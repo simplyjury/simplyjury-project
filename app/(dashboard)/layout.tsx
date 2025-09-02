@@ -72,8 +72,21 @@ function FreemiumBanner({ onClose }: { onClose: () => void }) {
 function UserMenu() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: user } = useSWR('/api/user', fetcher);
-  const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
-  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
+  
+  // Only fetch profiles based on user type to avoid 404 errors
+  const shouldFetchCenter = user?.user_type === 'centre';
+  const shouldFetchJury = user?.user_type === 'jury';
+  
+  const { data: centerProfile } = useSWR(
+    shouldFetchCenter ? '/api/profile/center' : null, 
+    fetcher,
+    { shouldRetryOnError: false }
+  );
+  const { data: juryProfile } = useSWR(
+    shouldFetchJury ? '/api/profile/jury' : null, 
+    fetcher,
+    { shouldRetryOnError: false }
+  );
   const router = useRouter();
 
   async function handleSignOut() {
