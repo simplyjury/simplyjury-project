@@ -53,6 +53,11 @@ export function SimplyJuryLogin({ mode = 'signin' }: SimplyJuryLoginProps) {
       const data = await response.json();
 
       if (!response.ok) {
+        // Check if it's a maintenance mode restriction
+        if (response.status === 503 && data.maintenanceMode) {
+          router.push('/maintenance');
+          return;
+        }
         setError(data.error || 'Une erreur est survenue');
         return;
       }

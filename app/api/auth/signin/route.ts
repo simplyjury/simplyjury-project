@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { AuthService } from '@/lib/auth/auth-service';
 import { setRLSContext } from '@/lib/auth/rls-context';
+import { SystemSettingsService } from '@/lib/services/system-settings-service';
 
 const signInSchema = z.object({
   email: z.string().email('Adresse email invalide'),
@@ -29,6 +30,9 @@ export async function POST(request: NextRequest) {
     const validatedData = signInSchema.parse(body);
     const { email, password } = validatedData;
 
+    // Check maintenance mode first
+    const isMaintenanceMode = await SystemSettingsService.getMaintenanceMode();
+
     // Authentification via AuthService
     const result = await AuthService.authenticateUser(email, password);
 
@@ -36,6 +40,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Email ou mot de passe incorrect' },
         { status: 401 }
+      );
+    }
+
+    // If maintenance mode is enabled, only allow admin users
+    if (isMaintenanceMode && result.user.userType !== 'admin') {
+      return NextResponse.json(
+        { 
+          error: 'La plateforme est actuellement en maintenance. Seuls les administrateurs peuvent se connecter.',
+          maintenanceMode: true
+        },
+        { status: 503 }
       );
     }
 

@@ -17,7 +17,14 @@ import {
   X,
   CheckCircle,
   User,
-  HelpCircle
+  HelpCircle,
+  Shield,
+  Users,
+  AlertTriangle,
+  BarChart3,
+  MapPin,
+  Download,
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
@@ -37,8 +44,74 @@ interface NavigationSection {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-function getNavigationSections(userType: 'jury' | 'center', isCertificateur: boolean): NavigationSection[] {
-  if (userType === 'jury') {
+function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertificateur: boolean): NavigationSection[] {
+  if (userType === 'admin') {
+    // Navigation for admin users
+    return [
+      {
+        title: 'ADMINISTRATION',
+        items: [
+          {
+            name: 'Tableau de bord',
+            href: '/dashboard/admin',
+            icon: LayoutDashboard,
+          },
+          {
+            name: 'Validation profils',
+            href: '/dashboard/admin/validation-profils',
+            icon: CheckCircle,
+            badge: 7,
+          },
+          {
+            name: 'Gestion utilisateurs',
+            href: '/dashboard/admin/gestion-utilisateurs',
+            icon: Users,
+          },
+          {
+            name: 'Modération avis',
+            href: '/dashboard/admin/moderation-avis',
+            icon: AlertTriangle,
+            badge: 3,
+          },
+        ],
+      },
+      {
+        title: 'STATISTIQUES',
+        items: [
+          {
+            name: 'Statistiques globales',
+            href: '/dashboard/admin/statistiques-globales',
+            icon: BarChart3,
+          },
+          {
+            name: 'Répartition géographique',
+            href: '/dashboard/admin/repartition-geographique',
+            icon: MapPin,
+          },
+          {
+            name: 'Export données',
+            href: '/dashboard/admin/export-donnees',
+            icon: Download,
+          },
+        ],
+      },
+      {
+        title: 'SYSTÈME',
+        items: [
+          {
+            name: 'Paramètres',
+            href: '/dashboard/admin/parametres',
+            icon: Settings,
+          },
+          {
+            name: 'Logs d\'activité',
+            href: '/dashboard/admin/logs-activite',
+            icon: Activity,
+          },
+        ],
+      },
+    ];
+  } else if (userType === 'jury') {
     // Navigation for jury profiles
     return [
       {
@@ -195,7 +268,9 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
                  (juryProfile?.data && !searchParams.get('profile')) ||
                  (user?.userType === 'jury' && !searchParams.get('profile'));
   
-  const userType: 'jury' | 'center' = isJury ? 'jury' : 'center';
+  const isAdmin = user?.userType === 'admin';
+  
+  const userType: 'jury' | 'center' | 'admin' = isAdmin ? 'admin' : (isJury ? 'jury' : 'center');
   const isCertificateur = centerProfile?.data?.isCertificateur || false;
   
   // Get navigation sections based on user type and certificateur status
@@ -246,6 +321,11 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
               height={40}
               className="h-10 w-auto"
             />
+            {isAdmin && (
+              <span className="ml-2 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
+                ADMIN
+              </span>
+            )}
           </div>
         </div>
 

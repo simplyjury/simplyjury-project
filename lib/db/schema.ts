@@ -176,6 +176,16 @@ export const certificationStats = pgTable('certification_stats', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+export const systemSettings = pgTable('system_settings', {
+  id: serial('id').primaryKey(),
+  maintenanceMode: boolean('maintenance_mode').default(false).notNull(),
+  maintenanceMessage: text('maintenance_message'),
+  lastModifiedBy: integer('last_modified_by')
+    .references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export const teamsRelations = relations(teams, ({ many }) => ({
   teamMembers: many(teamMembers),
   activityLogs: many(activityLogs),
@@ -277,6 +287,8 @@ export type FranceCompetenceCertification = typeof franceCompetenceCertification
 export type NewFranceCompetenceCertification = typeof franceCompetenceCertifications.$inferInsert;
 export type CertificationStats = typeof certificationStats.$inferSelect;
 export type NewCertificationStats = typeof certificationStats.$inferInsert;
+export type SystemSettings = typeof systemSettings.$inferSelect;
+export type NewSystemSettings = typeof systemSettings.$inferInsert;
 
 // Complex types
 export type TeamDataWithMembers = Team & {
