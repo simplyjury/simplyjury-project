@@ -21,7 +21,19 @@ import useSWR, { mutate } from 'swr';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 // Page title mapping based on routes and user type
-const getPageTitle = (pathname: string, isJury: boolean = false): { title: string; subtitle: string } => {
+const getPageTitle = (pathname: string, isJury: boolean = false, isAdmin: boolean = false): { title: string; subtitle: string } => {
+  const adminRoutes = {
+    '/dashboard/admin': { title: 'Administration', subtitle: 'Tableau de bord administrateur - Vue d\'ensemble de la plateforme' },
+    '/dashboard/admin/validation-profils': { title: 'Validation profils', subtitle: 'Gérez les demandes de validation des profils jury et centres' },
+    '/dashboard/admin/gestion-utilisateurs': { title: 'Gestion utilisateurs', subtitle: 'Administrez les comptes utilisateurs de la plateforme' },
+    '/dashboard/admin/moderation-avis': { title: 'Modération avis', subtitle: 'Modérez les avis et signalements' },
+    '/dashboard/admin/statistiques-globales': { title: 'Statistiques globales', subtitle: 'Consultez les métriques et analyses de la plateforme' },
+    '/dashboard/admin/repartition-geographique': { title: 'Répartition géographique', subtitle: 'Analysez la distribution géographique des utilisateurs' },
+    '/dashboard/admin/export-donnees': { title: 'Export données', subtitle: 'Exportez les données de la plateforme' },
+    '/dashboard/admin/parametres': { title: 'Paramètres système', subtitle: 'Configurez les paramètres de la plateforme' },
+    '/dashboard/admin/logs-activite': { title: 'Logs d\'activité', subtitle: 'Consultez les journaux d\'activité du système' },
+  };
+
   const centerRoutes = {
     '/dashboard': { title: 'Tableau de bord', subtitle: 'Bonjour ! Voici un aperçu de votre activité sur SimplyJury' },
     '/dashboard/search': { title: 'Rechercher un jury', subtitle: 'Trouvez le jury parfait pour votre certification' },
@@ -45,6 +57,10 @@ const getPageTitle = (pathname: string, isJury: boolean = false): { title: strin
     '/dashboard/settings': { title: 'Paramètres', subtitle: 'Configurez votre compte' },
     '/dashboard/help': { title: 'Aide & Support', subtitle: 'Trouvez de l\'aide et contactez le support' },
   };
+  
+  if (isAdmin) {
+    return adminRoutes[pathname as keyof typeof adminRoutes] || { title: 'Administration', subtitle: '' };
+  }
   
   const routes = isJury ? juryRoutes : centerRoutes;
   return routes[pathname as keyof typeof routes] || { title: 'Dashboard', subtitle: '' };
@@ -196,12 +212,14 @@ function HeaderContent({ onMenuToggle }: { onMenuToggle: () => void }) {
   const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
   const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
   
-  // Determine if user is jury based on URL parameter, profile data, or user.userType
+  // Determine user type based on URL parameter, profile data, or user.userType
   const isJury = searchParams.get('profile') === 'jury' || 
                  (juryProfile?.data && !searchParams.get('profile')) ||
                  (user?.userType === 'jury' && !searchParams.get('profile'));
   
-  const { title, subtitle } = getPageTitle(pathname, isJury);
+  const isAdmin = user?.userType === 'admin';
+  
+  const { title, subtitle } = getPageTitle(pathname, isJury, isAdmin);
   const isFreemium = centerProfile?.data?.subscriptionTier === 'gratuit';
   
 

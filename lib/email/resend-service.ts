@@ -51,15 +51,29 @@ export class EmailService {
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
     
     try {
+      console.log('EmailService: Checking API key...');
       this.checkApiKey();
-      return await resend.emails.send({
+      
+      console.log('EmailService: Preparing email data...');
+      console.log(`- To: ${email}`);
+      console.log(`- From: ${this.FROM_EMAIL}`);
+      console.log(`- Reset URL: ${resetUrl}`);
+      
+      const emailData = {
         from: this.FROM_EMAIL,
         to: email,
         subject: 'Réinitialisation de votre mot de passe - SimplyJury',
         react: PasswordResetEmail({ name, resetUrl }),
-      });
+      };
+      
+      console.log('EmailService: Sending email via Resend...');
+      const result = await resend.emails.send(emailData);
+      console.log('EmailService: Email sent successfully:', result);
+      
+      return result;
     } catch (error) {
-      console.error('Error sending password reset email:', error);
+      console.error('EmailService: Error sending password reset email:', error);
+      console.error('EmailService: Error details:', JSON.stringify(error, null, 2));
       throw new Error('Failed to send password reset email');
     }
   }

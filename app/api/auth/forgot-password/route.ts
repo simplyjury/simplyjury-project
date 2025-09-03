@@ -27,12 +27,22 @@ export async function POST(request: NextRequest) {
 
       if (user) {
         try {
-          await EmailService.sendPasswordResetEmail(email, user.name || 'Utilisateur', resetToken);
+          console.log(`Attempting to send password reset email to: ${email}`);
+          console.log(`User found: ${user.name || 'Utilisateur'}`);
+          console.log(`Reset token generated: ${resetToken.substring(0, 8)}...`);
+          
+          const result = await EmailService.sendPasswordResetEmail(email, user.name || 'Utilisateur', resetToken);
+          console.log('Password reset email sent successfully:', result);
         } catch (emailError) {
           console.error('Password reset email failed:', emailError);
+          console.error('Email error details:', JSON.stringify(emailError, null, 2));
           // Continue même si l'email échoue
         }
+      } else {
+        console.log(`No user found for email: ${email}`);
       }
+    } else {
+      console.log(`No reset token generated for email: ${email}`);
     }
 
     // Toujours retourner un succès pour des raisons de sécurité

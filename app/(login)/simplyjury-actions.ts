@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { AuthService } from '@/lib/auth/auth-service';
+import { EmailService } from '@/lib/email/resend-service';
 import { sendVerificationEmail } from '@/lib/auth/email-verification';
 import { setRLSContext } from '@/lib/auth/rls-context';
 
@@ -235,13 +236,34 @@ export async function requestPasswordResetAction(
     const validatedData = passwordResetRequestSchema.parse(rawData);
     const { email } = validatedData;
 
+    console.log(`Server Action: Processing password reset for ${email}`);
+    
+    // Generate reset token and update database
     const token = await AuthService.sendPasswordResetEmail(email);
 
     if (!token) {
+      console.log(`Server Action: No user found for email ${email}`);
+      // For security reasons, we still return success even if user doesn't exist
       return {
-        error: 'Aucun compte trouvé avec cette adresse email',
+        success: 'Un email de réinitialisation a été envoyé à votre adresse',
         email
       };
+    }
+
+    console.log(`Server Action: Reset token generated for ${email}`);
+
+    // Get user details to send the email
+    const user = await AuthService.getUserByEmail(email);
+    
+    if (user) {
+      try {
+        console.log(`Server Action: Sending reset email to ${email}`);
+        await EmailService.sendPasswordResetEmail(email, user.name || 'Utilisateur', token);
+        console.log(`Server Action: Reset email sent successfully to ${email}`);
+      } catch (emailError) {
+        console.error('Server Action: Failed to send reset email:', emailError);
+        // Continue even if email fails - don't reveal this to user for security
+      }
     }
 
     return {
@@ -250,6 +272,8 @@ export async function requestPasswordResetAction(
     };
 
   } catch (error) {
+    console.error('Server Action: Password reset error:', error);
+    
     if (error instanceof z.ZodError) {
       return {
         error: error.errors[0].message,
@@ -322,6 +346,11 @@ export async function signOutAction() {
 
 // Fonction utilitaire pour déterminer la redirection
 function getRedirectPath(user: any): string {
+  // Admin users always go to admin dashboard (no profile completion needed)
+  if (user.user_type === 'admin') {
+    return '/dashboard/admin';
+  }
+
   // Si le profil n'est pas complété, rediriger vers la page de profil
   if (!user.profile_completed) {
     return user.user_type === 'centre' ? '/dashboard/profile/centre' : '/dashboard/profile/jury';
