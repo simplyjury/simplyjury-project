@@ -2,12 +2,13 @@
 
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
+import { Suspense } from 'react';
 import JuryReviews from '@/components/dashboard/jury-reviews';
 import CenterReviews from '@/components/dashboard/center-reviews';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export default function ReviewsPage() {
+function ReviewsContent() {
   const searchParams = useSearchParams();
   
   // Fetch user data to determine user type
@@ -24,4 +25,12 @@ export default function ReviewsPage() {
   }
   
   return <CenterReviews />;
+}
+
+export default function ReviewsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64">Chargement...</div>}>
+      <ReviewsContent />
+    </Suspense>
+  );
 }

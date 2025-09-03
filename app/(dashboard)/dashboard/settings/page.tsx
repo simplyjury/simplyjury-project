@@ -2,12 +2,13 @@
 
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
+import { Suspense } from 'react';
 import JurySettings from '@/components/dashboard/jury-settings';
 import CenterSettings from '@/components/dashboard/center-settings';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export default function SettingsPage() {
+function SettingsContent() {
   const searchParams = useSearchParams();
   
   // Fetch user data to determine user type
@@ -24,4 +25,12 @@ export default function SettingsPage() {
   }
   
   return <CenterSettings />;
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64">Chargement...</div>}>
+      <SettingsContent />
+    </Suspense>
+  );
 }

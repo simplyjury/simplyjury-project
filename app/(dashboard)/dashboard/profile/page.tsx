@@ -2,12 +2,13 @@
 
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
+import { Suspense } from 'react';
 import JuryProfilePage from '@/components/profile/jury-profile-page';
 import CenterProfilePage from '@/components/profile/center-profile-page';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export default function ProfilePage() {
+function ProfileContent() {
   const searchParams = useSearchParams();
   
   // Fetch user data to determine user type
@@ -24,4 +25,12 @@ export default function ProfilePage() {
   }
   
   return <CenterProfilePage />;
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64">Chargement...</div>}>
+      <ProfileContent />
+    </Suspense>
+  );
 }
