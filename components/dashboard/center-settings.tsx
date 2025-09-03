@@ -1,56 +1,58 @@
 'use client';
 
-import { ClipboardCheck, Search, Filter, Plus, Star, TrendingUp, Award } from 'lucide-react';
+import { Settings, Building2, Bell, Shield, CreditCard, Users, Globe } from 'lucide-react';
 
-export default function EvaluationsPage() {
+export default function CenterSettings() {
   return (
     <section className="flex-1 p-4 lg:p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#0d4a70] mb-2">Évaluations</h1>
-        <p className="text-gray-600">Gérez vos évaluations et consultez vos retours</p>
+        <h1 className="text-3xl font-bold text-[#0d4a70] mb-2">Paramètres</h1>
+        <p className="text-gray-600">Configurez votre centre de formation</p>
       </div>
 
       {/* Coming Soon Card */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
         <div className="max-w-md mx-auto">
           <div className="w-20 h-20 bg-[#0d4a70] rounded-full flex items-center justify-center mx-auto mb-6">
-            <ClipboardCheck className="w-10 h-10 text-white" />
+            <Settings className="w-10 h-10 text-white" />
           </div>
           
           <h2 className="text-2xl font-bold text-[#0d4a70] mb-4">
-            Système d'évaluations en cours de développement
+            Paramètres centre en développement
           </h2>
           
           <p className="text-gray-600 mb-6 leading-relaxed">
-            Cette section permettra de gérer toutes vos évaluations, consulter les retours 
-            des centres de formation et suivre votre progression en tant que jury.
+            Cette section permettra de gérer tous les aspects de votre centre de formation 
+            et de personnaliser votre expérience SimplyJury.
           </p>
           
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <h3 className="font-semibold text-[#0d4a70] mb-2">Fonctionnalités à venir :</h3>
             <ul className="text-sm text-gray-600 space-y-1 text-left">
-              <li>• Évaluations reçues des centres de formation</li>
-              <li>• Notes et commentaires détaillés</li>
-              <li>• Historique complet des évaluations</li>
-              <li>• Statistiques de performance</li>
-              <li>• Analyse des points forts et axes d'amélioration</li>
-              <li>• Certification de qualité jury</li>
+              <li>• Gestion des informations du centre</li>
+              <li>• Paramètres de facturation et abonnement</li>
+              <li>• Gestion de l'équipe et des utilisateurs</li>
+              <li>• Notifications et alertes</li>
+              <li>• Sécurité et accès</li>
+              <li>• Préférences de communication</li>
+              <li>• Configuration des certifications</li>
+              <li>• Intégration France Compétence (si certificateur)</li>
             </ul>
           </div>
           
-          <div className="flex justify-center space-x-4 mb-6">
+          <div className="flex justify-center space-x-6 mb-6">
             <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <Star className="w-4 h-4 text-yellow-500" />
-              <span>Excellente</span>
+              <Building2 className="w-4 h-4 text-blue-500" />
+              <span>Centre</span>
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <TrendingUp className="w-4 h-4 text-green-500" />
-              <span>En progression</span>
+              <Users className="w-4 h-4 text-green-500" />
+              <span>Équipe</span>
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <Award className="w-4 h-4 text-blue-500" />
-              <span>Certifié</span>
+              <CreditCard className="w-4 h-4 text-purple-500" />
+              <span>Facturation</span>
             </div>
           </div>
           

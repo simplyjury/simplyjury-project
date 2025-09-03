@@ -15,14 +15,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNavigation } from '@/components/ui/sidebar-navigation';
 import { signOut } from '@/app/(login)/actions';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-// Page title mapping based on routes
-const getPageTitle = (pathname: string): { title: string; subtitle: string } => {
-  const routes = {
+// Page title mapping based on routes and user type
+const getPageTitle = (pathname: string, isJury: boolean = false): { title: string; subtitle: string } => {
+  const centerRoutes = {
     '/dashboard': { title: 'Tableau de bord', subtitle: 'Bonjour ! Voici un aperçu de votre activité sur SimplyJury' },
     '/dashboard/search': { title: 'Rechercher un jury', subtitle: 'Trouvez le jury parfait pour votre certification' },
     '/dashboard/messages': { title: 'Messagerie', subtitle: 'Gérez vos conversations avec les jurys' },
@@ -32,8 +32,21 @@ const getPageTitle = (pathname: string): { title: string; subtitle: string } => 
     '/dashboard/reviews': { title: 'Avis donnés', subtitle: 'Consultez les avis reçus' },
     '/dashboard/settings': { title: 'Paramètres', subtitle: 'Configurez votre compte' },
     '/dashboard/upgrade': { title: 'Passer au Pro', subtitle: 'Découvrez nos offres premium' },
+    '/dashboard/profile': { title: 'Mon profil', subtitle: 'Gérez vos informations personnelles et professionnelles' },
+  };
+
+  const juryRoutes = {
+    '/dashboard': { title: 'Tableau de bord', subtitle: 'Bonjour ! Voici un aperçu de votre activité sur SimplyJury' },
+    '/dashboard/requests': { title: 'Mes demandes', subtitle: 'Consultez les demandes de missions reçues' },
+    '/dashboard/messages': { title: 'Messagerie', subtitle: 'Gérez vos conversations avec les centres de formation' },
+    '/dashboard/missions': { title: 'Missions réalisées', subtitle: 'Consultez l\'historique de vos missions' },
+    '/dashboard/evaluations': { title: 'Mes évaluations', subtitle: 'Consultez les avis reçus' },
+    '/dashboard/profile': { title: 'Mon profil', subtitle: 'Gérez vos informations personnelles et professionnelles' },
+    '/dashboard/settings': { title: 'Paramètres', subtitle: 'Configurez votre compte' },
+    '/dashboard/help': { title: 'Aide & Support', subtitle: 'Trouvez de l\'aide et contactez le support' },
   };
   
+  const routes = isJury ? juryRoutes : centerRoutes;
   return routes[pathname as keyof typeof routes] || { title: 'Dashboard', subtitle: '' };
 };
 
@@ -71,23 +84,25 @@ function FreemiumBanner({ onClose }: { onClose: () => void }) {
 
 function UserMenu() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [juryPhotoUrl, setJuryPhotoUrl] = useState<string | null>(null);
   const { data: user } = useSWR('/api/user', fetcher);
-  
-  // Only fetch profiles based on user type to avoid 404 errors
-  const shouldFetchCenter = user?.user_type === 'centre';
-  const shouldFetchJury = user?.user_type === 'jury';
-  
-  const { data: centerProfile } = useSWR(
-    shouldFetchCenter ? '/api/profile/center' : null, 
-    fetcher,
-    { shouldRetryOnError: false }
-  );
-  const { data: juryProfile } = useSWR(
-    shouldFetchJury ? '/api/profile/jury' : null, 
-    fetcher,
-    { shouldRetryOnError: false }
-  );
+  const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
+  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
   const router = useRouter();
+
+  // Always call useEffect hook, but conditionally execute the logic inside
+  useEffect(() => {
+    if (juryProfile?.data?.profilePhotoUrl) {
+      fetch('/api/profile/jury/photo-url')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setJuryPhotoUrl(data.url);
+          }
+        })
+        .catch(err => console.error('Failed to get jury photo URL:', err));
+    }
+  }, [juryProfile?.data?.profilePhotoUrl]);
 
   async function handleSignOut() {
     await signOut();
@@ -123,22 +138,6 @@ function UserMenu() {
     ? `${activeProfile.firstName} ${activeProfile.lastName}`
     : activeProfile?.name;
   const profileImage = activeProfile?.logoUrl; // Only use logoUrl for training centers
-  
-  // For jury profiles, we need to fetch signed URL
-  const [juryPhotoUrl, setJuryPhotoUrl] = useState<string | null>(null);
-  
-  useEffect(() => {
-    if (juryProfile?.data?.profilePhotoUrl) {
-      fetch('/api/profile/jury/photo-url')
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setJuryPhotoUrl(data.url);
-          }
-        })
-        .catch(err => console.error('Failed to get jury photo URL:', err));
-    }
-  }, [juryProfile?.data?.profilePhotoUrl]);
   
   const displayImage = juryPhotoUrl || profileImage;
 
@@ -191,10 +190,18 @@ function UserMenu() {
 
 function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [showBanner, setShowBanner] = useState(true);
+  const { data: user } = useSWR('/api/user', fetcher);
   const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
+  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
   
-  const { title, subtitle } = getPageTitle(pathname);
+  // Determine if user is jury based on URL parameter, profile data, or user.userType
+  const isJury = searchParams.get('profile') === 'jury' || 
+                 (juryProfile?.data && !searchParams.get('profile')) ||
+                 (user?.userType === 'jury' && !searchParams.get('profile'));
+  
+  const { title, subtitle } = getPageTitle(pathname, isJury);
   const isFreemium = centerProfile?.data?.subscriptionTier === 'gratuit';
   
 

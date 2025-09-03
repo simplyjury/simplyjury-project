@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { 
   LayoutDashboard, 
@@ -46,7 +46,7 @@ function getNavigationSections(userType: 'jury' | 'center', isCertificateur: boo
         items: [
           {
             name: 'Tableau de bord',
-            href: '/dashboard',
+            href: '/dashboard?profile=jury',
             icon: LayoutDashboard,
           },
           {
@@ -157,6 +157,11 @@ function getNavigationSections(userType: 'jury' | 'center', isCertificateur: boo
         title: 'MON COMPTE',
         items: [
           {
+            name: 'Mon profil',
+            href: '/dashboard/profile',
+            icon: User,
+          },
+          {
             name: 'Paramètres',
             href: '/dashboard/settings',
             icon: Settings,
@@ -180,25 +185,17 @@ interface SidebarNavigationProps {
 
 export function SidebarNavigation({ isOpen = true, onClose, className }: SidebarNavigationProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: user } = useSWR('/api/user', fetcher);
+  const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
+  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
   
-  // Only fetch profiles based on user type to avoid 404 errors
-  const shouldFetchCenter = user?.user_type === 'centre';
-  const shouldFetchJury = user?.user_type === 'jury';
+  // Determine user type based on URL parameter, profile data, or user.userType
+  const isJury = searchParams.get('profile') === 'jury' || 
+                 (juryProfile?.data && !searchParams.get('profile')) ||
+                 (user?.userType === 'jury' && !searchParams.get('profile'));
   
-  const { data: centerProfile } = useSWR(
-    shouldFetchCenter ? '/api/profile/center' : null, 
-    fetcher,
-    { shouldRetryOnError: false }
-  );
-  const { data: juryProfile } = useSWR(
-    shouldFetchJury ? '/api/profile/jury' : null, 
-    fetcher,
-    { shouldRetryOnError: false }
-  );
-  
-  // Determine user type and certificateur status
-  const userType: 'jury' | 'center' = juryProfile?.data ? 'jury' : 'center';
+  const userType: 'jury' | 'center' = isJury ? 'jury' : 'center';
   const isCertificateur = centerProfile?.data?.isCertificateur || false;
   
   // Get navigation sections based on user type and certificateur status
@@ -261,7 +258,15 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
               </h3>
               <ul className="space-y-1">
                 {section.items.map((item: NavigationItem) => {
-                  const isActive = pathname === item.href;
+                  // Handle active state for URLs with query parameters
+                  let isActive = false;
+                  if (item.href.includes('?')) {
+                    const [path, query] = item.href.split('?');
+                    const params = new URLSearchParams(query);
+                    isActive = pathname === path && searchParams.get('profile') === params.get('profile');
+                  } else {
+                    isActive = pathname === item.href;
+                  }
                   const Icon = item.icon;
                   
                   return (

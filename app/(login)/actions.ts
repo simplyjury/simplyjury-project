@@ -106,7 +106,12 @@ export const signIn = validatedAction(signInSchema, async (data, formData) => {
     }
   }
 
-  redirect('/dashboard');
+  // Redirect based on user type
+  if (foundUser.userType === 'jury') {
+    redirect('/dashboard?profile=jury');
+  } else {
+    redirect('/dashboard');
+  }
 });
 
 const signUpSchema = z.object({
@@ -227,6 +232,7 @@ export const signUp = validatedAction(signUpSchema, async (data, formData) => {
     return createCheckoutSession({ team: createdTeam, priceId });
   }
 
+  // Redirect based on user type (for new signups, default to center)
   redirect('/dashboard');
 });
 
