@@ -2,12 +2,13 @@
 
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
+import { Suspense } from 'react';
 import JuryDashboard from '@/components/dashboard/jury-dashboard';
 import CenterDashboard from '@/components/dashboard/center-dashboard';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export default function DashboardPage() {
+function DashboardContent() {
   const searchParams = useSearchParams();
   const profile = searchParams.get('profile');
   const { data: user } = useSWR('/api/user', fetcher);
@@ -23,4 +24,12 @@ export default function DashboardPage() {
   }
   
   return <CenterDashboard />;
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64">Chargement...</div>}>
+      <DashboardContent />
+    </Suspense>
+  );
 }

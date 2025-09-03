@@ -188,7 +188,7 @@ function UserMenu() {
   );
 }
 
-function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
+function HeaderContent({ onMenuToggle }: { onMenuToggle: () => void }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [showBanner, setShowBanner] = useState(true);
@@ -257,13 +257,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SidebarNavigation 
-        isOpen={isMobileMenuOpen} 
-        onClose={closeMobileMenu}
-        className="lg:block"
-      />
+      <Suspense fallback={<div className="w-64 bg-white border-r border-gray-200" />}>
+        <SidebarNavigation 
+          isOpen={isMobileMenuOpen} 
+          onClose={closeMobileMenu}
+          className="lg:block"
+        />
+      </Suspense>
       <div className="flex-1 flex flex-col lg:ml-0">
-        <Header onMenuToggle={toggleMobileMenu} />
+        <Suspense fallback={<div className="h-16 border-b border-gray-200 bg-white" />}>
+          <HeaderContent onMenuToggle={toggleMobileMenu} />
+        </Suspense>
         <main className="flex-1">
           {children}
         </main>
