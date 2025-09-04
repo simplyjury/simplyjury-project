@@ -93,3 +93,38 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getSession();
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const userId = session.userId;
+    const body = await request.json();
+
+    const result = await withRLSContext(userId, async () => {
+      // Update profile - body should contain database field names
+      return await TrainingCenterService.updateProfile(userId, body);
+    });
+
+    if (!result) {
+      return NextResponse.json({ error: 'Profil centre non trouvé' }, { status: 404 });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      data: result,
+      message: 'Profil mis à jour avec succès'
+    });
+
+  } catch (error) {
+    console.error('Error updating center profile:', error);
+    return NextResponse.json(
+      { error: 'Erreur lors de la sauvegarde du profil' },
+      { status: 500 }
+    );
+  }
+}

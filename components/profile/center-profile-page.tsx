@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import useSWR from 'swr';
-import { Save, X, Plus, Upload, Trash2, Building2 } from 'lucide-react';
+import { Save, X, Plus, Upload, Trash2, Building2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -11,14 +11,15 @@ export default function CenterProfilePage() {
   const { data: centerProfileResponse, error, mutate } = useSWR('/api/profile/center', fetcher);
   const profile = centerProfileResponse?.data;
   
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingSection, setEditingSection] = useState<number | null>(null);
   const [isSaving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [signedLogoUrl, setSignedLogoUrl] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<number>(1);
   
   const [formData, setFormData] = useState({
-    centerName: '',
-    siretNumber: '',
+    name: '',
+    siret: '',
     address: '',
     city: '',
     postalCode: '',
@@ -26,19 +27,22 @@ export default function CenterProfilePage() {
     phone: '',
     website: '',
     description: '',
+    sector: '',
+    email: '',
     certificationDomains: [] as string[],
     isCertificateur: false,
-    qualiopi: false,
+    qualiopiCertified: false,
     contactPersonName: '',
     contactPersonEmail: '',
-    contactPersonPhone: ''
+    contactPersonPhone: '',
+    contactPersonRole: ''
   });
 
   useEffect(() => {
     if (profile) {
       setFormData({
-        centerName: profile.centerName || '',
-        siretNumber: profile.siretNumber || '',
+        name: profile.name || '',
+        siret: profile.siret || '',
         address: profile.address || '',
         city: profile.city || '',
         postalCode: profile.postalCode || '',
@@ -46,12 +50,15 @@ export default function CenterProfilePage() {
         phone: profile.phone || '',
         website: profile.website || '',
         description: profile.description || '',
+        sector: profile.sector || '',
+        email: profile.email || '',
         certificationDomains: profile.certificationDomains || [],
         isCertificateur: profile.isCertificateur || false,
-        qualiopi: profile.qualiopi || false,
+        qualiopiCertified: profile.qualiopiCertified || false,
         contactPersonName: profile.contactPersonName || '',
         contactPersonEmail: profile.contactPersonEmail || '',
-        contactPersonPhone: profile.contactPersonPhone || ''
+        contactPersonPhone: profile.contactPersonPhone || '',
+        contactPersonRole: profile.contactPersonRole || ''
       });
 
       if (profile.logoUrl) {
@@ -69,6 +76,16 @@ export default function CenterProfilePage() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addCertificationDomain = (domain: string) => {
+    if (domain && !formData.certificationDomains.includes(domain)) {
+      handleInputChange('certificationDomains', [...formData.certificationDomains, domain]);
+    }
+  };
+
+  const removeCertificationDomain = (domain: string) => {
+    handleInputChange('certificationDomains', formData.certificationDomains.filter(d => d !== domain));
   };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,7 +165,7 @@ export default function CenterProfilePage() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (sectionNumber: number) => {
     setSaving(true);
     try {
       const response = await fetch('/api/profile/center', {
@@ -159,7 +176,7 @@ export default function CenterProfilePage() {
       
       if (response.ok) {
         mutate();
-        setIsEditing(false);
+        setEditingSection(null);
       } else {
         throw new Error('Erreur lors de la sauvegarde');
       }
@@ -173,7 +190,7 @@ export default function CenterProfilePage() {
   if (error) return <div className="p-8 text-red-600">Erreur lors du chargement du profil</div>;
   if (!profile) return <div className="p-8">Chargement...</div>;
 
-  const initials = profile.centerName?.substring(0, 2).toUpperCase() || 'CF';
+  const initials = profile.name?.substring(0, 2).toUpperCase() || 'CF';
 
   return (
     <section className="flex-1 p-4 lg:p-8">
@@ -256,75 +273,101 @@ export default function CenterProfilePage() {
       </div>
 
       {/* Company Information Section */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-6">
+        <div 
+          className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 rounded-t-2xl"
+          onClick={() => setExpandedSection(expandedSection === 1 ? 0 : 1)}
+        >
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#0d4a70] rounded flex items-center justify-center">
-              <div className="w-3 h-3 bg-white rounded-sm"></div>
+            <div className="w-6 h-6 bg-[#13d090] rounded flex items-center justify-center text-white font-bold text-sm">
+              1
             </div>
             <h2 className="text-xl font-bold text-[#0d4a70]">Informations de l'entreprise</h2>
+            <p className="text-sm text-gray-500 ml-2">Gérez les informations de votre centre de formation</p>
           </div>
-          
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-[#0d4a70] text-white rounded-lg hover:bg-[#0a3a5a]"
-            >
-              Modifier
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-[#13d090] text-white rounded-lg hover:bg-[#10b87a] disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {expandedSection === 1 ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+            {expandedSection === 1 && (
+              <>
+                {editingSection !== 1 ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingSection(1);
+                    }}
+                    className="px-4 py-2 bg-[#0d4a70] text-white rounded-lg hover:bg-[#0a3a5a]"
+                  >
+                    Modifier
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingSection(null);
+                      }}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSave(1);
+                      }}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#13d090] text-white rounded-lg hover:bg-[#10b87a] disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
+
+        {expandedSection === 1 && (
+          <div className="p-6 pt-0">
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Nom du centre *</label>
-            {isEditing ? (
+            {editingSection === 1 ? (
               <input
                 type="text"
-                value={formData.centerName}
-                onChange={(e) => handleInputChange('centerName', e.target.value)}
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
               />
             ) : (
-              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.centerName}</p>
+              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.name}</p>
             )}
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Numéro SIRET *</label>
-            {isEditing ? (
+            {editingSection === 1 ? (
               <input
                 type="text"
-                value={formData.siretNumber}
-                onChange={(e) => handleInputChange('siretNumber', e.target.value)}
+                value={formData.siret}
+                onChange={(e) => handleInputChange('siret', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
                 placeholder="14 chiffres"
               />
             ) : (
-              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.siretNumber}</p>
+              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.siret}</p>
             )}
           </div>
 
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Adresse *</label>
-            {isEditing ? (
+            {editingSection === 1 ? (
               <input
                 type="text"
                 value={formData.address}
@@ -338,7 +381,7 @@ export default function CenterProfilePage() {
 
           <div>
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Ville *</label>
-            {isEditing ? (
+            {editingSection === 1 ? (
               <input
                 type="text"
                 value={formData.city}
@@ -352,7 +395,7 @@ export default function CenterProfilePage() {
 
           <div>
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Code postal *</label>
-            {isEditing ? (
+            {editingSection === 1 ? (
               <input
                 type="text"
                 value={formData.postalCode}
@@ -366,7 +409,7 @@ export default function CenterProfilePage() {
 
           <div>
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Région *</label>
-            {isEditing ? (
+            {editingSection === 1 ? (
               <select
                 value={formData.region}
                 onChange={(e) => handleInputChange('region', e.target.value)}
@@ -393,7 +436,7 @@ export default function CenterProfilePage() {
 
           <div>
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Téléphone</label>
-            {isEditing ? (
+            {editingSection === 1 ? (
               <input
                 type="tel"
                 value={formData.phone}
@@ -407,7 +450,7 @@ export default function CenterProfilePage() {
 
           <div>
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Site web</label>
-            {isEditing ? (
+            {editingSection === 1 ? (
               <input
                 type="url"
                 value={formData.website}
@@ -419,81 +462,174 @@ export default function CenterProfilePage() {
               <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.website || 'Non renseigné'}</p>
             )}
           </div>
-        </div>
 
-        {/* Description Section */}
-        <div className="mt-6">
-          <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Description du centre</label>
-          {isEditing ? (
-            <textarea
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent resize-vertical"
-              placeholder="Décrivez votre centre de formation, vos spécialités, votre équipe..."
-            />
-          ) : (
-            <p className="px-4 py-3 bg-gray-50 rounded-lg min-h-24">
-              {profile.description || 'Aucune description renseignée'}
-            </p>
-          )}
-        </div>
-
-        {/* Certifications Section */}
-        <div className="mt-6">
-          <label className="block text-sm font-semibold text-[#0d4a70] mb-3">Certifications et labels</label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <label className="flex items-center space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.isCertificateur}
-                onChange={(e) => handleInputChange('isCertificateur', e.target.checked)}
-                disabled={!isEditing}
-                className="w-5 h-5 text-[#13d090] border-gray-300 rounded focus:ring-[#13d090] focus:ring-2"
-              />
-              <span className="text-gray-700 font-medium">Centre certificateur</span>
-            </label>
-            <label className="flex items-center space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.qualiopi}
-                onChange={(e) => handleInputChange('qualiopi', e.target.checked)}
-                disabled={!isEditing}
-                className="w-5 h-5 text-[#13d090] border-gray-300 rounded focus:ring-[#13d090] focus:ring-2"
-              />
-              <span className="text-gray-700 font-medium">Certification Qualiopi</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* Contact Person Section */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-6 h-6 bg-[#0d4a70] rounded flex items-center justify-center">
-            <div className="w-3 h-3 bg-white rounded-sm"></div>
-          </div>
-          <h2 className="text-xl font-bold text-[#0d4a70]">Personne de contact</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Nom du contact *</label>
-            {isEditing ? (
+            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Secteur d'activité</label>
+            {editingSection === 1 ? (
               <input
                 type="text"
-                value={formData.contactPersonName}
-                onChange={(e) => handleInputChange('contactPersonName', e.target.value)}
+                value={formData.sector}
+                onChange={(e) => handleInputChange('sector', e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
               />
             ) : (
-              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.contactPersonName}</p>
+              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.sector || 'Non renseigné'}</p>
             )}
           </div>
 
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Description</label>
+            {editingSection === 1 ? (
+              <textarea
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+                placeholder="Décrivez votre centre de formation..."
+              />
+            ) : (
+              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.description || 'Non renseigné'}</p>
+            )}
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Email *</label>
+            {editingSection === 1 ? (
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+              />
+            ) : (
+              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.email}</p>
+            )}
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Domaines de certification</label>
+            {editingSection === 1 ? (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  {formData.certificationDomains.map((domain, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-[#13d090] text-white rounded-full text-sm"
+                    >
+                      {domain}
+                      <button
+                        onClick={() => removeCertificationDomain(domain)}
+                        className="ml-1 hover:bg-[#10b87a] rounded-full p-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  placeholder="Ajouter un domaine (appuyez sur Entrée)"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      const value = e.currentTarget.value.trim();
+                      if (value) {
+                        addCertificationDomain(value);
+                        e.currentTarget.value = '';
+                      }
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {profile.certificationDomains?.length > 0 ? (
+                  profile.certificationDomains.map((domain: string, index: number) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                    >
+                      {domain}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-gray-500">Aucun domaine renseigné</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+          </div>
+        )}
+      </div>
+
+      {/* Contact Person Section */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-6">
+        <div 
+          className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 rounded-t-2xl"
+          onClick={() => setExpandedSection(expandedSection === 2 ? 0 : 2)}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-[#13d090] rounded flex items-center justify-center text-white font-bold text-sm">
+              2
+            </div>
+            <h2 className="text-xl font-bold text-[#0d4a70]">Personne de contact</h2>
+            <p className="text-sm text-gray-500 ml-2">Informations de la personne de contact</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {expandedSection === 2 ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+            {expandedSection === 2 && (
+              <>
+                {editingSection !== 2 ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingSection(2);
+                    }}
+                    className="px-4 py-2 bg-[#0d4a70] text-white rounded-lg hover:bg-[#0a3a5a]"
+                  >
+                    Modifier
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingSection(null);
+                      }}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSave(2);
+                      }}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#13d090] text-white rounded-lg hover:bg-[#10b87a] disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {expandedSection === 2 && (
+          <div className="p-6 pt-0">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Email du contact *</label>
-            {isEditing ? (
+            {editingSection === 2 ? (
               <input
                 type="email"
                 value={formData.contactPersonEmail}
@@ -507,7 +643,7 @@ export default function CenterProfilePage() {
 
           <div>
             <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Téléphone du contact</label>
-            {isEditing ? (
+            {editingSection === 2 ? (
               <input
                 type="tel"
                 value={formData.contactPersonPhone}
@@ -518,7 +654,24 @@ export default function CenterProfilePage() {
               <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.contactPersonPhone || 'Non renseigné'}</p>
             )}
           </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Rôle du contact</label>
+            {editingSection === 2 ? (
+              <input
+                type="text"
+                value={formData.contactPersonRole}
+                onChange={(e) => handleInputChange('contactPersonRole', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+                placeholder="Directeur, Responsable formation..."
+              />
+            ) : (
+              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.contactPersonRole || 'Non renseigné'}</p>
+            )}
+          </div>
         </div>
+          </div>
+        )}
       </div>
     </section>
   );
