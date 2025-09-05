@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimplyJury - Contacter un jury</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f8fafc;
+            color: #0d4a70;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Modal Header */
+        .modal-header {
+            background: linear-gradient(135deg, #0d4a70 0%, #1a5a8a 100%);
+            color: white;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .modal-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .jury-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .jury-avatar-small {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #bea1e5, #cfbaed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .jury-preview-info h4 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .jury-preview-rating {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .close-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        /* Freemium Notice */
+        .freemium-notice {
+            background: linear-gradient(135deg, #fdce0f, #fee88c);
+            color: #0d4a70;
+            padding: 16px 20px;
+            margin: 24px 32px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(253, 206, 15, 0.2);
+        }
+
+        .notice-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        /* Form Content */
+        .form-content {
+            max-height: calc(90vh - 200px);
+            overflow-y: auto;
+            padding: 0 32px 32px;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0d4a70;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            color: #13d090;
+        }
+
+        .section-description {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        /* Form Elements */
+        .form-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0d4a70;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #ef4444;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #13d090;
+            box-shadow: 0 0 0 3px rgba(19,208,144,0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+            line-height: 1.6;
+        }
+
+        /* Time Picker */
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        /* Modality Selection */
+        .modality-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .modality-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            text-align: center;
+        }
+
+        .modality-option:hover {
+            border-color: #13d090;
+            background: rgba(19,208,144,0.05);
+        }
+
+        .modality-option.selected {
+            border-color: #13d090;
+            background: rgba(19,208,144,0.1);
+            box-shadow: 0 4px 12px rgba(19,208,144,0.15);
+        }
+
+        .modality-icon {
+            width: 32px;
+            height: 32px;
+            color: #13d090;
+        }
+
+        .modality-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0d4a70;
+        }
+
+        .modality-description {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        /* Expense Checkboxes */
+        .expense-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .checkbox-item:hover {
+            border-color: #13d090;
+            background: rgba(19,208,144,0.02);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #13d090;
+            margin: 0;
+        }
+
+        .checkbox-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0d4a70;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }
+
+        .checkbox-description {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        /* Character Counter */
+        .char-counter {
+            text-align: right;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+
+        .char-counter.warning {
+            color: #f59e0b;
+        }
+
+        .char-counter.danger {
+            color: #ef4444;
+        }
+
+        /* Modal Actions */
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 32px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #13d090;
+            color: white;
+            box-shadow: 0 4px 12px rgba(19,208,144,0.3);
+        }
+
+        .btn-primary:hover {
+            background: #0fb378;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(19,208,144,0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e0;
+        }
+
+        /* Form Validation */
+        .form-input.error, .form-select.error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .modal {
+                margin: 10px;
+                max-height: calc(100vh - 20px);
+                border-radius: 16px;
+            }
+
+            .modal-header {
+                padding: 24px;
+            }
+
+            .modal-title {
+                font-size: 24px;
+            }
+
+            .form-content {
+                padding: 0 24px 24px;
+            }
+
+            .modal-actions {
+                padding: 20px 24px;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .form-grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .time-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modality-options {
+                grid-template-columns: 1fr;
+            }
+
+            .expense-checkboxes {
+                grid-template-columns: 1fr;
+            }
+
+            .jury-preview {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            cursor: help;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0d4a70;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1001;
+            margin-bottom: 5px;
+        }
+
+        .tooltip:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #0d4a70;
+            z-index: 1001;
+        }
+
+        /* Custom Scrollbar */
+        .form-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .form-content::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        .form-content::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        .form-content::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="header-content">
+                    <div>
+                        <h2 class="modal-title">Demande de jury externe</h2>
+                        <p class="modal-subtitle">Remplissez les détails de votre session d'examen</p>
+                        
+                        <div class="jury-preview">
+                            <div class="jury-avatar-small">JM</div>
+                            <div class="jury-preview-info">
+                                <h4>Jean Martin</h4>
+                                <div class="jury-preview-rating">⭐ 4.9 • Développement Web</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="close-btn" onclick="closeModal()">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Freemium Notice -->
+            <div class="freemium-notice">
+                <svg class="notice-icon" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                Il s'agit de votre mise en relation gratuite. Passez au plan Pro pour des contacts illimités.
+            </div>
+
+            <!-- Form Content -->
+            <div class="form-content">
+                <form id="demandForm">
+                    <!-- Section 1: Certification et Session -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <svg class="section-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Certification et session d'examen
+                        </h3>
+                        <p class="section-description">
+                            Précisez la certification visée et les détails de votre session d'examen.
+                        </p>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="certification" class="form-label required">Certification visée</label>
+                                <select id="certification" class="form-select" required>
+                                    <option value="">Sélectionnez une certification</option>
+                                    <option value="RNCP31114">Développeur Web et Web Mobile (RNCP31114)</option>
+                                    <option value="RNCP34838">Concepteur Développeur d'Applications (RNCP34838)</option>
+                                    <option value="RNCP36061">Expert en Technologies de l'Information (RNCP36061)</option>
+                                    <option value="RNCP35475">Administrateur d'infrastructures sécurisées (RNCP35475)</option>
+                                    <option value="autre">Autre certification</option>
+                                </select>
+                            </div>
+
+                            <div class="form-grid form-grid-2">
+                                <div class="form-group">
+                                    <label for="sessionDate" class="form-label required">Date de la session</label>
+                                    <input type="date" id="sessionDate" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="candidateCount" class="form-label required">Nombre de candidats</label>
+                                    <input type="number" id="candidateCount" class="form-input" min="1" max="50" placeholder="Ex: 8" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Créneaux horaires</label>
+                                <div class="time-grid">
+                                    <div class="form-group">
+                                        <label for="startTime" class="form-label">Heure de début</label>
+                                        <input type="time" id="startTime" class="form-input" value="09:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="endTime" class="form-label">Heure de fin</label>
+                                        <input type="time" id="endTime" class="form-input" value="17:00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Modalités et Logistique -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <svg class="section-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                            Modalités et logistique
+                        </h3>
+                        <p class="section-description">
+                            Choisissez la modalité d'examen et précisez les conditions logistiques.
+                        </p>
+
+                        <div class="form-group">
+                            <label class="form-label required">Modalité d'examen</label>
+                            <div class="modality-options">
+                                <div class="modality-option" data-modality="presentiel">
+                                    <svg class="modality-icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M20 6h-2.5l-1.5-1.5h-5L9.5 6H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h13c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+                                    </svg>
+                                    <h4 class="modality-title">Présentiel</h4>
+                                    <p class="modality-description">Dans nos locaux</p>
+                                </div>
+                                <div class="modality-option" data-modality="visio">
+                                    <svg class="modality-icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                                    </svg>
+                                    <h4 class="modality-title">Visioconférence</h4>
+                                    <p class="modality-description">À distance</p>
+                                </div>
+                                <div class="modality-option" data-modality="hybride">
+                                    <svg class="modality-icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                                    </svg>
+                                    <h4 class="modality-title">Hybride</h4>
+                                    <p class="modality-description">Mixte</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="locationGroup" style="display: none;">
+                            <label for="location" class="form-label required">Lieu de la session</label>
+                            <input type="text" id="location" class="form-input" placeholder="Adresse complète du lieu d'examen">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Frais pris en charge</label>
+                            <div class="expense-checkboxes">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="transport" name="expenses">
+                                    <div>
+                                        <label for="transport" class="checkbox-label">Transport</label>
+                                        <div class="checkbox-description">Frais de déplacement</div>
+                                    </div>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="meals" name="expenses">
+                                    <div>
+                                        <label for="meals" class="checkbox-label">Restauration</label>
+                                        <div class="checkbox-description">Déjeuner inclus</div>
+                                    </div>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="accommodation" name="expenses">
+                                    <div>
+                                        <label for="accommodation" class="checkbox-label">Hébergement</label>
+                                        <div class="checkbox-description">Si session de plusieurs jours</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Message -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <svg class="section-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                            </svg>
+                            Message personnalisé
+                            <span class="tooltip" data-tooltip="Message optionnel pour contextualiser votre demande">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                                </svg>
+                            </span>
+                        </h3>
+
+                        <div class="form-group">
+                            <textarea 
+                                id="message" 
+                                class="form-textarea" 
+                                placeholder="Bonjour Jean,
+
+J'espère que vous allez bien. Nous organisons une session d'examen et aimerions faire appel à votre expertise.
+
+Pouvez-vous nous confirmer votre disponibilité ?
+
+Cordialement,
+[Votre nom]"
+                                maxlength="1000"></textarea>
+                            <div class="char-counter">
+                                <span id="charCount">0</span>/1000 caractères
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Actions -->
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn" form="demandForm">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                    Envoyer la demande
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set minimum date to today
+        document.getElementById('sessionDate').min = new Date().toISOString().split('T')[0];
+
+        // Character counter for message
+        const messageTextarea = document.getElementById('message');
+        const charCount = document.getElementById('charCount');
+        
+        messageTextarea.addEventListener('input', function() {
+            const count = this.value.length;
+            charCount.textContent = count;
+            
+            const counter = charCount.parentElement;
+            counter.className = 'char-counter';
+            if (count > 800) counter.classList.add('warning');
+            if (count > 950) counter.classList.add('danger');
+        });
+
+        // Modality selection
+        let selectedModality = '';
+        document.querySelectorAll('.modality-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove previous selection
+                document.querySelectorAll('.modality-option').forEach(opt => opt.classList.remove('selected'));
+                
+                // Add selection to clicked option
+                this.classList.add('selected');
+                selectedModality = this.dataset.modality;
+                
+                // Show/hide location field based on modality
+                const locationGroup = document.getElementById('locationGroup');
+                const locationInput = document.getElementById('location');
+                
+                if (selectedModality === 'presentiel' || selectedModality === 'hybride') {
+                    locationGroup.style.display = 'block';
+                    locationInput.required = true;
+                } else {
+                    locationGroup.style.display = 'none';
+                    locationInput.required = false;
+                }
+            });
+        });
+
+        // Form validation and submission
+        document.getElementById('demandForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Basic validation
+            const certification = document.getElementById('certification').value;
+            const sessionDate = document.getElementById('sessionDate').value;
+            const candidateCount = document.getElementById('candidateCount').value;
+            
+            if (!certification || !sessionDate || !candidateCount || !selectedModality) {
+                alert('Veuillez remplir tous les champs obligatoires.');
+                return;
+            }
+            
+            if (selectedModality === 'presentiel' || selectedModality === 'hybride') {
+                const location = document.getElementById('location').value;
+                if (!location) {
+                    alert('Veuillez préciser le lieu de la session.');
+                    return;
+                }
+            }
+            
+            // Simulate sending request
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="animation: spin 1s linear infinite;">
+                    <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6z"/>
+                    <path d="M18.76 7.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/>
+                </svg>
+                Envoi en cours...
+            `;
+            
+            // Simulate network delay
+            setTimeout(() => {
+                // Show success message
+                showSuccessMessage();
+            }, 2000);
+        });
+
+        function showSuccessMessage() {
+            const modal = document.querySelector('.modal');
+            modal.innerHTML = `
+                <div style="padding: 60px 40px; text-align: center;">
+                    <div style="width: 80px; height: 80px; background: #13d090; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 32px; color: white;">✓</div>
+                    <h2 style="font-size: 28px; font-weight: 700; color: #0d4a70; margin-bottom: 16px;">Demande envoyée avec succès !</h2>
+                    <p style="font-size: 16px; color: #64748b; margin-bottom: 32px; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                        Votre demande de jury a été transmise à <strong>Jean Martin</strong>. Vous recevrez une notification dès qu'il aura répondu.
+                    </p>
+                    
+                    <div style="background: rgba(19,208,144,0.1); border-radius: 16px; padding: 24px; margin-bottom: 32px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;">
+                        <h3 style="font-size: 16px; font-weight: 600; color: #0d4a70; margin-bottom: 12px; text-align: center;">Prochaines étapes :</h3>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                            <div style="width: 24px; height: 24px; background: #13d090; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold; flex-shrink: 0;">1</div>
+                            <span style="font-size: 14px; color: #64748b;">Jean Martin reçoit votre demande</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                            <div style="width: 24px; height: 24px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px; font-weight: bold; flex-shrink: 0;">2</div>
+                            <span style="font-size: 14px; color: #64748b;">Il accepte ou refuse la mission</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 24px; height: 24px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px; font-weight: bold; flex-shrink: 0;">3</div>
+                            <span style="font-size: 14px; color: #64748b;">Vous êtes mis en relation</span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: linear-gradient(135deg, #fdce0f, #fee88c); padding: 20px; border-radius: 12px; margin-bottom: 32px;">
+                        <div style="color: #0d4a70; font-weight: 600; margin-bottom: 8px;">⚠️ Limite freemium atteinte</div>
+                        <div style="color: #0d4a70; font-size: 14px; opacity: 0.9;">Vous avez utilisé votre contact gratuit. Passez au plan Pro pour des mises en relation illimitées.</div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                        <button onclick="closeModal()" class="btn btn-secondary" style="padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 16px; border: 2px solid #e2e8f0; background: transparent; color: #64748b; cursor: pointer; text-decoration: none;">
+                            Fermer
+                        </button>
+                        <a href="#" class="btn" style="padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 16px; background: #13d090; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                            </svg>
+                            Voir mes demandes
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        function closeModal(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const modal = document.querySelector('.modal-overlay');
+            modal.style.animation = 'fadeOut 0.2s ease-out forwards';
+            
+            setTimeout(() => {
+                // In a real application, this would close the modal
+                console.log('Modal closed');
+            }, 200);
+        }
+
+        // Add fadeOut animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize character counter
+        messageTextarea.dispatchEvent(new Event('input'));
+    </script>
+</body>
+</html>

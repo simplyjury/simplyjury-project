@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimplyJury - Profil Jury</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f8fafc;
+            color: #0d4a70;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Modal Header */
+        .modal-header {
+            background: linear-gradient(135deg, #0d4a70 0%, #1a5a8a 100%);
+            color: white;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .jury-main-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .jury-avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #bea1e5, #cfbaed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            font-weight: 700;
+            flex-shrink: 0;
+            box-shadow: 0 8px 25px rgba(190, 161, 229, 0.4);
+        }
+
+        .jury-header-text h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .jury-location {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 12px;
+        }
+
+        .jury-rating-large {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stars-large {
+            color: #fdce0f;
+            font-size: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .rating-large {
+            font-size: 16px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .close-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        /* Modal Content */
+        .modal-content {
+            max-height: calc(90vh - 140px);
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .content-section {
+            padding: 32px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .content-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0d4a70;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            color: #13d090;
+        }
+
+        /* Professional Summary */
+        .professional-summary {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .summary-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0d4a70;
+        }
+
+        .summary-description {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .summary-description p {
+            color: #64748b;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        /* Expertise Tags */
+        .expertise-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .expertise-tag {
+            background: linear-gradient(135deg, rgba(19,208,144,0.1), rgba(19,208,144,0.05));
+            color: #0d4a70;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid rgba(19,208,144,0.2);
+            transition: all 0.2s;
+        }
+
+        .expertise-tag:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(19,208,144,0.15);
+        }
+
+        /* Modalities and Zones */
+        .modalities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .modality-card {
+            background: white;
+            border: 2px solid #f1f5f9;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .modality-card.available {
+            border-color: rgba(19,208,144,0.3);
+            background: rgba(19,208,144,0.05);
+        }
+
+        .modality-icon {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 12px;
+            color: #13d090;
+        }
+
+        .modality-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0d4a70;
+            margin-bottom: 4px;
+        }
+
+        .modality-description {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        /* Availability Calendar */
+        .availability-section {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .availability-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .availability-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0d4a70;
+        }
+
+        .availability-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(19,208,144,0.1);
+            border: 1px solid rgba(19,208,144,0.2);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0d7a5a;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #13d090;
+        }
+
+        .availability-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .availability-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .availability-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .availability-dates {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0d4a70;
+            margin-bottom: 8px;
+        }
+
+        .availability-details {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .availability-modality {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .availability-note {
+            font-size: 13px;
+            color: #94a3b8;
+            font-style: italic;
+            margin-top: 8px;
+        }
+
+        /* Contact Section */
+        .contact-section {
+            background: linear-gradient(135deg, #13d090, #0fb378);
+            color: white;
+            text-align: center;
+        }
+
+        .contact-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .contact-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 24px;
+        }
+
+        .contact-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            min-width: 160px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #13d090;
+        }
+
+        .btn-primary:hover {
+            background: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255,255,255,0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .modal {
+                margin: 10px;
+                max-height: calc(100vh - 20px);
+                border-radius: 16px;
+            }
+
+            .modal-header {
+                padding: 24px;
+            }
+
+            .jury-main-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 16px;
+            }
+
+            .jury-avatar-large {
+                width: 64px;
+                height: 64px;
+                font-size: 24px;
+                border-radius: 16px;
+            }
+
+            .jury-header-text h1 {
+                font-size: 24px;
+            }
+
+            .content-section {
+                padding: 24px;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .modalities-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .contact-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Custom Scrollbar */
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="header-content">
+                    <div class="jury-main-info">
+                        <div class="jury-avatar-large">JM</div>
+                        <div class="jury-header-text">
+                            <h1>Jean Martin</h1>
+                            <div class="jury-location">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                </svg>
+                                Cannes, PACA
+                            </div>
+                            <div class="jury-rating-large">
+                                <span class="stars-large">★★★★★</span>
+                                <span class="rating-large">4.9 (45 avis)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="close-btn" onclick="closeModal()">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="modal-content">
+                <!-- Professional Summary -->
+                <div class="content-section">
+                    <h2 class="section-title">
+                        <svg class="section-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                        Profil professionnel
+                    </h2>
+                    
+                    <div class="professional-summary">
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <span class="summary-label">Poste actuel</span>
+                                <span class="summary-value">Développeur Senior Full-Stack</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Entreprise</span>
+                                <span class="summary-value">TechSolutions SARL</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Expérience</span>
+                                <span class="summary-value">8-15 ans</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Formation</span>
+                                <span class="summary-value">Master Informatique - EPITA</span>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-description">
+                            <p>Développeur full-stack passionné avec plus de 10 ans d'expérience dans le développement web et mobile. Spécialisé dans les technologies React, Node.js et les architectures cloud. J'accompagne régulièrement des équipes junior et j'apprécie transmettre mes connaissances techniques à travers l'évaluation de certifications professionnelles.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expertise -->
+                <div class="content-section">
+                    <h2 class="section-title">
+                        <svg class="section-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7.01 5 5 7.01 5 9.5S7.01 14 9.5 14 14 11.99 14 9.5 11.99 5 9.5 5z"/>
+                        </svg>
+                        Domaines d'expertise
+                    </h2>
+                    
+                    <div class="expertise-grid">
+                        <span class="expertise-tag">Développement Web</span>
+                        <span class="expertise-tag">JavaScript/TypeScript</span>
+                        <span class="expertise-tag">React/Vue.js</span>
+                        <span class="expertise-tag">Node.js</span>
+                        <span class="expertise-tag">Bases de données</span>
+                        <span class="expertise-tag">DevOps/Cloud</span>
+                        <span class="expertise-tag">Architecture logicielle</span>
+                        <span class="expertise-tag">Méthodologies Agiles</span>
+                    </div>
+                </div>
+
+                <!-- Modalities -->
+                <div class="content-section">
+                    <h2 class="section-title">
+                        <svg class="section-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                        Modalités acceptées
+                    </h2>
+                    
+                    <div class="modalities-grid">
+                        <div class="modality-card available">
+                            <svg class="modality-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                            </svg>
+                            <h3 class="modality-title">Visioconférence</h3>
+                            <p class="modality-description">Préférée - Très bien équipé</p>
+                        </div>
+                        
+                        <div class="modality-card">
+                            <svg class="modality-icon" fill="currentColor" viewBox="0 0 24 24" style="color: #cbd5e0;">
+                                <path d="M20 6h-2.5l-1.5-1.5h-5L9.5 6H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h13c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+                            </svg>
+                            <h3 class="modality-title" style="color: #94a3b8;">Présentiel</h3>
+                            <p class="modality-description" style="color: #94a3b8;">Non disponible actuellement</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zone d'intervention -->
+                <div class="content-section">
+                    <h2 class="section-title">
+                        <svg class="section-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                        Zone d'intervention
+                    </h2>
+                    
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <span class="expertise-tag" style="background: rgba(253,206,15,0.1); border-color: rgba(253,206,15,0.3);">National (Visio)</span>
+                    </div>
+                </div>
+
+                <!-- Availability -->
+                <div class="content-section">
+                    <h2 class="section-title">
+                        <svg class="section-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>
+                        </svg>
+                        Disponibilités
+                    </h2>
+                    
+                    <div class="availability-section">
+                        <div class="availability-header">
+                            <h3 class="availability-title">Créneaux disponibles</h3>
+                            <div class="availability-status">
+                                <div class="status-dot"></div>
+                                Disponible immédiatement
+                            </div>
+                        </div>
+                        
+                        <div class="availability-list">
+                            <div class="availability-item">
+                                <div class="availability-dates">15 mars - 30 avril 2025</div>
+                                <div class="availability-details">
+                                    <div class="availability-modality">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                                        </svg>
+                                        Visioconférence uniquement
+                                    </div>
+                                </div>
+                                <div class="availability-note">Préférence pour les sessions en matinée (9h-12h)</div>
+                            </div>
+                            
+                            <div class="availability-item">
+                                <div class="availability-dates">15 mai - 15 juin 2025</div>
+                                <div class="availability-details">
+                                    <div class="availability-modality">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                                        </svg>
+                                        Visioconférence uniquement
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Section -->
+                <div class="content-section contact-section">
+                    <h2 class="contact-title">Prêt à contacter ce jury ?</h2>
+                    <p class="contact-subtitle">Envoyez votre demande directement à Jean Martin</p>
+                    
+                    <div class="contact-actions">
+                        <button class="btn btn-primary" onclick="contactJury()">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                            </svg>
+                            Envoyer une demande
+                        </button>
+                        
+                        <button class="btn btn-secondary" onclick="saveJury()">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+                            </svg>
+                            Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function closeModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            
+            const modal = document.querySelector('.modal-overlay');
+            modal.style.animation = 'fadeOut 0.2s ease-out forwards';
+            
+            setTimeout(() => {
+                // In a real application, this would close the modal
+                console.log('Modal closed');
+            }, 200);
+        }
+
+        function contactJury() {
+            // In a real application, this would open the contact form
+            alert('Ouverture du formulaire de contact...');
+        }
+
+        function saveJury() {
+            // In a real application, this would save the jury to favorites
+            alert('Jury sauvegardé dans vos favoris !');
+        }
+
+        // Add fadeOut animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `;
