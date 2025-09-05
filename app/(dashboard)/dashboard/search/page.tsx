@@ -8,6 +8,8 @@ import { Select } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { JuryProfileModal } from '@/components/ui/jury-profile-modal';
+import StructuredRequestModal from '@/components/jury/structured-request-modal';
 
 interface JuryProfile {
   id: number;
@@ -55,6 +57,10 @@ export default function SearchPage() {
     modality: '',
     availability: ''
   });
+  const [selectedJury, setSelectedJury] = useState<JuryProfile | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [selectedJuryForRequest, setSelectedJuryForRequest] = useState<JuryProfile | null>(null);
 
   // Fetch jury data from API
   const fetchJuries = async () => {
@@ -115,13 +121,65 @@ export default function SearchPage() {
     setCurrentPage(1);
   };
 
-  const handleContact = () => {
+  const handleContact = (jury: JuryProfile) => {
     if (!hasUsedFreeContact && contactsRemaining > 0) {
-      setHasUsedFreeContact(true);
-      setContactsRemaining(0);
-      alert('Contact envoyé ! Vous avez utilisé votre mise en relation gratuite.');
+      setSelectedJuryForRequest(jury);
+      setIsRequestModalOpen(true);
     } else {
       alert('Limite freemium atteinte. Passez au plan Pro pour plus de contacts.');
+    }
+  };
+
+  const handleViewProfile = (jury: JuryProfile) => {
+    setSelectedJury(jury);
+    setIsModalOpen(true);
+  };
+
+  const handleModalContact = (juryId: number) => {
+    setHasUsedFreeContact(true);
+    setContactsRemaining(0);
+    alert('Contact envoyé ! Vous avez utilisé votre mise en relation gratuite.');
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedJury(null);
+  };
+
+  const handleCloseRequestModal = () => {
+    setIsRequestModalOpen(false);
+    setSelectedJuryForRequest(null);
+  };
+
+  const handleSubmitRequest = async (requestData: any) => {
+    try {
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth-token='))
+        ?.split('=')[1];
+
+      const response = await fetch('/api/jury-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setHasUsedFreeContact(true);
+        setContactsRemaining(0);
+        alert('Demande envoyée avec succès ! Le jury recevra une notification.');
+        handleCloseRequestModal();
+      } else {
+        throw new Error(result.error || 'Erreur lors de l\'envoi de la demande');
+      }
+    } catch (error) {
+      console.error('Error submitting request:', error);
+      alert('Erreur lors de l\'envoi de la demande. Veuillez réessayer.');
     }
   };
 
@@ -213,7 +271,7 @@ export default function SearchPage() {
         {/* Actions */}
         <div className={`flex ${viewMode === 'grid' ? 'w-full mt-4' : 'flex-col'} gap-2 min-w-[120px]`}>
           <Button
-            onClick={handleContact}
+            onClick={() => handleContact(jury)}
             disabled={hasUsedFreeContact}
             className={`${viewMode === 'grid' ? 'flex-1' : ''} ${
               hasUsedFreeContact 
@@ -226,7 +284,8 @@ export default function SearchPage() {
           </Button>
           <Button
             variant="ghost"
-            className={`${viewMode === 'grid' ? 'flex-1' : ''} text-gray-500 hover:text-gray-700 hover:bg-gray-50 text-sm`}
+            onClick={() => handleViewProfile(jury)}
+            className={`${viewMode === 'grid' ? 'flex-1' : ''} text-gray-500 hover:text-gray-700 hover:bg-gray-50 text-sm cursor-pointer`}
           >
             Voir profil
           </Button>
@@ -428,6 +487,50 @@ export default function SearchPage() {
             </Button>
           </div>
         </Card>
+      )}
+
+      {/* Jury Profile Modal */}
+      {selectedJury && (
+        <JuryProfileModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          jury={{
+            id: selectedJury.id,
+            name: selectedJury.name,
+            location: selectedJury.location,
+            rating: selectedJury.rating,
+            reviewCount: selectedJury.reviewCount,
+            avatar: selectedJury.avatar,
+            expertiseDomains: selectedJury.expertise,
+            workModalities: selectedJury.workModalities || [],
+            interventionZones: selectedJury.interventionZones || [],
+            bio: selectedJury.bio || '',
+            currentPosition: selectedJury.currentPosition || '',
+            experienceYears: selectedJury.experienceYears || 0,
+            hourlyRate: parseFloat(selectedJury.hourlyRate?.replace('€/h', '') || '0'),
+            profilePhotoUrl: selectedJury.profilePhotoUrl
+          }}
+          onContact={handleModalContact}
+        />
+      )}
+
+      {/* Structured Request Modal */}
+      {selectedJuryForRequest && (
+        <StructuredRequestModal
+          isOpen={isRequestModalOpen}
+          onClose={handleCloseRequestModal}
+          jury={{
+            id: selectedJuryForRequest.id,
+            firstName: selectedJuryForRequest.name.split(' ')[0] || '',
+            lastName: selectedJuryForRequest.name.split(' ').slice(1).join(' ') || '',
+            profilePhotoUrl: selectedJuryForRequest.profilePhotoUrl,
+            rating: selectedJuryForRequest.rating,
+            expertiseDomains: selectedJuryForRequest.expertise,
+            city: selectedJuryForRequest.location.split(',')[0] || '',
+            region: selectedJuryForRequest.location.split(',')[1]?.trim() || ''
+          }}
+          onSubmit={handleSubmitRequest}
+        />
       )}
     </div>
   );

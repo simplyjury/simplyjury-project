@@ -116,6 +116,7 @@ export async function GET(request: NextRequest) {
         reviewCount: Math.floor(Math.random() * 50) + 5, // Mock review count
         avatar: getAvatarEmoji(jury.expertiseDomains?.[0] || ''),
         expertise: jury.expertiseDomains || [],
+        expertiseDomains: jury.expertiseDomains || [],
         workModalities: jury.workModalities || [],
         status: getAvailabilityStatus(jury.availabilityPreferences),
         statusText: getAvailabilityText(jury.availabilityPreferences),
@@ -124,7 +125,8 @@ export async function GET(request: NextRequest) {
         hourlyRate: jury.hourlyRate,
         bio: jury.bio,
         profilePhotoUrl: signedPhotoUrl,
-        interventionZones: jury.interventionZones
+        interventionZones: jury.interventionZones,
+        availabilityPreferences: jury.availabilityPreferences
       };
     }));
 
@@ -209,5 +211,5 @@ function getAvailabilityText(availabilityPreferences: any): string {
     }
   }
   
-  return 'Contactez-moi';
+  return 'Non disponible';
 }
