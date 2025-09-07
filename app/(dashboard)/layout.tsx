@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNavigation } from '@/components/ui/sidebar-navigation';
+import { ToastProvider } from '@/components/ui/toast';
 import { signOut } from '@/app/(login)/actions';
 import { usePathname, useSearchParams } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
@@ -274,22 +275,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Suspense fallback={<div className="w-64 bg-white border-r border-gray-200" />}>
-        <SidebarNavigation 
-          isOpen={isMobileMenuOpen} 
-          onClose={closeMobileMenu}
-          className="lg:block"
-        />
-      </Suspense>
-      <div className="flex-1 flex flex-col lg:ml-0">
-        <Suspense fallback={<div className="h-16 border-b border-gray-200 bg-white" />}>
-          <HeaderContent onMenuToggle={toggleMobileMenu} />
+    <ToastProvider>
+      <div className="flex min-h-screen bg-gray-50">
+        <Suspense fallback={<div className="w-64 bg-white border-r border-gray-200" />}>
+          <SidebarNavigation 
+            isOpen={isMobileMenuOpen} 
+            onClose={closeMobileMenu}
+            className="lg:block"
+          />
         </Suspense>
-        <main className="flex-1">
-          {children}
-        </main>
+        <div className="flex-1 flex flex-col lg:ml-0">
+          <Suspense fallback={<div className="h-16 border-b border-gray-200 bg-white" />}>
+            <HeaderContent onMenuToggle={toggleMobileMenu} />
+          </Suspense>
+          <main className="flex-1">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { AuthService } from '@/lib/auth/auth-service';
+import { getSession } from '@/lib/auth/session';
+import { JuryRequestEmailService } from '@/lib/email/jury-request-service';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,22 +23,25 @@ interface StructuredRequestData {
   customMessage: string;
 }
 
-async function getCurrentUser(request: NextRequest) {
+async function getCurrentUser() {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const session = await getSession();
+    if (!session || !session.userId) {
       return null;
     }
 
-    const token = authHeader.split(' ')[1];
-    const payload = await AuthService.verifyJWT(token);
-    const userId = payload.userId;
+    // Get user data from Supabase
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', session.userId)
+      .single();
 
-    if (!userId) {
+    if (error || !user) {
       return null;
     }
 
-    return await AuthService.getUserWithProfile(payload.userId);
+    return user;
   } catch (error) {
     return null;
   }
@@ -46,7 +50,7 @@ async function getCurrentUser(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
         { error: 'Non autorisé' },
@@ -55,17 +59,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is a training center
-    if (user.userType !== 'centre') {
+    console.log('User data:', user);
+    console.log('User type:', user.user_type, 'vs userType:', user.userType);
+    
+    if (user.user_type !== 'centre') {
       return NextResponse.json(
         { error: 'Seuls les centres de formation peuvent créer des demandes' },
         { status: 403 }
       );
     }
 
-    // Get training center info
+    // Get training center info including contact details
     const { data: trainingCenter, error: centerError } = await supabase
       .from('training_centers')
-      .select('id, subscription_tier')
+      .select('id, subscription_tier, name, contact_person_name, contact_person_email, email')
       .eq('user_id', user.id)
       .single();
 
@@ -104,6 +111,8 @@ export async function POST(request: NextRequest) {
     }
 
     const requestData: StructuredRequestData = await request.json();
+    console.log('Full request data:', requestData);
+    console.log('Jury ID from request:', requestData.juryId);
 
     // Validate required fields
     const requiredFields = ['juryId', 'certificationType', 'sessionDate', 'candidateCount'];
@@ -124,14 +133,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify jury exists and is validated
+    // Verify jury exists and is validated, get email and profile info
+    console.log('Looking for jury with ID:', requestData.juryId, 'type:', typeof requestData.juryId);
+    
     const { data: jury, error: juryError } = await supabase
       .from('users')
-      .select('id, user_type, validation_status')
+      .select(`
+        id, 
+        user_type, 
+        validation_status, 
+        email,
+        jury_profiles!inner(first_name, last_name)
+      `)
       .eq('id', requestData.juryId)
       .eq('user_type', 'jury')
       .eq('validation_status', 'validated')
       .single();
+
+    console.log('Jury query result:', jury);
+    console.log('Jury query error:', juryError);
 
     if (juryError || !jury) {
       return NextResponse.json(
@@ -252,6 +272,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Send email notifications
+    try {
+      const emailData = {
+        juryId: jury.id,
+        juryEmail: jury.email,
+        juryFirstName: jury.jury_profiles[0].first_name,
+        juryLastName: jury.jury_profiles[0].last_name,
+        centerName: trainingCenter.name,
+        centerEmail: trainingCenter.contact_person_email,
+        centerCcEmail: trainingCenter.email, // Add CC email
+        contactPersonName: trainingCenter.contact_person_name,
+        certificationType: requestData.certificationType,
+        sessionDate: requestData.sessionDate,
+        candidateCount: requestData.candidateCount,
+        modality: requestData.modality,
+        juryLoginUrl: `${process.env.NEXT_PUBLIC_APP_URL}/sign-in`,
+        centerDashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+      };
+
+      if (JuryRequestEmailService.validateEmailData(emailData)) {
+        // Send emails in background (don't wait for completion)
+        JuryRequestEmailService.sendBothEmails(emailData).then(result => {
+          console.log('Email sending results:', result);
+        }).catch(error => {
+          console.error('Error sending emails:', error);
+        });
+      } else {
+        console.error('Invalid email data, skipping email notifications');
+      }
+    } catch (emailError) {
+      console.error('Error preparing emails:', emailError);
+      // Don't fail the request if email sending fails
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -273,13 +327,14 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
         { error: 'Non autorisé' },
         { status: 401 }
       );
     }
+    
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const page = parseInt(searchParams.get('page') || '1');
@@ -289,52 +344,98 @@ export async function GET(request: NextRequest) {
     // Set RLS context
     await supabase.rpc('set_current_user_id', { user_id: user.id });
 
-    let query = supabase
-      .from('jury_requests')
-      .select(`
-        *,
-        training_centers!inner(name, contact_person_name),
-        users!jury_requests_jury_id_fkey(id, name),
-        jury_profiles!inner(first_name, last_name, expertise_domains)
-      `)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    // Check if user is jury or center
+    if (user.user_type === 'jury') {
+      // Fetch requests sent TO this jury
+      let query = supabase
+        .from('jury_requests')
+        .select(`
+          *,
+          training_centers!inner(name, contact_person_name, contact_person_email),
+          conversations(id, created_at)
+        `)
+        .eq('jury_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (status) {
-      query = query.eq('status', status);
-    }
+      if (status) {
+        query = query.eq('status', status);
+      }
 
-    const { data: requests, error } = await query;
+      const { data: requests, error, count } = await query
+        .range(offset, offset + limit - 1);
 
-    if (error) {
-      console.error('Error fetching jury requests:', error);
+      if (error) {
+        console.error('Error fetching jury requests:', error);
+        return NextResponse.json(
+          { error: 'Erreur lors de la récupération des demandes' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: requests || [],
+        pagination: {
+          page,
+          limit,
+          total: count || 0,
+          totalPages: Math.ceil((count || 0) / limit)
+        }
+      });
+    } else if (user.user_type === 'centre') {
+      // Existing center logic
+      let query = supabase
+        .from('jury_requests')
+        .select(`
+          *,
+          training_centers!inner(name, contact_person_name),
+          users!jury_requests_jury_id_fkey(id, name),
+          jury_profiles!inner(first_name, last_name, expertise_domains)
+        `)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      const { data: requests, error } = await query;
+
+      if (error) {
+        console.error('Error fetching jury requests:', error);
+        return NextResponse.json(
+          { error: 'Erreur lors de la récupération des demandes' },
+          { status: 500 }
+        );
+      }
+
+      // Get total count for pagination
+      let countQuery = supabase
+        .from('jury_requests')
+        .select('*', { count: 'exact', head: true });
+
+      if (status) {
+        countQuery = countQuery.eq('status', status);
+      }
+
+      const { count } = await countQuery;
+
+      return NextResponse.json({
+        success: true,
+        data: requests,
+        pagination: {
+          page,
+          limit,
+          total: count || 0,
+          totalPages: Math.ceil((count || 0) / limit)
+        }
+      });
+    } else {
       return NextResponse.json(
-        { error: 'Erreur lors de la récupération des demandes' },
-        { status: 500 }
+        { error: 'Type d\'utilisateur non autorisé' },
+        { status: 403 }
       );
     }
-
-    // Get total count for pagination
-    let countQuery = supabase
-      .from('jury_requests')
-      .select('*', { count: 'exact', head: true });
-
-    if (status) {
-      countQuery = countQuery.eq('status', status);
-    }
-
-    const { count } = await countQuery;
-
-    return NextResponse.json({
-      success: true,
-      data: requests,
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
-      }
-    });
 
   } catch (error) {
     console.error('Error in GET jury requests:', error);

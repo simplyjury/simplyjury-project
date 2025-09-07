@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: jury.id,
+        userId: jury.userId, // Add the user ID for API requests
         name: `${jury.firstName} ${jury.lastName}`,
         location: `${jury.city}, ${jury.region}`,
         rating: Math.random() * 1 + 4, // Mock rating between 4-5

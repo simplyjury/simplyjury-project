@@ -153,10 +153,10 @@ export default function StructuredRequestModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-5">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col animate-in fade-in-0 zoom-in-95 duration-300 my-8">
         {/* Header */}
-        <div className="bg-gradient-to-br from-[#0d4a70] to-[#1a5a8a] text-white p-8 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-[#0d4a70] to-[#1a5a8a] text-white p-8 relative overflow-hidden rounded-t-3xl flex-shrink-0">
           <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-white/10 to-transparent rounded-full transform translate-x-24 -translate-y-24"></div>
           
           <div className="relative z-10 flex justify-between items-start">
@@ -194,8 +194,8 @@ export default function StructuredRequestModal({
         </div>
 
         {/* Form Content */}
-        <div className="max-h-[calc(90vh-280px)] overflow-y-auto p-8">
-          <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="flex-1 overflow-y-auto p-8">
+          <form id="demandForm" onSubmit={handleSubmit} className="space-y-8">
             {/* Section 1: Certification et Session */}
             <div className="border-b border-slate-200 pb-6">
               <div className="flex items-center gap-3 mb-4">
@@ -411,7 +411,7 @@ Cordialement,
         </div>
 
         {/* Actions */}
-        <div className="flex justify-between items-center p-8 bg-slate-50 border-t border-slate-200">
+        <div className="flex justify-between items-center p-8 bg-slate-50 border-t border-slate-200 flex-shrink-0">
           <button
             type="button"
             onClick={onClose}
