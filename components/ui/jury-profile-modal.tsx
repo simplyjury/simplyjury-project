@@ -61,7 +61,7 @@ export function JuryProfileModal({ isOpen, onClose, jury, onContact }: JuryProfi
           {'☆'.repeat(emptyStars)}
         </span>
         <span className="text-white text-base font-semibold opacity-90">
-          {rating} ({jury.reviewCount} avis)
+          {rating.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ({jury.reviewCount} avis)
         </span>
       </div>
     );

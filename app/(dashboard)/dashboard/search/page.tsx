@@ -9,10 +9,12 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { JuryProfileModal } from '@/components/ui/jury-profile-modal';
+import { useToast } from '@/components/ui/toast';
 import StructuredRequestModal from '@/components/jury/structured-request-modal';
 
 interface JuryProfile {
   id: number;
+  userId: number; // Add userId field
   name: string;
   location: string;
   rating: number;
@@ -41,7 +43,16 @@ interface SearchFilters {
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  
+  // Responsive default view: grid for mobile (< 768px), list for desktop
+  const getInitialViewMode = (): 'list' | 'grid' => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768 ? 'grid' : 'list';
+    }
+    return 'list'; // Default for SSR
+  };
+  
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>(getInitialViewMode);
   const [contactsRemaining, setContactsRemaining] = useState(1);
   const [hasUsedFreeContact, setHasUsedFreeContact] = useState(false);
   const [juries, setJuries] = useState<JuryProfile[]>([]);
@@ -59,6 +70,7 @@ export default function SearchPage() {
   });
   const [selectedJury, setSelectedJury] = useState<JuryProfile | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { showToast } = useToast();
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [selectedJuryForRequest, setSelectedJuryForRequest] = useState<JuryProfile | null>(null);
 
@@ -105,6 +117,20 @@ export default function SearchPage() {
   useEffect(() => {
     fetchJuries();
   }, [currentPage, filters]);
+
+  // Effect to handle responsive view mode on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const newViewMode = window.innerWidth < 768 ? 'grid' : 'list';
+      setViewMode(newViewMode);
+    };
+
+    // Set initial view mode after component mounts
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Handle search input with debouncing
   useEffect(() => {
@@ -153,33 +179,42 @@ export default function SearchPage() {
 
   const handleSubmitRequest = async (requestData: any) => {
     try {
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('auth-token='))
-        ?.split('=')[1];
+      console.log('Request data:', requestData);
 
       const response = await fetch('/api/jury-requests', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestData)
       });
 
+      console.log('Response status:', response.status);
       const result = await response.json();
+      console.log('Response data:', result);
 
       if (result.success) {
         setHasUsedFreeContact(true);
         setContactsRemaining(0);
-        alert('Demande envoyée avec succès ! Le jury recevra une notification.');
+        showToast({
+          type: 'success',
+          title: 'Demande envoyée avec succès !',
+          message: 'Le jury recevra une notification par email.',
+          duration: 4000
+        });
         handleCloseRequestModal();
       } else {
-        throw new Error(result.error || 'Erreur lors de l\'envoi de la demande');
+        throw new Error(result.error);
       }
     } catch (error) {
       console.error('Error submitting request:', error);
-      alert('Erreur lors de l\'envoi de la demande. Veuillez réessayer.');
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      showToast({
+        type: 'error',
+        title: 'Erreur lors de l\'envoi',
+        message: errorMessage,
+        duration: 5000
+      });
     }
   };
 
@@ -224,7 +259,7 @@ export default function SearchPage() {
                 {renderStars(jury.rating)}
               </span>
               <span className="text-xs text-gray-500">
-                {jury.rating} ({jury.reviewCount} avis)
+                {jury.rating.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ({jury.reviewCount} avis)
               </span>
             </div>
           </div>
@@ -520,7 +555,7 @@ export default function SearchPage() {
           isOpen={isRequestModalOpen}
           onClose={handleCloseRequestModal}
           jury={{
-            id: selectedJuryForRequest.id,
+            id: selectedJuryForRequest.userId, // Use userId instead of profile id
             firstName: selectedJuryForRequest.name.split(' ')[0] || '',
             lastName: selectedJuryForRequest.name.split(' ').slice(1).join(' ') || '',
             profilePhotoUrl: selectedJuryForRequest.profilePhotoUrl,
