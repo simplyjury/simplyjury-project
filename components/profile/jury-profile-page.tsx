@@ -16,6 +16,9 @@ export default function JuryProfilePage() {
   const [isSaving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [signedPhotoUrl, setSignedPhotoUrl] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
+  const [pendingPhotoDeletion, setPendingPhotoDeletion] = useState(false);
   const [expandedSection, setExpandedSection] = useState<number>(1);
   
   const [formData, setFormData] = useState({
@@ -73,17 +76,95 @@ export default function JuryProfilePage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleCancel = (sectionNumber: number) => {
+    setEditingSection(null);
+    
+    // Clear pending photo if any
+    if (pendingPhotoFile) {
+      setPendingPhotoFile(null);
+      if (photoPreview) {
+        URL.revokeObjectURL(photoPreview);
+        setPhotoPreview(null);
+      }
+    }
+    
+    // Reset pending photo deletion
+    setPendingPhotoDeletion(false);
+    
+    // Reset form data to original values
+    if (profile) {
+      setFormData({
+        firstName: profile.firstName || '',
+        lastName: profile.lastName || '',
+        region: profile.region || '',
+        city: profile.city || '',
+        expertiseDomains: profile.expertiseDomains || [],
+        certifications: profile.certifications || [],
+        experienceYears: profile.experienceYears || 0,
+        currentPosition: profile.currentPosition || '',
+        company: profile.company || '',
+        workModalities: profile.workModalities || [],
+        interventionZones: profile.interventionZones || [],
+        hourlyRate: profile.hourlyRate || '',
+        bio: profile.bio || '',
+        mainDiploma: profile.mainDiploma || '',
+        availabilityPreferences: profile.availabilityPreferences || []
+      });
+    }
+  };
+
   const handleSave = async (sectionNumber: number) => {
     setSaving(true);
     try {
+      // First, handle photo deletion if pending
+      if (pendingPhotoDeletion) {
+        const deleteResponse = await fetch('/api/profile/jury/photo', {
+          method: 'DELETE',
+        });
+
+        if (deleteResponse.ok) {
+          setSignedPhotoUrl(null);
+          setPendingPhotoDeletion(false);
+        }
+      }
+      
+      // Then, upload photo if there's a pending one
+      if (pendingPhotoFile) {
+        const formData = new FormData();
+        formData.append('photo', pendingPhotoFile);
+
+        const photoResponse = await fetch('/api/profile/jury/photo', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (photoResponse.ok) {
+          // Clear pending photo state
+          setPendingPhotoFile(null);
+          if (photoPreview) {
+            URL.revokeObjectURL(photoPreview);
+            setPhotoPreview(null);
+          }
+        }
+      }
+
+      // Then save profile data
       const response = await fetch('/api/profile/jury', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
-
+      
       if (response.ok) {
-        await mutate();
+        mutate();
+        // Refresh signed URL for photo
+        if (profile?.profilePhotoUrl || pendingPhotoFile) {
+          const urlResponse = await fetch('/api/profile/jury/photo-url');
+          const urlData = await urlResponse.json();
+          if (urlData.success) {
+            setSignedPhotoUrl(urlData.url);
+          }
+        }
         setEditingSection(null);
       }
     } catch (error) {
@@ -97,45 +178,27 @@ export default function JuryProfilePage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setUploadingPhoto(true);
-    try {
-      const formData = new FormData();
-      formData.append('photo', file);
-
-      const response = await fetch('/api/profile/jury/photo', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        mutate();
-        // Refresh signed URL
-        const urlResponse = await fetch('/api/profile/jury/photo-url');
-        const urlData = await urlResponse.json();
-        if (urlData.success) {
-          setSignedPhotoUrl(urlData.url);
-        }
-      }
-    } catch (error) {
-      alert('Erreur lors du téléchargement de la photo');
-    } finally {
-      setUploadingPhoto(false);
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Le fichier doit être une image');
+      return;
     }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Le fichier ne doit pas dépasser 5MB');
+      return;
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setPhotoPreview(previewUrl);
+    setPendingPhotoFile(file);
   };
 
-  const handleRemovePhoto = async () => {
-    try {
-      const response = await fetch('/api/profile/jury/photo', {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setSignedPhotoUrl(null);
-        mutate();
-      }
-    } catch (error) {
-      alert('Erreur lors de la suppression de la photo');
-    }
+  const handleRemovePhoto = () => {
+    // Mark photo for deletion instead of immediately deleting
+    setPendingPhotoDeletion(true);
   };
 
   const addExpertiseDomain = (domain: string) => {
@@ -289,7 +352,7 @@ export default function JuryProfilePage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setEditingSection(null);
+                        handleCancel(1);
                       }}
                       className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                     >
@@ -318,16 +381,23 @@ export default function JuryProfilePage() {
             {/* Photo Upload Section */}
             <div className="mb-8 text-center">
               <div className="relative inline-block">
-                {signedPhotoUrl ? (
+{(photoPreview || (signedPhotoUrl && !pendingPhotoDeletion)) ? (
                   <div className="relative">
                     <img
-                      src={signedPhotoUrl}
+                      src={photoPreview || signedPhotoUrl || ''}
                       alt="Photo de profil"
                       className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
                     />
                     {editingSection === 1 && (
                       <button
-                        onClick={handleRemovePhoto}
+                        onClick={photoPreview ? () => {
+                          // Remove preview photo
+                          if (photoPreview) {
+                            URL.revokeObjectURL(photoPreview);
+                            setPhotoPreview(null);
+                          }
+                          setPendingPhotoFile(null);
+                        } : () => handleRemovePhoto()}
                         className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
                       >
                         <X className="w-4 h-4" />
