@@ -28,10 +28,8 @@ function DashboardContent() {
     return <div className="flex items-center justify-center h-64">Redirection...</div>;
   }
   
-  // Determine if user is jury based on URL parameter, profile data, or user.userType
-  const isJury = profile === 'jury' || 
-                 (juryProfile?.data && !profile) || 
-                 (user?.userType === 'jury' && !profile);
+  // Determine user type ONLY from database - ignore URL parameters for security
+  const isJury = user?.userType === 'jury';
   
   if (isJury) {
     return <JuryDashboard />;

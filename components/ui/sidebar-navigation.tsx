@@ -269,12 +269,9 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
     fetcher
   );
   
-  // Determine user type based on URL parameter, profile data, or user.userType
-  const isJury = searchParams.get('profile') === 'jury' || 
-                 (juryProfile?.data && !searchParams.get('profile')) ||
-                 (user?.userType === 'jury' && !searchParams.get('profile'));
-  
+  // Determine user type ONLY from database - ignore URL parameters for security
   const isAdmin = user?.userType === 'admin';
+  const isJury = user?.userType === 'jury';
   
   const userType: 'jury' | 'center' | 'admin' = isAdmin ? 'admin' : (isJury ? 'jury' : 'center');
   const isCertificateur = centerProfile?.data?.isCertificateur || false;
