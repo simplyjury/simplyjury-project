@@ -51,7 +51,8 @@ function StatsCard({ title, value, icon: Icon, trend, color = "text-[#0d4a70]" }
 }
 
 function RecentRequests() {
-  const { data: requests } = useSWR('/api/jury/requests', fetcher);
+  // TODO: Implement /api/jury/requests endpoint
+  const { data: requests } = useSWR(null, fetcher); // Disabled until endpoint exists
   
   return (
     <Card>
@@ -102,7 +103,8 @@ function RecentRequests() {
 }
 
 function UpcomingMissions() {
-  const { data: missions } = useSWR('/api/jury/missions/upcoming', fetcher);
+  // TODO: Implement /api/jury/missions/upcoming endpoint
+  const { data: missions } = useSWR(null, fetcher); // Disabled until endpoint exists
   
   return (
     <Card>
@@ -179,7 +181,8 @@ function QuickActions() {
 }
 
 export default function JuryDashboard() {
-  const { data: stats } = useSWR('/api/jury/stats', fetcher);
+  // TODO: Implement /api/jury/stats endpoint
+  const { data: stats } = useSWR(null, fetcher); // Disabled until endpoint exists
   const { data: profile } = useSWR('/api/profile/jury', fetcher);
 
   const juryStats: JuryStats = stats?.data || {
