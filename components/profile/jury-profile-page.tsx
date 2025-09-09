@@ -953,7 +953,7 @@ export default function JuryProfilePage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <label className="block text-sm font-semibold text-[#0d4a70]">Vos disponibilités spécifiques *</label>
-                {editingSection === 1 && (
+                {editingSection === 4 && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -996,7 +996,7 @@ export default function JuryProfilePage() {
                           )}
                         </div>
                         
-                        {editingSection === 1 && (
+                        {editingSection === 4 && (
                           <div className="flex gap-2 ml-4">
                             <button
                               onClick={(e) => {
@@ -1026,7 +1026,7 @@ export default function JuryProfilePage() {
                 <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                   <div className="text-gray-400 mb-2">📅</div>
                   <p className="text-gray-500 mb-2">Aucune disponibilité ajoutée</p>
-                  {editingSection === 1 && (
+                  {editingSection === 4 && (
                     <p className="text-sm text-gray-400">Cliquez sur "Ajouter une période" pour commencer</p>
                   )}
                 </div>
