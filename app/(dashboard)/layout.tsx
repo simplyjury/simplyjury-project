@@ -103,8 +103,14 @@ function UserMenu() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [juryPhotoUrl, setJuryPhotoUrl] = useState<string | null>(null);
   const { data: user } = useSWR('/api/user', fetcher);
-  const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
-  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
+  const { data: centerProfile } = useSWR(
+    user?.userType === 'centre' ? '/api/profile/center' : null, 
+    fetcher
+  );
+  const { data: juryProfile } = useSWR(
+    user?.userType === 'jury' ? '/api/profile/jury' : null, 
+    fetcher
+  );
   const router = useRouter();
 
   // Always call useEffect hook, but conditionally execute the logic inside
@@ -210,8 +216,14 @@ function HeaderContent({ onMenuToggle }: { onMenuToggle: () => void }) {
   const searchParams = useSearchParams();
   const [showBanner, setShowBanner] = useState(true);
   const { data: user } = useSWR('/api/user', fetcher);
-  const { data: centerProfile } = useSWR('/api/profile/center', fetcher);
-  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
+  const { data: centerProfile } = useSWR(
+    user?.userType === 'centre' ? '/api/profile/center' : null, 
+    fetcher
+  );
+  const { data: juryProfile } = useSWR(
+    user?.userType === 'jury' ? '/api/profile/jury' : null, 
+    fetcher
+  );
   
   // Determine user type based on URL parameter, profile data, or user.userType
   const isJury = searchParams.get('profile') === 'jury' || 
