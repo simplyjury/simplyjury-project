@@ -12,6 +12,7 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute = pathname.startsWith(protectedRoutes);
 
   console.log('🔍 MIDDLEWARE: Processing request:', { pathname, hasSession: !!sessionCookie, isProtected: isProtectedRoute });
+  console.log('🚀 MIDDLEWARE: Production deployment active');
 
   // Skip maintenance mode check in production to avoid database calls
   const isMaintenanceMode = false;
