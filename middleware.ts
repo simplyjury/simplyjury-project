@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { signToken, verifyToken } from '@/lib/auth/session';
 import { SystemSettingsService } from '@/lib/services/system-settings-service';
+import { debugAuthIssue, logJWTError } from '@/lib/debug/auth-debug';
 
 const protectedRoutes = '/dashboard';
 
@@ -52,6 +53,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
+  // Add debug logging for protected routes
+  if (isProtectedRoute) {
+    const debugResult = await debugAuthIssue(request);
+    if (!debugResult.success) {
+      console.log('🔄 Redirecting to sign-in due to auth failure');
+    }
+  }
+
   if (isProtectedRoute && !sessionCookie) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
@@ -75,7 +84,7 @@ export async function middleware(request: NextRequest) {
         expires: expiresInOneDay
       });
     } catch (error) {
-      console.error('Error updating session:', error);
+      logJWTError(error, 'middleware session refresh');
       res.cookies.delete('session');
       if (isProtectedRoute) {
         return NextResponse.redirect(new URL('/sign-in', request.url));
