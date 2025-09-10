@@ -70,7 +70,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (isProtectedRoute && !sessionCookie) {
+  // Check for session cookie
+  console.log('🔍 MIDDLEWARE: Session cookie check:', { 
+    hasCookie: !!sessionCookie,
+    cookieValue: sessionCookie?.value ? `${sessionCookie.value.substring(0, 20)}...` : 'none'
+  });
+
+  if (!sessionCookie) {
     console.log('❌ MIDDLEWARE: No session cookie, redirecting to sign-in');
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }

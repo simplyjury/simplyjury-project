@@ -56,10 +56,26 @@ export async function setSession(user: NewUser) {
     expires: expiresInOneDay.toISOString(),
   };
   const encryptedSession = await signToken(session);
-  (await cookies()).set('session', encryptedSession, {
+  
+  // Next.js 15 production-compatible cookie settings
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  const cookieStore = await cookies();
+  cookieStore.set('session', encryptedSession, {
     expires: expiresInOneDay,
     httpOnly: true,
-    secure: true,
+    secure: isProduction,
     sameSite: 'lax',
+    path: '/',
+    maxAge: 24 * 60 * 60, // 24 hours in seconds
+  });
+  
+  // Debug logging for production
+  console.log('🔍 SESSION: Cookie set with options:', {
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 24 * 60 * 60,
+    httpOnly: true
   });
 }
