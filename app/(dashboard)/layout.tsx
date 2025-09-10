@@ -226,9 +226,8 @@ function HeaderContent({ onMenuToggle }: { onMenuToggle: () => void }) {
     fetcher
   );
   
-  // Determine user type based on URL parameter, profile data, or user.userType
+  // Determine user type based on URL parameter or user.userType
   const isJury = searchParams.get('profile') === 'jury' || 
-                 (juryProfile?.data && !searchParams.get('profile')) ||
                  (user?.userType === 'jury' && !searchParams.get('profile'));
   
   const isAdmin = user?.userType === 'admin';
