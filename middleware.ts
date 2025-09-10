@@ -66,12 +66,73 @@ export async function middleware(request: NextRequest) {
   if (isProtectedRoute) {
     const debugResult = await debugAuthIssue(request);
     if (!debugResult.success) {
-      console.log('🔄 Redirecting to sign-in due to auth failure');
+      // Next.js 15 cookie debugging - check both cookie header and parsed cookies
+      const cookieHeader = request.headers.get('cookie');
+      const sessionCookie = request.cookies.get('session');
+      const allCookies = request.cookies.getAll();
+      
+      console.log('🔍 MIDDLEWARE: Next.js 15 Cookie Analysis:', {
+        rawCookieHeader: cookieHeader ? cookieHeader.substring(0, 100) + '...' : 'none',
+        parsedSessionCookie: !!sessionCookie,
+        allParsedCookies: allCookies.map(c => c.name),
+        totalCookies: allCookies.length
+      });
+
+      // Check if session exists in raw header but not in parsed cookies (Next.js 15 issue)
+      if (!sessionCookie && cookieHeader?.includes('session=')) {
+        console.log('⚠️ MIDDLEWARE: Session cookie exists in header but not parsed by Next.js');
+        console.log('🔍 MIDDLEWARE: Raw cookie header:', cookieHeader);
+      }
+
+      if (!sessionCookie) {
+        console.log('❌ MIDDLEWARE: No session cookie found, redirecting to sign-in');
+        return NextResponse.redirect(new URL('/sign-in', request.url));
+      }
+
+      let res = NextResponse.next();
+
+      if (sessionCookie && request.method === 'GET') {
+        try {
+          const parsed = await verifyToken(sessionCookie.value);
+          const expiresInOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+          res.cookies.set({
+            name: 'session',
+            value: await signToken({
+              ...parsed,
+              expires: expiresInOneDay.toISOString()
+            }),
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            expires: expiresInOneDay
+          });
+        } catch (error) {
+          logJWTError(error, 'middleware session refresh');
+          console.log('❌ MIDDLEWARE: JWT verification failed, redirecting to sign-in');
+          res.cookies.delete('session');
+          if (isProtectedRoute) {
+            return NextResponse.redirect(new URL('/sign-in', request.url));
+          }
+        }
+      }
+
+      return res;
     }
   }
 
-  if (isProtectedRoute && !sessionCookie) {
-    console.log('❌ MIDDLEWARE: No session cookie, redirecting to sign-in');
+  const allCookies = request.cookies.getAll();
+  
+  console.log('🔍 MIDDLEWARE: Cookie debugging:', {
+    allCookieNames: allCookies.map(c => c.name),
+    sessionCookieExists: !!sessionCookie,
+    sessionCookieValue: sessionCookie?.value ? `${sessionCookie.value.substring(0, 20)}...` : 'none',
+    totalCookies: allCookies.length
+  });
+
+  if (!sessionCookie) {
+    console.log('❌ MIDDLEWARE: No session cookie found, redirecting to sign-in');
+    console.log('🔍 MIDDLEWARE: Available cookies:', allCookies.map(c => ({ name: c.name, value: c.value.substring(0, 10) + '...' })));
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
 
