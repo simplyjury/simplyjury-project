@@ -11,8 +11,17 @@ export async function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('session');
   const isProtectedRoute = pathname.startsWith(protectedRoutes);
 
+  console.log('🔍 MIDDLEWARE: Processing request:', { pathname, hasSession: !!sessionCookie, isProtected: isProtectedRoute });
+
   // Check maintenance mode first
-  const isMaintenanceMode = await SystemSettingsService.getMaintenanceMode();
+  let isMaintenanceMode = false;
+  try {
+    isMaintenanceMode = await SystemSettingsService.getMaintenanceMode();
+    console.log('🔍 MIDDLEWARE: Maintenance mode check:', isMaintenanceMode);
+  } catch (error) {
+    console.error('❌ MIDDLEWARE: Maintenance mode check failed:', error);
+    isMaintenanceMode = false;
+  }
   
   // Allow access to maintenance page and API routes during maintenance
   if (isMaintenanceMode && !pathname.startsWith('/maintenance') && !pathname.startsWith('/api')) {
@@ -62,6 +71,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isProtectedRoute && !sessionCookie) {
+    console.log('❌ MIDDLEWARE: No session cookie, redirecting to sign-in');
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
 
@@ -85,6 +95,7 @@ export async function middleware(request: NextRequest) {
       });
     } catch (error) {
       logJWTError(error, 'middleware session refresh');
+      console.log('❌ MIDDLEWARE: JWT verification failed, redirecting to sign-in');
       res.cookies.delete('session');
       if (isProtectedRoute) {
         return NextResponse.redirect(new URL('/sign-in', request.url));
