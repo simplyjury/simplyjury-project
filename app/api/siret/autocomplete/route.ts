@@ -24,18 +24,21 @@ export async function POST(request: NextRequest) {
 
     try {
       // Call API Pappers
-      const response = await fetch(
-        `https://api.pappers.fr/v2/entreprise?api_token=${process.env.API_PAPPERS_KEY}&siret=${cleanSiret}`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-        }
-      );
+      const apiUrl = `https://api.pappers.fr/v2/entreprise?api_token=${process.env.API_PAPPERS_KEY}&siret=${cleanSiret}`;
+      console.log('🔍 Calling API Pappers with URL:', apiUrl.replace(process.env.API_PAPPERS_KEY!, '[API_KEY_HIDDEN]'));
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
 
+      console.log('🔍 API Pappers response status:', response.status, response.statusText);
+      
       if (!response.ok) {
-        console.error('API Pappers error:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('API Pappers error details:', errorText);
         return NextResponse.json(
           { error: 'SIRET non trouvé' },
           { status: 404 }
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await response.json();
+      console.log('🔍 Raw API Pappers response:', JSON.stringify(data, null, 2));
 
       // Map API Pappers response to our format
       const companyData = {
@@ -53,7 +57,7 @@ export async function POST(request: NextRequest) {
         sector: data.libelle_activite_principale || data.code_ape_entreprise || ''
       };
 
-      console.log('API Pappers response for SIRET', cleanSiret, ':', companyData);
+      console.log('🔍 Mapped company data for SIRET', cleanSiret, ':', companyData);
 
       return NextResponse.json(companyData);
     } catch (apiError) {
