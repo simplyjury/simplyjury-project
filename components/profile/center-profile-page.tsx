@@ -150,18 +150,19 @@ export default function CenterProfilePage() {
     if (!confirm('Êtes-vous sûr de vouloir supprimer votre logo ?')) return;
     
     try {
-      const response = await fetch('/api/profile/center', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ logoUrl: null }),
+      const response = await fetch('/api/upload/center-logo/delete', {
+        method: 'DELETE',
       });
       
       if (response.ok) {
         mutate();
         setSignedLogoUrl(null);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Erreur lors de la suppression du logo');
       }
     } catch (error) {
-      // Silent error handling
+      alert('Erreur lors de la suppression du logo');
     }
   };
 

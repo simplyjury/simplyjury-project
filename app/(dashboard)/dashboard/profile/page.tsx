@@ -13,7 +13,13 @@ function ProfileContent() {
   
   // Fetch user data to determine user type
   const { data: user } = useSWR('/api/user', fetcher);
-  const { data: juryProfileResponse } = useSWR('/api/profile/jury', fetcher);
+  
+  // Only fetch jury profile if user is potentially a jury
+  const shouldFetchJuryProfile = user?.userType === 'jury' || searchParams.get('profile') === 'jury';
+  const { data: juryProfileResponse } = useSWR(
+    shouldFetchJuryProfile ? '/api/profile/jury' : null, 
+    fetcher
+  );
   
   // Determine if user is jury using consistent detection logic from the document
   const isJury = searchParams.get('profile') === 'jury' || 
