@@ -14,7 +14,10 @@ function DashboardContent() {
   const router = useRouter();
   const profile = searchParams.get('profile');
   const { data: user } = useSWR('/api/user', fetcher);
-  const { data: juryProfile } = useSWR('/api/profile/jury', fetcher);
+  const { data: juryProfile } = useSWR(
+    user?.userType === 'jury' ? '/api/profile/jury' : null, 
+    fetcher
+  );
   
   // Redirect admin users to admin dashboard
   useEffect(() => {
