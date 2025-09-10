@@ -21,13 +21,9 @@ export async function middleware(request: NextRequest) {
 
   // Skip debug logging in production to avoid database calls
 
-  // Check for session cookie
-  console.log('🔍 MIDDLEWARE: Session cookie check:', { 
-    hasCookie: !!sessionCookie,
-    cookieValue: sessionCookie?.value ? `${sessionCookie.value.substring(0, 20)}...` : 'none'
-  });
+  // Only check session for protected routes
 
-  if (!sessionCookie) {
+  if (isProtectedRoute && !sessionCookie) {
     console.log('❌ MIDDLEWARE: No session cookie, redirecting to sign-in');
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
