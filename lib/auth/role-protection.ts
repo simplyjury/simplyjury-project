@@ -23,13 +23,16 @@ export async function getCurrentUser(): Promise<AuthenticatedUser> {
   const sessionCookie = cookieStore.get('session');
   
   if (!sessionCookie) {
+    console.log('🔍 getCurrentUser: No session cookie found');
     throw new Error('Not authenticated');
   }
 
   try {
     const session = await verifyToken(sessionCookie.value);
+    console.log('🔍 getCurrentUser: Session verified:', { userId: session?.userId, userType: session?.userType });
     
     if (!session?.userId) {
+      console.log('❌ getCurrentUser: Invalid session - no userId');
       throw new Error('Invalid session');
     }
 
@@ -44,12 +47,20 @@ export async function getCurrentUser(): Promise<AuthenticatedUser> {
       .where(eq(users.id, session.userId))
       .limit(1);
 
+    console.log('🔍 getCurrentUser: Database query result:', { 
+      found: !!user[0], 
+      userType: user[0]?.userType,
+      userId: user[0]?.id 
+    });
+
     if (!user[0]) {
+      console.log('❌ getCurrentUser: User not found in database');
       throw new Error('User not found');
     }
 
     return user[0] as AuthenticatedUser;
   } catch (error) {
+    console.error('❌ getCurrentUser error:', error);
     throw new Error('Authentication failed');
   }
 }
@@ -59,15 +70,25 @@ export async function getCurrentUser(): Promise<AuthenticatedUser> {
  */
 export async function requireRole(allowedRoles: UserRole | UserRole[], redirectTo: string = '/dashboard') {
   try {
+    console.log('🔍 requireRole: Checking roles:', { allowedRoles, redirectTo });
     const user = await getCurrentUser();
     const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
     
+    console.log('🔍 requireRole: User check result:', { 
+      userType: user.userType, 
+      allowedRoles: roles,
+      hasAccess: roles.includes(user.userType)
+    });
+    
     if (!roles.includes(user.userType)) {
+      console.log('🔄 requireRole: Redirecting due to insufficient role');
       redirect(redirectTo);
     }
     
+    console.log('✅ requireRole: Access granted');
     return user;
   } catch (error) {
+    console.error('❌ requireRole: Error, redirecting to sign-in:', error);
     redirect('/sign-in');
   }
 }
