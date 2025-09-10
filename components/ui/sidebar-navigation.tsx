@@ -24,7 +24,8 @@ import {
   BarChart3,
   MapPin,
   Download,
-  Activity
+  Activity,
+  Building
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
@@ -132,6 +133,11 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             name: 'Messagerie',
             href: '/dashboard/messages',
             icon: MessageSquare,
+          },
+          {
+            name: 'Contacter un centre',
+            href: '/dashboard/jury/centres',
+            icon: Building,
           },
         ],
       },

@@ -52,6 +52,7 @@ const getPageTitle = (pathname: string, isJury: boolean = false, isAdmin: boolea
     '/dashboard': { title: 'Tableau de bord', subtitle: 'Bonjour ! Voici un aperçu de votre activité sur SimplyJury' },
     '/dashboard/requests': { title: 'Mes demandes', subtitle: 'Consultez les demandes de missions reçues' },
     '/dashboard/messages': { title: 'Messagerie', subtitle: 'Gérez vos conversations avec les centres de formation' },
+    '/dashboard/jury/centres': { title: 'Annuaire des centres de formation', subtitle: 'Contactez directement les centres pour proposer vos services de jury professionnel' },
     '/dashboard/missions': { title: 'Missions réalisées', subtitle: 'Consultez l\'historique de vos missions' },
     '/dashboard/evaluations': { title: 'Mes évaluations', subtitle: 'Consultez les avis reçus' },
     '/dashboard/profile': { title: 'Mon profil', subtitle: 'Gérez vos informations personnelles et professionnelles' },

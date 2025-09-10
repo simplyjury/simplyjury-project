@@ -101,6 +101,7 @@ export const trainingCenters = pgTable('training_centers', {
   contactPersonRole: varchar('contact_person_role', { length: 100 }),
   contactPersonEmail: varchar('contact_person_email', { length: 255 }),
   contactPersonPhone: varchar('contact_person_phone', { length: 20 }),
+  logoUrl: text('logo_url'),
   isCertificateur: boolean('is_certificateur').default(false),
   certificationDomains: text('certification_domains').array(),
   subscriptionTier: varchar('subscription_tier', { length: 20 }).default('gratuit'),
