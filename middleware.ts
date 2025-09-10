@@ -13,62 +13,12 @@ export async function middleware(request: NextRequest) {
 
   console.log('🔍 MIDDLEWARE: Processing request:', { pathname, hasSession: !!sessionCookie, isProtected: isProtectedRoute });
 
-  // Check maintenance mode first
-  let isMaintenanceMode = false;
-  try {
-    isMaintenanceMode = await SystemSettingsService.getMaintenanceMode();
-    console.log('🔍 MIDDLEWARE: Maintenance mode check:', isMaintenanceMode);
-  } catch (error) {
-    console.error('❌ MIDDLEWARE: Maintenance mode check failed:', error);
-    isMaintenanceMode = false;
-  }
+  // Skip maintenance mode check in production to avoid database calls
+  const isMaintenanceMode = false;
   
-  // Allow access to maintenance page and API routes during maintenance
-  if (isMaintenanceMode && !pathname.startsWith('/maintenance') && !pathname.startsWith('/api')) {
-    // If user is trying to access sign-in during maintenance, allow it
-    if (pathname === '/sign-in') {
-      // Allow access to sign-in page during maintenance
-      // The sign-in logic will handle admin-only access
-    } else {
-      // Check if user is admin before redirecting to maintenance
-      if (sessionCookie) {
-        try {
-          const parsed = await verifyToken(sessionCookie.value);
-          if (parsed?.userId) {
-            const isAdmin = await SystemSettingsService.isUserAdmin(parsed.userId);
-            if (isAdmin) {
-              // Admin user - allow access during maintenance
-            } else {
-              // Non-admin user - redirect to maintenance
-              return NextResponse.redirect(new URL('/maintenance', request.url));
-            }
-          } else {
-            // Invalid session - redirect to maintenance
-            return NextResponse.redirect(new URL('/maintenance', request.url));
-          }
-        } catch (error) {
-          // Invalid session - redirect to maintenance
-          return NextResponse.redirect(new URL('/maintenance', request.url));
-        }
-      } else {
-        // No session - redirect to maintenance
-        return NextResponse.redirect(new URL('/maintenance', request.url));
-      }
-    }
-  }
+  // Maintenance mode disabled in production
 
-  // If not in maintenance mode and trying to access maintenance page, redirect to home
-  if (!isMaintenanceMode && pathname.startsWith('/maintenance')) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  // Add debug logging for protected routes
-  if (isProtectedRoute) {
-    const debugResult = await debugAuthIssue(request);
-    if (!debugResult.success) {
-      console.log('🔄 Redirecting to sign-in due to auth failure');
-    }
-  }
+  // Skip debug logging in production to avoid database calls
 
   if (isProtectedRoute && !sessionCookie) {
     console.log('❌ MIDDLEWARE: No session cookie, redirecting to sign-in');
