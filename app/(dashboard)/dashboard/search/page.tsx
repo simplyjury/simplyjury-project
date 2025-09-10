@@ -3,7 +3,14 @@ import SearchPageClient from './search-client';
 
 export default async function SearchPage() {
   // Server-side protection - only centers can access this page
-  await requireCenter();
+  console.log('🔍 SearchPage: Starting requireCenter check');
+  try {
+    await requireCenter();
+    console.log('✅ SearchPage: requireCenter passed');
+  } catch (error) {
+    console.error('❌ SearchPage: requireCenter failed:', error);
+    throw error;
+  }
   
   return <SearchPageClient />;
 }
