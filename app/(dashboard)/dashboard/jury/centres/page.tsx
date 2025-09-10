@@ -20,6 +20,7 @@ interface TrainingCenter {
   sector?: string;
   website?: string;
   description?: string;
+  logoUrl?: string;
   contactPersonName?: string;
   contactPersonRole?: string;
   contactPersonEmail?: string;
@@ -72,6 +73,17 @@ export default function CentersPage() {
   useEffect(() => {
     fetchCenters();
   }, []);
+
+  useEffect(() => {
+    fetchCenters(searchTerm);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (centers.length > 0) {
+      console.log('Frontend centers data:', centers[0]);
+      console.log('First center logoUrl:', centers[0].logoUrl);
+    }
+  }, [centers]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -170,8 +182,33 @@ export default function CentersPage() {
             <Card key={center.id} className="hover:shadow-lg transition-shadow duration-200">
               <CardHeader className="pb-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-[#fdce0f] to-[#fee88c] rounded-2xl flex items-center justify-center text-[#0d4a70] font-bold text-lg flex-shrink-0">
-                    {getInitials(center.name)}
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#fdce0f] to-[#fee88c] rounded-2xl flex items-center justify-center text-[#0d4a70] font-bold text-lg flex-shrink-0 overflow-hidden">
+                    {(() => {
+                      console.log(`Center ${center.id} (${center.name}) logoUrl:`, center.logoUrl);
+                      if (center.logoUrl) {
+                        return (
+                          <img 
+                            src={center.logoUrl} 
+                            alt={`Logo ${center.name}`}
+                            className="w-full h-full object-cover rounded-2xl"
+                            onLoad={() => console.log(`Logo loaded successfully for ${center.name}`)}
+                            onError={(e) => {
+                              console.log(`Logo failed to load for ${center.name}:`, center.logoUrl);
+                              // Fallback to initials if logo fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `<span class="text-[#0d4a70] font-bold text-lg">${getInitials(center.name)}</span>`;
+                              }
+                            }}
+                          />
+                        );
+                      } else {
+                        console.log(`No logo for ${center.name}, showing initials`);
+                        return getInitials(center.name);
+                      }
+                    })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-[#0d4a70] text-lg mb-1 break-words leading-tight">
@@ -228,18 +265,37 @@ export default function CentersPage() {
 
                 {/* Contact Information - Only show website, no confidential contact details */}
                 {center.website && (
-                  <div className="mb-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-3 w-3" />
-                      <a 
-                        href={center.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-[#13d090] hover:underline truncate"
-                      >
-                        Site web
-                      </a>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                      {center.logoUrl ? (
+                        <img 
+                          src={center.logoUrl} 
+                          alt={`Logo ${center.name}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to initials if logo fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `<span class="text-blue-600 font-semibold">${center.name.charAt(0).toUpperCase()}</span>`;
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="text-blue-600 font-semibold">
+                          {center.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
+                    <a 
+                      href={center.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[#13d090] hover:underline truncate"
+                    >
+                      Site web
+                    </a>
                   </div>
                 )}
 

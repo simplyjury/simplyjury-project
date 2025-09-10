@@ -25,7 +25,8 @@ import {
   MapPin,
   Download,
   Activity,
-  Building
+  Building,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
@@ -45,7 +46,7 @@ interface NavigationSection {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertificateur: boolean): NavigationSection[] {
+function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertificateur: boolean, unreadCount?: number): NavigationSection[] {
   if (userType === 'admin') {
     // Navigation for admin users
     return [
@@ -133,11 +134,12 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             name: 'Messagerie',
             href: '/dashboard/messages',
             icon: MessageSquare,
+            badge: unreadCount && unreadCount > 0 ? unreadCount : undefined,
           },
           {
-            name: 'Contacter un centre',
+            name: 'Annuaire des centres',
             href: '/dashboard/jury/centres',
-            icon: Building,
+            icon: BookOpen,
           },
         ],
       },
@@ -194,7 +196,7 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
         name: 'Messagerie',
         href: '/dashboard/messages',
         icon: MessageSquare,
-        badge: 3,
+        badge: unreadCount && unreadCount > 0 ? unreadCount : undefined,
       },
       {
         name: 'Mes demandes',
@@ -274,6 +276,10 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
     user?.userType === 'jury' ? '/api/profile/jury' : null, 
     fetcher
   );
+  const { data: unreadData } = useSWR('/api/unread-messages-count', fetcher, {
+    refreshInterval: 60000, // Refresh every 60 seconds instead of 10
+    revalidateOnFocus: false, // Disable focus revalidation
+  });
   
   // Determine user type ONLY from database - ignore URL parameters for security
   const isAdmin = user?.userType === 'admin';
@@ -283,7 +289,7 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
   const isCertificateur = centerProfile?.data?.isCertificateur || false;
   
   // Get navigation sections based on user type and certificateur status
-  const navigationSections = getNavigationSections(userType, isCertificateur);
+  const navigationSections = getNavigationSections(userType, isCertificateur, unreadData?.unreadCount);
 
   // Close mobile menu when clicking on a link
   const handleLinkClick = () => {
