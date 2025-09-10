@@ -45,22 +45,37 @@ export function ContactCenterModal({ center, isOpen, onClose }: ContactCenterMod
     setSubmitStatus('idle');
 
     try {
-      // TODO: Implement actual contact API call
-      // For now, simulate a successful submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSubmitStatus('success');
-      
-      // Reset form after success
-      setTimeout(() => {
-        setFormData({
-          subject: '',
-          message: '',
-          contactMethod: 'email'
-        });
-        setSubmitStatus('idle');
-        onClose();
-      }, 2000);
+      const response = await fetch('/api/contact-center', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          trainingCenterId: center.id,
+          subject: formData.subject,
+          message: formData.message,
+          contactMethod: formData.contactMethod
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus('success');
+        
+        // Reset form after success
+        setTimeout(() => {
+          setFormData({
+            subject: '',
+            message: '',
+            contactMethod: 'email'
+          });
+          setSubmitStatus('idle');
+          onClose();
+        }, 2000);
+      } else {
+        throw new Error(result.error || 'Erreur lors de l\'envoi');
+      }
       
     } catch (error) {
       setSubmitStatus('error');

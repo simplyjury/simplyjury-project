@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
         sector: trainingCenters.sector,
         website: trainingCenters.website,
         description: trainingCenters.description,
+        logoUrl: trainingCenters.logoUrl, // Include logo URL for display
         // Exclude confidential contact person fields for jury access
         // contactPersonName: trainingCenters.contactPersonName,
         // contactPersonRole: trainingCenters.contactPersonRole,
@@ -74,9 +75,47 @@ export async function GET(request: NextRequest) {
       .leftJoin(users, eq(trainingCenters.userId, users.id))
       .where(searchConditions);
 
+    // Debug: Log all centers to check why some are missing
+    console.log('All centers found:', centers.length);
+    console.log('Centers data:', JSON.stringify(centers, null, 2));
+
+    // Generate signed URLs for logos
+    const centersWithSignedUrls = await Promise.all(
+      centers.map(async (center) => {
+        if (center.logoUrl) {
+          try {
+            // Extract the file path from the public URL
+            const urlParts = center.logoUrl.split('/storage/v1/object/public/logo-centres/');
+            if (urlParts.length > 1) {
+              const filePath = urlParts[1];
+              
+              // Generate signed URL
+              const { createClient } = await import('@supabase/supabase-js');
+              const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!
+              );
+              
+              const { data } = await supabase.storage
+                .from('logo-centres')
+                .createSignedUrl(filePath, 3600); // 1 hour expiry
+              
+              return {
+                ...center,
+                logoUrl: data?.signedUrl || center.logoUrl
+              };
+            }
+          } catch (error) {
+            console.error('Error generating signed URL for center', center.id, error);
+          }
+        }
+        return center;
+      })
+    );
+
     return NextResponse.json({
-      centers,
-      count: centers.length
+      centers: centersWithSignedUrls,
+      count: centersWithSignedUrls.length
     });
 
   } catch (error) {

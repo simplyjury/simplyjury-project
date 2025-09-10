@@ -191,6 +191,35 @@ export const systemSettings = pgTable('system_settings', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+export const conversations = pgTable('conversations', {
+  id: serial('id').primaryKey(),
+  trainingCenterId: integer('training_center_id')
+    .references(() => trainingCenters.id, { onDelete: 'cascade' }),
+  juryId: integer('jury_id')
+    .references(() => users.id, { onDelete: 'cascade' }),
+  juryRequestId: integer('jury_request_id'),
+  status: varchar('status', { length: 20 }),
+  subject: varchar('subject'),
+  createdAt: timestamp('created_at'),
+  updatedAt: timestamp('updated_at'),
+  lastMessageAt: timestamp('last_message_at'),
+});
+
+export const messages = pgTable('messages', {
+  id: serial('id').primaryKey(),
+  conversationId: integer('conversation_id')
+    .references(() => conversations.id, { onDelete: 'cascade' }),
+  senderId: integer('sender_id')
+    .references(() => users.id, { onDelete: 'cascade' }),
+  senderType: varchar('sender_type', { length: 20 }),
+  content: text('content'),
+  messageType: varchar('message_type', { length: 20 }),
+  isRead: boolean('is_read'),
+  readAt: timestamp('read_at'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at'),
+});
+
 export const teamsRelations = relations(teams, ({ many }) => ({
   teamMembers: many(teamMembers),
   activityLogs: many(activityLogs),
