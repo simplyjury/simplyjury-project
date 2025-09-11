@@ -1,40 +1,63 @@
-// lib/auth/server-auth.ts
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth/session';
 
-export async function requireAuth() {
-  const cookieStore = cookies();
-  const sessionCookie = cookieStore.get('session');
+const protectedRoutes = '/dashboard';
 
-  if (!sessionCookie) {
-    redirect('/sign-in');
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isProtectedRoute = pathname.startsWith(protectedRoutes);
+  
+  console.log('🔍 SIMPLIFIED MIDDLEWARE:', {
+    pathname,
+    isProtectedRoute,
+    timestamp: new Date().toISOString(),
+    hasAuthSecret: !!process.env.AUTH_SECRET
+  });
+
+  // Only check authentication for protected routes
+  if (!isProtectedRoute) {
+    return NextResponse.next();
   }
 
+  // Check for session cookie
+  const sessionCookie = request.cookies.get('session');
+  
+  if (!sessionCookie) {
+    console.log('❌ No session cookie found - redirecting');
+    return NextResponse.redirect(new URL('/sign-in', request.url));
+  }
+
+  // Verify token without refreshing
   try {
     const sessionData = await verifyToken(sessionCookie.value);
     
+    // Simple expiration check
     if (sessionData.expires && new Date(sessionData.expires) < new Date()) {
-      redirect('/sign-in');
+      console.log('❌ Session expired - redirecting');
+      const response = NextResponse.redirect(new URL('/sign-in', request.url));
+      response.cookies.delete('session');
+      return response;
     }
 
-    return sessionData;
+    console.log('✅ Valid session found:', {
+      userId: sessionData.userId,
+      email: sessionData.email,
+      expires: sessionData.expires
+    });
+
+    // Don't refresh token - let API routes handle that
+    return NextResponse.next();
+    
   } catch (error) {
-    redirect('/sign-in');
+    console.log('❌ Token verification failed:', error.message);
+    const response = NextResponse.redirect(new URL('/sign-in', request.url));
+    response.cookies.delete('session');
+    return response;
   }
 }
 
-// Usage in page components (app/dashboard/search/page.tsx)
-import { requireAuth } from '@/lib/auth/server-auth';
-
-export default async function SearchPage() {
-  const user = await requireAuth(); // This will redirect if not authenticated
-  
-  return (
-    <div>
-      <h1>Search Dashboard</h1>
-      <p>Welcome, {user.email}</p>
-      {/* Your search component */}
-    </div>
-  );
-}
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  runtime: 'nodejs'
+};
