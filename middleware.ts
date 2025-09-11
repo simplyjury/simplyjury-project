@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
     
   } catch (error) {
-    console.log('❌ Token verification failed:', error.message);
+    console.log('❌ Token verification failed:', (error as Error).message);
     const response = NextResponse.redirect(new URL('/sign-in', request.url));
     response.cookies.delete('session');
     return response;
