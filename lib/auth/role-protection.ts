@@ -20,10 +20,23 @@ export interface AuthenticatedUser {
  */
 export async function getCurrentUser(): Promise<AuthenticatedUser> {
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('session');
+  
+  // Handle production cookie name changes (same as middleware)
+  let sessionCookie = cookieStore.get('session');
+  if (!sessionCookie && process.env.NODE_ENV === 'production') {
+    sessionCookie = cookieStore.get('__Secure-session') || 
+                   cookieStore.get('__Host-session');
+  }
+  
+  console.log('🔍 getCurrentUser: Cookie check:', {
+    hasSession: !!sessionCookie,
+    cookieName: sessionCookie?.name,
+    allCookies: Array.from(cookieStore.getAll()).map(c => c.name),
+    nodeEnv: process.env.NODE_ENV
+  });
   
   if (!sessionCookie) {
-    console.log('🔍 getCurrentUser: No session cookie found');
+    console.log('❌ getCurrentUser: No session cookie found');
     throw new Error('Not authenticated');
   }
 

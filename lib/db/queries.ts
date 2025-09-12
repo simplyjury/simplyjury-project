@@ -7,11 +7,21 @@ import { verifyToken } from '@/lib/auth/session';
 export async function getUser() {
   console.log('🔍 getUser: Starting authentication check - PRODUCTION DEBUG');
   
-  const sessionCookie = (await cookies()).get('session');
+  const cookieStore = await cookies();
+  
+  // Handle production cookie name changes (same as middleware)
+  let sessionCookie = cookieStore.get('session');
+  if (!sessionCookie && process.env.NODE_ENV === 'production') {
+    sessionCookie = cookieStore.get('__Secure-session') || 
+                   cookieStore.get('__Host-session');
+  }
+  
   console.log('🔍 getUser: Session cookie check:', { 
     hasCookie: !!sessionCookie, 
     cookieLength: sessionCookie?.value?.length,
-    cookieName: sessionCookie?.name 
+    cookieName: sessionCookie?.name,
+    allCookies: Array.from(cookieStore.getAll()).map(c => c.name),
+    nodeEnv: process.env.NODE_ENV
   });
   
   if (!sessionCookie || !sessionCookie.value) {
