@@ -19,24 +19,39 @@ export interface AuthenticatedUser {
  * Throws error if not authenticated
  */
 export async function getCurrentUser(): Promise<AuthenticatedUser> {
+  console.log('🔍 getCurrentUser: FUNCTION CALLED - Starting authentication check');
+  
   const cookieStore = await cookies();
   
-  // Handle production cookie name changes (same as middleware)
-  let sessionCookie = cookieStore.get('session');
-  if (!sessionCookie && process.env.NODE_ENV === 'production') {
-    sessionCookie = cookieStore.get('__Secure-session') || 
-                   cookieStore.get('__Host-session');
-  }
-  
-  console.log('🔍 getCurrentUser: Cookie check:', {
-    hasSession: !!sessionCookie,
-    cookieName: sessionCookie?.name,
-    allCookies: Array.from(cookieStore.getAll()).map(c => c.name),
+  // Log ALL cookies to see what's actually available
+  const allCookies = cookieStore.getAll();
+  console.log('🔍 getCurrentUser: All cookies available:', {
+    count: allCookies.length,
+    cookies: allCookies.map(c => ({ name: c.name, hasValue: !!c.value, valueLength: c.value?.length })),
     nodeEnv: process.env.NODE_ENV
   });
   
+  // Handle production cookie name changes (same as middleware)
+  let sessionCookie = cookieStore.get('session');
+  console.log('🔍 getCurrentUser: Found session cookie:', {
+    found: !!sessionCookie,
+    name: sessionCookie?.name,
+    hasValue: !!sessionCookie?.value,
+    valueLength: sessionCookie?.value?.length
+  });
+  
+  if (!sessionCookie && process.env.NODE_ENV === 'production') {
+    sessionCookie = cookieStore.get('__Secure-session') || 
+                   cookieStore.get('__Host-session');
+    console.log('🔍 getCurrentUser: Production cookie fallback:', {
+      found: !!sessionCookie,
+      name: sessionCookie?.name,
+      hasValue: !!sessionCookie?.value
+    });
+  }
+  
   if (!sessionCookie) {
-    console.log('❌ getCurrentUser: No session cookie found');
+    console.log('❌ getCurrentUser: No session cookie found - throwing error');
     throw new Error('Not authenticated');
   }
 
