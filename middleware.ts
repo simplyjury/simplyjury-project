@@ -4,7 +4,8 @@ import { signToken, verifyToken } from '@/lib/auth/session';
 import { SystemSettingsService } from '@/lib/services/system-settings-service';
 import { debugAuthIssue, logJWTError } from '@/lib/debug/auth-debug';
 
-const protectedRoutes = '/dashboard';
+const protectedRoutes = ['/dashboard'];
+const excludedRoutes = ['/dashboard/search']; // Allow public access to search
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -31,7 +32,9 @@ export async function middleware(request: NextRequest) {
     cookieValue: sessionCookie?.value?.substring(0, 20) + '...'
   });
   
-  const isProtectedRoute = pathname.startsWith(protectedRoutes);
+  // Check if route is protected and not excluded
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) && 
+                          !excludedRoutes.some(route => pathname.startsWith(route));
 
   // Enhanced production debugging
   console.log('🔍 MIDDLEWARE: Processing request:', { 
