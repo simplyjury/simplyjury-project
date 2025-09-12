@@ -5,6 +5,7 @@ import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getSession } from '@/lib/auth/session';
+import { notifyValidatorsOfNewJury } from '@/lib/actions/jury-validation-actions';
 
 export async function GET(request: NextRequest) {
   try {
@@ -94,6 +95,22 @@ export async function POST(request: NextRequest) {
 
       return { id: juryProfileId };
     });
+
+    // Send notification emails to validators after successful profile creation
+    try {
+      console.log('Sending validator notifications for new jury profile...');
+      const notificationResult = await notifyValidatorsOfNewJury(userId);
+      
+      if (notificationResult.success) {
+        console.log('Validator notifications sent successfully:', notificationResult.message);
+      } else {
+        console.error('Failed to send validator notifications:', notificationResult.error);
+        // Don't fail the profile creation if email notifications fail
+      }
+    } catch (emailError) {
+      console.error('Error sending validator notifications:', emailError);
+      // Continue with successful response even if email fails
+    }
 
     return NextResponse.json({ 
       success: true, 

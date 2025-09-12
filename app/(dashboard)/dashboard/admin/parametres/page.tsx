@@ -2,14 +2,57 @@
 
 import { Settings, Shield, Bell, Database, Mail, Key, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function ParametresPage() {
+  const router = useRouter();
+  const { data: user, error: userError, isLoading: userLoading } = useSWR('/api/user', fetcher);
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingMaintenanceState, setPendingMaintenanceState] = useState(false);
+
+  // Authorization check
+  useEffect(() => {
+    if (userLoading) return;
+    
+    if (userError || !user) {
+      router.push('/sign-in');
+      return;
+    }
+
+    if (user.userType !== 'admin') {
+      router.push('/dashboard');
+      return;
+    }
+
+    setIsAuthorized(true);
+  }, [user, userError, userLoading, router]);
+
+  // Show loading state while checking authorization
+  if (userLoading || !isAuthorized) {
+    return (
+      <section className="flex-1 p-4 lg:p-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Shield className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <div className="text-lg font-medium text-gray-600 mb-2">
+              Vérification des autorisations...
+            </div>
+            <div className="text-sm text-gray-500">
+              Veuillez patienter pendant que nous vérifions vos droits d'accès.
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   // Load current maintenance settings
   useEffect(() => {
