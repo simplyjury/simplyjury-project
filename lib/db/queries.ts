@@ -5,24 +5,36 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth/session';
 
 export async function getUser() {
-  console.log('🔍 getUser: Starting authentication check - PRODUCTION DEBUG');
+  console.log('🔍 getUser: FUNCTION CALLED - Starting authentication check');
   
   const cookieStore = await cookies();
   
+  // Log ALL cookies to see what's actually available
+  const allCookies = cookieStore.getAll();
+  console.log('🔍 getUser: All cookies available:', {
+    count: allCookies.length,
+    cookies: allCookies.map(c => ({ name: c.name, hasValue: !!c.value, valueLength: c.value?.length })),
+    nodeEnv: process.env.NODE_ENV
+  });
+  
   // Handle production cookie name changes (same as middleware)
   let sessionCookie = cookieStore.get('session');
+  console.log('🔍 getUser: Found session cookie:', {
+    found: !!sessionCookie,
+    name: sessionCookie?.name,
+    hasValue: !!sessionCookie?.value,
+    valueLength: sessionCookie?.value?.length
+  });
+  
   if (!sessionCookie && process.env.NODE_ENV === 'production') {
     sessionCookie = cookieStore.get('__Secure-session') || 
                    cookieStore.get('__Host-session');
+    console.log('🔍 getUser: Production cookie fallback:', {
+      found: !!sessionCookie,
+      name: sessionCookie?.name,
+      hasValue: !!sessionCookie?.value
+    });
   }
-  
-  console.log('🔍 getUser: Session cookie check:', { 
-    hasCookie: !!sessionCookie, 
-    cookieLength: sessionCookie?.value?.length,
-    cookieName: sessionCookie?.name,
-    allCookies: Array.from(cookieStore.getAll()).map(c => c.name),
-    nodeEnv: process.env.NODE_ENV
-  });
   
   if (!sessionCookie || !sessionCookie.value) {
     console.log('❌ getUser: No session cookie found');
