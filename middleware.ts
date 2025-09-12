@@ -1,60 +1,105 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/auth/session';
+import { signToken, verifyToken } from '@/lib/auth/session';
+import { SystemSettingsService } from '@/lib/services/system-settings-service';
+import { debugAuthIssue, logJWTError } from '@/lib/debug/auth-debug';
 
 const protectedRoutes = '/dashboard';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isProtectedRoute = pathname.startsWith(protectedRoutes);
   
-  console.log('🔍 SIMPLIFIED MIDDLEWARE:', {
-    pathname,
-    isProtectedRoute,
-    timestamp: new Date().toISOString(),
-    hasAuthSecret: !!process.env.AUTH_SECRET
+  // Handle production cookie name changes (from Next.js report)
+  let sessionCookie = request.cookies.get('session');
+  if (!sessionCookie && process.env.NODE_ENV === 'production') {
+    // Check for secure cookie variants in production
+    sessionCookie = request.cookies.get('__Secure-session') || 
+                   request.cookies.get('__Host-session');
+  }
+  
+  const isProtectedRoute = pathname.startsWith(protectedRoutes);
+
+  // Enhanced production debugging
+  console.log('🔍 MIDDLEWARE: Processing request:', { 
+    pathname, 
+    hasSession: !!sessionCookie, 
+    isProtected: isProtectedRoute,
+    environment: process.env.NODE_ENV,
+    host: request.headers.get('host'),
+    userAgent: request.headers.get('user-agent')?.substring(0, 50),
+    cookieValue: sessionCookie?.value ? `${sessionCookie.value.substring(0, 20)}...` : 'none'
   });
 
-  // Only check authentication for protected routes
-  if (!isProtectedRoute) {
-    return NextResponse.next();
-  }
-
-  // Check for session cookie
-  const sessionCookie = request.cookies.get('session');
+  // Skip maintenance mode check in production to avoid database calls
+  const isMaintenanceMode = false;
   
-  if (!sessionCookie) {
-    console.log('❌ No session cookie found - redirecting');
+  // Maintenance mode disabled in production
+
+  // Skip debug logging in production to avoid database calls
+
+  if (isProtectedRoute && !sessionCookie) {
+    console.log('❌ MIDDLEWARE: No session cookie, redirecting to sign-in', {
+      pathname,
+      allCookies: Object.fromEntries(request.cookies.getAll().map(c => [c.name, c.value.substring(0, 10) + '...'])),
+      headers: {
+        host: request.headers.get('host'),
+        'x-forwarded-proto': request.headers.get('x-forwarded-proto'),
+        'x-forwarded-host': request.headers.get('x-forwarded-host')
+      }
+    });
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
 
-  // Verify token without refreshing
-  try {
-    const sessionData = await verifyToken(sessionCookie.value);
-    
-    // Simple expiration check
-    if (sessionData.expires && new Date(sessionData.expires) < new Date()) {
-      console.log('❌ Session expired - redirecting');
-      const response = NextResponse.redirect(new URL('/sign-in', request.url));
-      response.cookies.delete('session');
-      return response;
+  let res = NextResponse.next();
+  
+  // Disable caching for proper cookie handling (from Next.js report)
+  res.headers.set("x-middleware-cache", "no-cache");
+
+  if (sessionCookie && request.method === 'GET') {
+    try {
+      const parsed = await verifyToken(sessionCookie.value);
+      const expiresInOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      const cookieOptions: any = {
+        name: 'session',
+        value: await signToken({
+          ...parsed,
+          expires: expiresInOneDay.toISOString()
+        }),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        expires: expiresInOneDay
+      };
+
+      // Handle domain for Vercel production (avoid .vercel.app domain issues)
+      if (process.env.NODE_ENV === 'production') {
+        const host = request.headers.get('host');
+        if (host && !host.includes('.vercel.app')) {
+          cookieOptions.domain = host;
+        }
+      }
+
+      res.cookies.set(cookieOptions);
+    } catch (error) {
+      logJWTError(error, 'middleware session refresh');
+      console.log('❌ MIDDLEWARE: JWT verification failed, redirecting to sign-in', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorType: error?.constructor?.name,
+        pathname,
+        cookieExists: !!sessionCookie,
+        cookieLength: sessionCookie?.value?.length,
+        authSecretExists: !!process.env.AUTH_SECRET,
+        authSecretLength: process.env.AUTH_SECRET?.length
+      });
+      res.cookies.delete('session');
+      if (isProtectedRoute) {
+        return NextResponse.redirect(new URL('/sign-in', request.url));
+      }
     }
-
-    console.log('✅ Valid session found:', {
-      userId: sessionData.userId,
-      email: sessionData.email,
-      expires: sessionData.expires
-    });
-
-    // Don't refresh token - let API routes handle that
-    return NextResponse.next();
-    
-  } catch (error) {
-    console.log('❌ Token verification failed:', (error as Error).message);
-    const response = NextResponse.redirect(new URL('/sign-in', request.url));
-    response.cookies.delete('session');
-    return response;
   }
+
+  return res;
 }
 
 export const config = {
