@@ -9,13 +9,27 @@ const protectedRoutes = '/dashboard';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // PRODUCTION DEBUG: Log all cookies and environment
+  console.log('🔍 MIDDLEWARE DEBUG:', {
+    pathname,
+    nodeEnv: process.env.NODE_ENV,
+    host: request.headers.get('host'),
+    allCookies: Object.fromEntries(request.cookies.getAll().map(c => [c.name, c.value?.substring(0, 20) + '...'])),
+    cookieNames: request.cookies.getAll().map(c => c.name)
+  });
+  
   // Handle production cookie name changes (from Next.js report)
   let sessionCookie = request.cookies.get('session');
   if (!sessionCookie && process.env.NODE_ENV === 'production') {
-    // Check for secure cookie variants in production
     sessionCookie = request.cookies.get('__Secure-session') || 
                    request.cookies.get('__Host-session');
   }
+  
+  console.log('🔍 MIDDLEWARE SESSION CHECK:', {
+    hasSessionCookie: !!sessionCookie,
+    cookieName: sessionCookie?.name,
+    cookieValue: sessionCookie?.value?.substring(0, 20) + '...'
+  });
   
   const isProtectedRoute = pathname.startsWith(protectedRoutes);
 
