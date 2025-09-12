@@ -3,6 +3,7 @@ import { db } from '@/lib/db/drizzle';
 import { users, juryProfiles } from '@/lib/db/schema';
 import { eq, and, ilike, or, sql } from 'drizzle-orm';
 import { createClient } from '@supabase/supabase-js';
+import { getUser } from '@/lib/db/queries';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,6 +12,22 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
+    // Get current user and verify they are a center
+    const user = await getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Non autorisé' },
+        { status: 401 }
+      );
+    }
+
+    if (user.userType !== 'centre') {
+      return NextResponse.json(
+        { error: 'Accès réservé aux centres de formation' },
+        { status: 403 }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
     const region = searchParams.get('region') || '';
