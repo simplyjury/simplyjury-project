@@ -70,8 +70,23 @@ export async function middleware(request: NextRequest) {
   res.headers.set("x-middleware-cache", "no-cache");
 
   if (sessionCookie && request.method === 'GET') {
+    console.log('🔍 MIDDLEWARE: Attempting JWT verification for:', {
+      pathname,
+      cookieLength: sessionCookie.value.length,
+      cookieStart: sessionCookie.value.substring(0, 30) + '...',
+      authSecretExists: !!process.env.AUTH_SECRET,
+      authSecretLength: process.env.AUTH_SECRET?.length
+    });
+    
     try {
       const parsed = await verifyToken(sessionCookie.value);
+      console.log('✅ MIDDLEWARE: JWT verification successful:', {
+        pathname,
+        userId: parsed?.userId,
+        userType: parsed?.userType,
+        hasExpires: !!parsed?.expires
+      });
+      
       const expiresInOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       const cookieOptions: any = {
