@@ -46,7 +46,7 @@ interface NavigationSection {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertificateur: boolean, unreadCount?: number): NavigationSection[] {
+function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertificateur: boolean, unreadCount?: number, pendingJuryCount?: number): NavigationSection[] {
   if (userType === 'admin') {
     // Navigation for admin users
     return [
@@ -62,7 +62,7 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             name: 'Validation profils',
             href: '/dashboard/admin/validation-profils',
             icon: CheckCircle,
-            badge: 7,
+            badge: pendingJuryCount && pendingJuryCount > 0 ? pendingJuryCount : undefined,
           },
           {
             name: 'Gestion utilisateurs',
@@ -281,6 +281,16 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
     revalidateOnFocus: false, // Disable focus revalidation
   });
   
+  // Fetch pending jury count for admin users
+  const { data: pendingJuryData } = useSWR(
+    user?.userType === 'admin' ? '/api/admin/pending-jury-count' : null,
+    fetcher,
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+      revalidateOnFocus: false,
+    }
+  );
+  
   // Determine user type ONLY from database - ignore URL parameters for security
   const isAdmin = user?.userType === 'admin';
   const isJury = user?.userType === 'jury';
@@ -289,7 +299,7 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
   const isCertificateur = centerProfile?.data?.isCertificateur || false;
   
   // Get navigation sections based on user type and certificateur status
-  const navigationSections = getNavigationSections(userType, isCertificateur, unreadData?.unreadCount);
+  const navigationSections = getNavigationSections(userType, isCertificateur, unreadData?.unreadCount, pendingJuryData?.count);
 
   // Close mobile menu when clicking on a link
   const handleLinkClick = () => {

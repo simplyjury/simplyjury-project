@@ -213,4 +213,54 @@ export class AuthService {
 
     return user;
   }
+
+  static async verifyToken(request: Request): Promise<{ success: boolean; user?: any; error?: string }> {
+    try {
+      const authHeader = request.headers.get('authorization');
+      const cookieHeader = request.headers.get('cookie');
+      
+      let token: string | null = null;
+      
+      // Try to get token from Authorization header
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+      
+      // Try to get token from cookies if not in header
+      if (!token && cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Look for session cookie (used by this app) or auth-token
+        token = cookies['session'] || cookies['auth-token'];
+      }
+      
+      if (!token) {
+        return { success: false, error: 'Token manquant' };
+      }
+      
+      const payload = await this.verifyJWT(token);
+      const user = await this.getUserWithProfile(payload.userId);
+      
+      if (!user) {
+        return { success: false, error: 'Utilisateur non trouvé' };
+      }
+      
+      return { 
+        success: true, 
+        user: {
+          id: user.id,
+          email: user.email,
+          userType: user.userType,
+          isValidator: user.isValidator,
+          name: user.name
+        }
+      };
+    } catch (error) {
+      return { success: false, error: 'Token invalide' };
+    }
+  }
 }

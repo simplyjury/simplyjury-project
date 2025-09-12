@@ -3,6 +3,8 @@ import { WelcomeEmail } from '@/components/emails/welcome-email';
 import { VerificationEmail } from '@/components/emails/verification-email';
 import { PasswordResetEmail } from '@/components/emails/password-reset-email';
 import { ProfileValidationEmail } from '@/components/emails/profile-validation-email';
+import { JuryValidationRequest } from '@/components/emails/jury-validation-request';
+import { JuryProfileValidationEmail } from '@/components/emails/jury-profile-validation-email';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy-key-for-build');
 
@@ -116,6 +118,68 @@ export class EmailService {
     } catch (error) {
       console.error('Error sending resend verification email:', error);
       throw new Error('Failed to send resend verification email');
+    }
+  }
+
+  static async sendJuryValidationRequest(
+    validatorEmail: string,
+    validatorName: string,
+    juryData: {
+      firstName: string;
+      lastName: string;
+      region: string;
+      city?: string;
+      hourlyRate?: number;
+      profilePhotoUrl?: string;
+      expertiseDomains?: string[];
+    }
+  ) {
+    const subject = `Nouveau profil jury à valider - ${juryData.firstName} ${juryData.lastName}`;
+    
+    try {
+      this.checkApiKey();
+      return await resend.emails.send({
+        from: this.FROM_EMAIL,
+        to: validatorEmail,
+        subject,
+        react: JuryValidationRequest({
+          validatorName,
+          juryFirstName: juryData.firstName,
+          juryLastName: juryData.lastName,
+          juryRegion: juryData.region,
+          juryCity: juryData.city,
+          juryHourlyRate: juryData.hourlyRate,
+          juryProfilePhotoUrl: juryData.profilePhotoUrl,
+          juryExpertiseDomains: juryData.expertiseDomains,
+        }),
+      });
+    } catch (error) {
+      console.error('Error sending jury validation request email:', error);
+      throw new Error('Failed to send jury validation request email');
+    }
+  }
+
+  static async sendJuryProfileValidationEmail(
+    email: string, 
+    juryName: string, 
+    status: 'validated' | 'rejected',
+    comment?: string
+  ) {
+    const subject = status === 'validated' 
+      ? 'Félicitations ! Votre profil jury a été validé - SimplyJury'
+      : 'Votre profil jury nécessite des modifications - SimplyJury';
+      
+    try {
+      this.checkApiKey();
+      return await resend.emails.send({
+        from: this.FROM_EMAIL,
+        to: email,
+        subject,
+        react: JuryProfileValidationEmail({ juryName, status, comment }),
+      });
+    } catch (error) {
+      console.error('Error sending jury profile validation email:', error);
+      throw new Error('Failed to send jury profile validation email');
     }
   }
 }

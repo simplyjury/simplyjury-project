@@ -25,6 +25,7 @@ export const users = pgTable('users', {
   profileCompleted: boolean('profile_completed').default(false),
   validationStatus: varchar('validation_status', { length: 20 }).default('pending'),
   validationComment: text('validation_comment'),
+  isValidator: boolean('is_validator').default(false),
   lastLogin: timestamp('last_login'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
