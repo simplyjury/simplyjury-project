@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, Grid, List, MapPin, Star, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+// Removed unused Select import - using native HTML select elements
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
