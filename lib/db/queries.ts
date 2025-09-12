@@ -5,18 +5,37 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth/session';
 
 export async function getUser() {
+  console.log('🔍 getUser: Starting authentication check - PRODUCTION DEBUG');
+  
   const sessionCookie = (await cookies()).get('session');
+  console.log('🔍 getUser: Session cookie check:', { 
+    hasCookie: !!sessionCookie, 
+    cookieLength: sessionCookie?.value?.length,
+    cookieName: sessionCookie?.name 
+  });
+  
   if (!sessionCookie || !sessionCookie.value) {
+    console.log('❌ getUser: No session cookie found');
     return null;
   }
 
   try {
+    console.log('🔍 getUser: Attempting JWT verification...');
     // Use same verifyToken as middleware for consistency
     const sessionData = await verifyToken(sessionCookie.value);
+    console.log('✅ getUser: JWT verification successful:', { 
+      userId: sessionData?.userId, 
+      userType: sessionData?.userType,
+      hasExpiration: !!sessionData?.expires 
+    });
+    
     if (!sessionData || !sessionData.userId || typeof sessionData.userId !== 'number') {
+      console.log('❌ getUser: Invalid session data structure');
       return null;
     }
 
+    console.log('🔍 getUser: Querying database for user ID:', sessionData.userId);
+    
     const user = await db
       .select()
       .from(users)
@@ -24,12 +43,18 @@ export async function getUser() {
       .limit(1);
 
     if (user.length === 0) {
+      console.log('❌ getUser: User not found in database');
       return null;
     }
 
+    console.log('✅ getUser: User found in database:', { 
+      userId: user[0].id, 
+      userType: user[0].userType,
+      email: user[0].email?.substring(0, 10) + '...'
+    });
     return user[0];
   } catch (error) {
-    console.error('JWT verification failed:', error);
+    console.error('❌ getUser: JWT verification failed:', error);
     return null;
   }
 }

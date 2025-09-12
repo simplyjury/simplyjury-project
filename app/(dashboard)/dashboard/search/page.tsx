@@ -3,7 +3,7 @@ import SearchPageClient from './search-client';
 
 export default async function SearchPage() {
   // Server-side protection - only centers can access this page
-  console.log('🔍 SearchPage: Starting requireCenter check');
+  console.log('🔍 SearchPage: Starting server-side auth check - PRODUCTION DEBUG');
   
   try {
     const user = await requireCenter();
@@ -13,8 +13,7 @@ export default async function SearchPage() {
     });
   } catch (error) {
     console.error('❌ SearchPage: requireCenter failed:', error);
-    // Let the error propagate to trigger the redirect
-    throw error;
+    throw error; // This will cause redirect to sign-in
   }
   
   return <SearchPageClient />;
