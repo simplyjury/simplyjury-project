@@ -5,7 +5,7 @@ import { SystemSettingsService } from '@/lib/services/system-settings-service';
 import { debugAuthIssue, logJWTError } from '@/lib/debug/auth-debug';
 
 const protectedRoutes = ['/dashboard'];
-const excludedRoutes = ['/dashboard/search']; // Allow public access to search
+const excludedRoutes: string[] = []; // No excluded routes - all dashboard routes require authentication
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
