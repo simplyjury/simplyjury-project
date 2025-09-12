@@ -7,7 +7,7 @@ import { EmailService } from '@/lib/email/resend-service';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     // Verify authentication and admin access
@@ -21,7 +21,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    const userId = parseInt(params.userId);
+    const resolvedParams = await params;
+    const userId = parseInt(resolvedParams.userId);
     if (isNaN(userId)) {
       return NextResponse.json({ error: 'ID utilisateur invalide' }, { status: 400 });
     }
