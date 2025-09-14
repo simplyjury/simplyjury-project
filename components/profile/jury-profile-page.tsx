@@ -50,7 +50,7 @@ export default function JuryProfilePage() {
         certifications: profile.certifications || [],
         experienceYears: profile.experienceYears || 0,
         currentPosition: profile.currentPosition || '',
-        company: profile.company || '',
+        company: profile.currentCompany || '',
         workModalities: profile.workModalities || [],
         interventionZones: profile.interventionZones || [],
         hourlyRate: profile.hourlyRate || '',
@@ -102,7 +102,7 @@ export default function JuryProfilePage() {
         certifications: profile.certifications || [],
         experienceYears: profile.experienceYears || 0,
         currentPosition: profile.currentPosition || '',
-        company: profile.company || '',
+        company: profile.currentCompany || '',
         workModalities: profile.workModalities || [],
         interventionZones: profile.interventionZones || [],
         hourlyRate: profile.hourlyRate || '',
@@ -148,11 +148,17 @@ export default function JuryProfilePage() {
         }
       }
 
-      // Then save profile data
+      // Then save profile data - map frontend field names to backend field names
+      const { company, ...restFormData } = formData;
+      const backendData = {
+        ...restFormData,
+        currentCompany: company, // Map company to currentCompany
+      };
+      
       const response = await fetch('/api/profile/jury', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(backendData),
       });
       
       if (response.ok) {
@@ -543,7 +549,7 @@ export default function JuryProfilePage() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
               />
             ) : (
-              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.company}</p>
+              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.currentCompany}</p>
             )}
           </div>
             </div>
@@ -1030,6 +1036,26 @@ export default function JuryProfilePage() {
                     <p className="text-sm text-gray-400">Cliquez sur "Ajouter une période" pour commencer</p>
                   )}
                 </div>
+              )}
+            </div>
+
+            {/* Hourly Rate Section */}
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Tarif horaire (€)</label>
+              {editingSection === 4 ? (
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.hourlyRate}
+                  onChange={(e) => handleInputChange('hourlyRate', e.target.value)}
+                  placeholder="150.00"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+                />
+              ) : (
+                <p className="px-4 py-3 bg-gray-50 rounded-lg">
+                  {profile.hourlyRate ? `${profile.hourlyRate} €` : 'Non renseigné'}
+                </p>
               )}
             </div>
           </div>

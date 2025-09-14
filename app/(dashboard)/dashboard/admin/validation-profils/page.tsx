@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Filter, CheckCircle, XCircle, User, Clock, MapPin, Briefcase, Shield } from 'lucide-react';
 import useSWR, { mutate } from 'swr';
 import { ValidationConfirmationModal } from '@/components/admin/validation-confirmation-modal';
+import { JuryProfileDetailsModal } from '@/components/admin/jury-profile-details-modal';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -53,6 +54,10 @@ export default function ValidationProfilsPage() {
     userName: string;
   } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [profileDetailsModal, setProfileDetailsModal] = useState<{
+    isOpen: boolean;
+    profile: any | null;
+  }>({ isOpen: false, profile: null });
 
   // Build API URL with filters
   const buildApiUrl = () => {
@@ -149,6 +154,51 @@ export default function ValidationProfilsPage() {
     if (!isUpdating) {
       setModalState(null);
     }
+  };
+
+  // Handle profile details modal
+  const handleViewProfile = async (profile: any) => {
+    try {
+      // Fetch full profile details from API
+      const response = await fetch(`/api/profile/jury/${profile.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile details');
+      }
+      const profileData = await response.json();
+      
+      // Combine user data with profile data
+      const fullProfile = {
+        id: profile.id,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        phone: profileData.data?.phone,
+        profilePhotoUrl: profile.profilePhotoUrl,
+        city: profile.city,
+        region: profile.region,
+        currentPosition: profile.currentPosition,
+        currentCompany: profileData.data?.currentCompany,
+        experienceYears: profile.experienceYears,
+        hourlyRate: profile.hourlyRate,
+        bio: profileData.data?.bio,
+        expertiseDomains: profile.expertiseDomains,
+        certifications: profileData.data?.certifications,
+        workModalities: profileData.data?.workModalities,
+        interventionZones: profileData.data?.interventionZones,
+        availabilityPreferences: profileData.data?.availabilityPreferences,
+        createdAt: profile.createdAt
+      };
+      
+      setProfileDetailsModal({ isOpen: true, profile: fullProfile });
+    } catch (error) {
+      console.error('Error fetching profile details:', error);
+      // Fallback to basic profile data
+      setProfileDetailsModal({ isOpen: true, profile });
+    }
+  };
+
+  const handleCloseProfileModal = () => {
+    setProfileDetailsModal({ isOpen: false, profile: null });
   };
 
   // Show loading state while checking authorization
@@ -291,7 +341,10 @@ export default function ValidationProfilsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="mb-2">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-gray-900 text-sm sm:text-base">
+                          <h4 
+                            className="font-semibold text-gray-900 text-sm sm:text-base cursor-pointer hover:text-[#13d090] transition-colors"
+                            onClick={() => handleViewProfile(profile)}
+                          >
                             {profile.firstName} {profile.lastName}
                           </h4>
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
@@ -335,7 +388,11 @@ export default function ValidationProfilsPage() {
                     >
                       <XCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-full flex-shrink-0" title="Voir le profil">
+                    <button 
+                      onClick={() => handleViewProfile(profile)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-full flex-shrink-0" 
+                      title="Voir le profil"
+                    >
                       <User className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
@@ -361,6 +418,13 @@ export default function ValidationProfilsPage() {
           isLoading={isUpdating}
         />
       )}
+
+      {/* Jury Profile Details Modal */}
+      <JuryProfileDetailsModal
+        isOpen={profileDetailsModal.isOpen}
+        onClose={handleCloseProfileModal}
+        profile={profileDetailsModal.profile}
+      />
     </section>
   );
 }
