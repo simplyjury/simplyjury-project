@@ -128,6 +128,7 @@ export const juryProfiles = pgTable('jury_profiles', {
   certifications: text('certifications').array(),
   experienceYears: integer('experience_years'),
   currentPosition: varchar('current_position', { length: 200 }),
+  currentCompany: varchar('current_company', { length: 255 }),
   availabilityPreferences: jsonb('availability_preferences'),
   workModalities: text('work_modalities').array(),
   interventionZones: text('intervention_zones').array(),

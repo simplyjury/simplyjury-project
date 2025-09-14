@@ -177,7 +177,15 @@ function UserMenu() {
           {user.email}
         </div>
         <div className="flex items-center space-x-2 text-xs text-gray-500">
-          <span>✅ Compte vérifié</span>
+          {user.validationStatus === 'validated' ? (
+            <span>✅ Compte vérifié</span>
+          ) : user.validationStatus === 'pending' ? (
+            <span>⏳ Validation en attente</span>
+          ) : user.validationStatus === 'rejected' ? (
+            <span>❌ Compte rejeté</span>
+          ) : (
+            <span>⏳ Statut en cours de vérification</span>
+          )}
         </div>
       </div>
       <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>

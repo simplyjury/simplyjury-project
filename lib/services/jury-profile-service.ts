@@ -27,10 +27,44 @@ export class JuryProfileService {
   }
 
   static async updateProfile(userId: number, data: Partial<Omit<NewJuryProfile, 'userId'>>) {
+    // Clean up numeric fields - convert empty strings to null
+    const cleanedData = { ...data };
+    
+    if ('hourlyRate' in cleanedData) {
+      if (cleanedData.hourlyRate === null || cleanedData.hourlyRate === undefined) {
+        cleanedData.hourlyRate = null;
+      } else if (typeof cleanedData.hourlyRate === 'string') {
+        if (cleanedData.hourlyRate === '') {
+          cleanedData.hourlyRate = null;
+        }
+        // If it's a valid string number, leave it as is since decimal fields can accept string numbers
+      }
+    }
+    
+    if ('experienceYears' in cleanedData) {
+      if (cleanedData.experienceYears === null || cleanedData.experienceYears === undefined) {
+        cleanedData.experienceYears = null;
+      } else if (typeof cleanedData.experienceYears === 'string') {
+        if (cleanedData.experienceYears === '') {
+          cleanedData.experienceYears = null;
+        } else {
+          const parsed = parseInt(cleanedData.experienceYears);
+          cleanedData.experienceYears = isNaN(parsed) ? null : parsed;
+        }
+      }
+    }
+
+    // Handle currentCompany field - ensure empty strings are handled properly
+    if ('currentCompany' in cleanedData) {
+      if (cleanedData.currentCompany === '') {
+        cleanedData.currentCompany = null;
+      }
+    }
+
     const [updated] = await db
       .update(juryProfiles)
       .set({
-        ...data,
+        ...cleanedData,
         updatedAt: new Date(),
       })
       .where(eq(juryProfiles.userId, userId))
