@@ -4,22 +4,33 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { FileText, Search, Filter, Clock, CheckCircle, XCircle, Calendar, MapPin, Users, MessageCircle, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import RequestDetailsModal from '@/components/jury/request-details-modal';
+import { useJuryRequestCount } from '@/lib/hooks/use-jury-request-count';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 interface JuryRequest {
   id: number;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
+  certification_title: string;
   certification_type: string;
+  certification_code?: string;
   session_date: string;
+  session_start_time?: string;
+  session_end_time?: string;
   candidate_count: number;
   modality: 'presentiel' | 'visio' | 'hybride';
+  session_location?: string;
   location?: string;
+  transport_covered: boolean;
+  meals_covered: boolean;
+  accommodation_covered: boolean;
+  custom_message?: string;
   created_at: string;
   training_centers: {
     name: string;
@@ -388,6 +399,9 @@ function JuryRequestsPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRequest, setSelectedRequest] = useState<JuryRequest | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { decrementRequestCount } = useJuryRequestCount();
 
   useEffect(() => {
     fetchRequests();
@@ -472,6 +486,106 @@ function JuryRequestsPage() {
     });
   };
 
+  const handleViewRequest = (request: JuryRequest) => {
+    setSelectedRequest(request);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedRequest(null);
+  };
+
+  const handleAcceptRequest = async (requestId: number) => {
+    try {
+      const response = await fetch(`/api/jury-requests/${requestId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'accepted' }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update the request in the local state
+        setRequests(prevRequests =>
+          prevRequests.map(req =>
+            req.id === requestId ? { ...req, status: 'accepted' } : req
+          )
+        );
+        
+        // Update stats
+        setStats(prevStats => ({
+          ...prevStats,
+          pending: prevStats.pending - 1,
+          accepted: prevStats.accepted + 1
+        }));
+
+        // Close modal and show success message
+        handleCloseModal();
+        
+        // Update the jury request count in sidebar
+        decrementRequestCount();
+        
+        // You could add a toast notification here
+        console.log(result.message);
+      } else {
+        console.error('Error accepting request:', result.error);
+        // You could add error handling/toast here
+      }
+    } catch (error) {
+      console.error('Error accepting request:', error);
+      // You could add error handling/toast here
+    }
+  };
+
+  const handleDeclineRequest = async (requestId: number) => {
+    try {
+      const response = await fetch(`/api/jury-requests/${requestId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'declined' }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update the request in the local state
+        setRequests(prevRequests =>
+          prevRequests.map(req =>
+            req.id === requestId ? { ...req, status: 'declined' } : req
+          )
+        );
+        
+        // Update stats
+        setStats(prevStats => ({
+          ...prevStats,
+          pending: prevStats.pending - 1,
+          declined: prevStats.declined + 1
+        }));
+
+        // Close modal and show success message
+        handleCloseModal();
+        
+        // Update the jury request count in sidebar
+        decrementRequestCount();
+        
+        // You could add a toast notification here
+        console.log(result.message);
+      } else {
+        console.error('Error declining request:', result.error);
+        // You could add error handling/toast here
+      }
+    } catch (error) {
+      console.error('Error declining request:', error);
+      // You could add error handling/toast here
+    }
+  };
+
   const filteredRequests = requests.filter(request =>
     request.training_centers.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     request.certification_type.toLowerCase().includes(searchQuery.toLowerCase())
@@ -493,15 +607,23 @@ function JuryRequestsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[#0d4a70] mb-2">Mes demandes reçues</h1>
-            <p className="text-gray-600">Consultez les demandes de missions reçues</p>
+            <h1 className="text-3xl font-bold text-[#0d4a70] mb-2">Mes demandes de missions</h1>
+            <p className="text-gray-600">Consultez vos demandes reçues et missions à venir</p>
           </div>
-          {stats.pending > 0 && (
-            <div className="bg-gradient-to-r from-[#fdce0f] to-[#fee88c] text-[#0d4a70] px-4 py-2 rounded-full font-semibold text-sm flex items-center gap-2 animate-pulse">
-              <Clock className="w-4 h-4" />
-              {stats.pending} nouvelle{stats.pending > 1 ? 's' : ''} demande{stats.pending > 1 ? 's' : ''}
-            </div>
-          )}
+          <div className="flex gap-3">
+            {stats.pending > 0 && (
+              <div className="bg-gradient-to-r from-[#fdce0f] to-[#fee88c] text-[#0d4a70] px-4 py-2 rounded-full font-semibold text-sm flex items-center gap-2 animate-pulse">
+                <Clock className="w-4 h-4" />
+                {stats.pending} nouvelle{stats.pending > 1 ? 's' : ''} demande{stats.pending > 1 ? 's' : ''}
+              </div>
+            )}
+            {stats.accepted > 0 && (
+              <div className="bg-gradient-to-r from-[#13d090] to-[#0fb378] text-white px-4 py-2 rounded-full font-semibold text-sm flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                {stats.accepted} mission{stats.accepted > 1 ? 's' : ''} à venir
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -634,7 +756,7 @@ function JuryRequestsPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" onClick={() => handleViewRequest(request)}>
                     <Eye className="w-4 h-4 mr-1" />
                     Voir
                   </Button>
@@ -668,6 +790,17 @@ function JuryRequestsPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Request Details Modal */}
+      {selectedRequest && (
+        <RequestDetailsModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          request={selectedRequest}
+          onAccept={handleAcceptRequest}
+          onDecline={handleDeclineRequest}
+        />
       )}
     </section>
   );

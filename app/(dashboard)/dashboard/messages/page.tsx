@@ -7,11 +7,13 @@ import { CenterConversationList } from '@/components/messaging/center-conversati
 import { CenterChatArea } from '@/components/messaging/center-chat-area';
 import { MessageCircle } from 'lucide-react';
 import useSWR, { mutate } from 'swr';
+import { useUnreadCount } from '@/lib/hooks/use-unread-count';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function MessagesPage() {
   const { data: user } = useSWR('/api/user', fetcher);
+  const { updateUnreadCount } = useUnreadCount();
   const conversationsEndpoint = user?.userType === 'centre' ? '/api/center-conversations' : '/api/conversations';
   const { data: conversationsData, error: conversationsError } = useSWR(
     user ? conversationsEndpoint : null,
@@ -51,6 +53,8 @@ export default function MessagesPage() {
 
   const handleConversationSelect = (conversation: any) => {
     setSelectedConversation(conversation);
+    // Update unread count when a conversation is selected (messages will be marked as read)
+    setTimeout(() => updateUnreadCount(), 500);
   };
 
   const handleSendMessage = async (content: string) => {

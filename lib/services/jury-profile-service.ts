@@ -17,16 +17,40 @@ export class JuryProfileService {
   }
 
   static async getByUserId(userId: number) {
-    const [juryProfile] = await db
-      .select()
+    const result = await db
+      .select({
+        // Jury profile fields
+        id: juryProfiles.id,
+        userId: juryProfiles.userId,
+        firstName: juryProfiles.firstName,
+        lastName: juryProfiles.lastName,
+        profilePhotoUrl: juryProfiles.profilePhotoUrl,
+        region: juryProfiles.region,
+        city: juryProfiles.city,
+        expertiseDomains: juryProfiles.expertiseDomains,
+        certifications: juryProfiles.certifications,
+        experienceYears: juryProfiles.experienceYears,
+        currentPosition: juryProfiles.currentPosition,
+        currentCompany: juryProfiles.currentCompany,
+        availabilityPreferences: juryProfiles.availabilityPreferences,
+        workModalities: juryProfiles.workModalities,
+        interventionZones: juryProfiles.interventionZones,
+        hourlyRate: juryProfiles.hourlyRate,
+        bio: juryProfiles.bio,
+        createdAt: juryProfiles.createdAt,
+        updatedAt: juryProfiles.updatedAt,
+        // User fields
+        displayName: users.name,
+      })
       .from(juryProfiles)
+      .innerJoin(users, eq(juryProfiles.userId, users.id))
       .where(eq(juryProfiles.userId, userId))
       .limit(1);
 
-    return juryProfile;
+    return result[0] || null;
   }
 
-  static async updateProfile(userId: number, data: Partial<Omit<NewJuryProfile, 'userId'>>) {
+  static async updateProfile(userId: number, data: Partial<Omit<NewJuryProfile, 'userId'>> & { displayName?: string }) {
     // Clean up numeric fields - convert empty strings to null
     const cleanedData = { ...data };
     
@@ -59,6 +83,17 @@ export class JuryProfileService {
       if (cleanedData.currentCompany === '') {
         cleanedData.currentCompany = null;
       }
+    }
+
+    // Handle display name separately - update users table
+    if ('displayName' in cleanedData) {
+      await db
+        .update(users)
+        .set({ name: cleanedData.displayName })
+        .where(eq(users.id, userId));
+      
+      // Remove displayName from cleanedData since it's not part of jury_profiles table
+      delete cleanedData.displayName;
     }
 
     const [updated] = await db

@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { JuryProfileModal } from '@/components/ui/jury-profile-modal';
 import { useToast } from '@/components/ui/toast';
 import StructuredRequestModal from '@/components/jury/structured-request-modal';
+import { useJuryRequestCount } from '@/lib/hooks/use-jury-request-count';
 
 interface JuryProfile {
   id: number;
@@ -43,6 +44,7 @@ interface SearchFilters {
 export default function SearchPageClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const { updateRequestCount } = useJuryRequestCount();
   
   // Responsive default view: grid for mobile (< 768px), list for desktop
   const getInitialViewMode = (): 'list' | 'grid' => {
@@ -196,6 +198,8 @@ export default function SearchPageClient() {
       if (result.success) {
         setHasUsedFreeContact(true);
         setContactsRemaining(0);
+        // Trigger real-time update of jury request count
+        updateRequestCount();
         showToast({
           type: 'success',
           title: 'Demande envoyée avec succès !',
