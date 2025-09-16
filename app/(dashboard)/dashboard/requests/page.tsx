@@ -405,15 +405,13 @@ function JuryRequestsPage() {
 
   useEffect(() => {
     fetchRequests();
-  }, [statusFilter]);
+  }, []); // Remove statusFilter dependency to prevent refetch on filter change
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (statusFilter) params.append('status', statusFilter);
-      
-      const response = await fetch(`/api/jury-requests?${params.toString()}`);
+      // Fetch all requests without status filter for client-side filtering
+      const response = await fetch(`/api/jury-requests`);
       const result = await response.json();
       
       if (result.success) {
@@ -586,10 +584,17 @@ function JuryRequestsPage() {
     }
   };
 
-  const filteredRequests = requests.filter(request =>
-    request.training_centers.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    request.certification_type.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredRequests = requests.filter(request => {
+    // Apply status filter
+    const matchesStatus = !statusFilter || request.status === statusFilter;
+    
+    // Apply search filter
+    const matchesSearch = !searchQuery || 
+      request.training_centers.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      request.certification_type.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesStatus && matchesSearch;
+  });
 
   if (loading) {
     return (
