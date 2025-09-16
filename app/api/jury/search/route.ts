@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
     if (query) {
       conditions.push(
         or(
+          ilike(users.name, `%${query}%`), // Add user.name to search
           ilike(juryProfiles.firstName, `%${query}%`),
           ilike(juryProfiles.lastName, `%${query}%`),
           sql`${juryProfiles.expertiseDomains}::text ILIKE ${'%' + query + '%'}`,
@@ -89,7 +90,8 @@ export async function GET(request: NextRequest) {
         bio: juryProfiles.bio,
         availabilityPreferences: juryProfiles.availabilityPreferences,
         email: users.email,
-        validationStatus: users.validationStatus
+        validationStatus: users.validationStatus,
+        displayName: users.name
       })
       .from(users)
       .innerJoin(juryProfiles, eq(users.id, juryProfiles.userId))
@@ -128,7 +130,9 @@ export async function GET(request: NextRequest) {
       return {
         id: jury.id,
         userId: jury.userId, // Add the user ID for API requests
-        name: `${jury.firstName} ${jury.lastName}`,
+        name: jury.displayName || `${jury.firstName} ${jury.lastName}`, // Use display name first, fallback to formal name
+        displayName: jury.displayName,
+        formalName: `${jury.firstName} ${jury.lastName}`,
         location: `${jury.city}, ${jury.region}`,
         rating: Math.random() * 1 + 4, // Mock rating between 4-5
         reviewCount: Math.floor(Math.random() * 50) + 5, // Mock review count

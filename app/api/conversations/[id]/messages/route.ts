@@ -80,6 +80,7 @@ export async function GET(
 
     // Transform messages for frontend
     const formattedMessages = messagesData.map(msg => {
+      // Use display name (users.name) as primary, fallback to email
       let senderName = msg.senderName || msg.senderEmail;
       
       // Format sender name based on user type

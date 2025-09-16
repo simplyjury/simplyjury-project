@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
         status: conversations.status,
         createdAt: conversations.createdAt,
         lastMessageAt: conversations.lastMessageAt,
-        // Jury info
-        juryName: users.name,
+        // Jury info - use display name
+        juryName: users.name, // Display name from users table
         juryEmail: users.email,
         // Last message info
         lastMessageContent: sql<string>`(

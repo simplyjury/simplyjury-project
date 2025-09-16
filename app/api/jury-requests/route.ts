@@ -83,12 +83,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if freemium user has already made a request (basic rate limiting)
+    const requestData: StructuredRequestData = await request.json();
+    console.log('Full request data:', requestData);
+    console.log('Jury ID from request:', requestData.juryId);
+
+    // Check if freemium user has already contacted this specific jury
     if (trainingCenter.subscription_tier === 'gratuit') {
       const { data: existingRequests, error: requestsError } = await supabase
         .from('jury_requests')
         .select('id')
         .eq('training_center_id', trainingCenter.id)
+        .eq('jury_id', requestData.juryId)
         .limit(1);
 
       if (requestsError) {
@@ -102,17 +107,13 @@ export async function POST(request: NextRequest) {
       if (existingRequests && existingRequests.length > 0) {
         return NextResponse.json(
           { 
-            error: 'Limite atteinte pour le plan gratuit. Passez au plan Pro pour des contacts illimités.',
+            error: 'Vous avez déjà contacté ce jury avec votre compte gratuit. Passez au plan Pro pour des contacts illimités.',
             code: 'FREEMIUM_LIMIT_REACHED'
           },
           { status: 403 }
         );
       }
     }
-
-    const requestData: StructuredRequestData = await request.json();
-    console.log('Full request data:', requestData);
-    console.log('Jury ID from request:', requestData.juryId);
 
     // Validate required fields
     const requiredFields = ['juryId', 'certificationType', 'sessionDate', 'candidateCount'];

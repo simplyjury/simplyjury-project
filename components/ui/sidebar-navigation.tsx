@@ -31,6 +31,8 @@ import {
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
 import { useState, useEffect } from 'react';
+import { useUnreadCount } from '@/lib/hooks/use-unread-count';
+import { useJuryRequestCount } from '@/lib/hooks/use-jury-request-count';
 
 interface NavigationItem {
   name: string;
@@ -46,7 +48,7 @@ interface NavigationSection {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertificateur: boolean, unreadCount?: number, pendingJuryCount?: number): NavigationSection[] {
+function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertificateur: boolean, unreadCount?: number, pendingJuryCount?: number, requestCount?: number): NavigationSection[] {
   if (userType === 'admin') {
     // Navigation for admin users
     return [
@@ -128,7 +130,7 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             name: 'Mes demandes',
             href: '/dashboard/requests',
             icon: FileText,
-            badge: 2,
+            badge: requestCount && requestCount > 0 ? requestCount : undefined,
           },
           {
             name: 'Messagerie',
@@ -276,10 +278,8 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
     user?.userType === 'jury' ? '/api/profile/jury' : null, 
     fetcher
   );
-  const { data: unreadData } = useSWR('/api/unread-messages-count', fetcher, {
-    refreshInterval: 60000, // Refresh every 60 seconds instead of 10
-    revalidateOnFocus: false, // Disable focus revalidation
-  });
+  const { unreadCount } = useUnreadCount();
+  const { count: requestCount } = useJuryRequestCount();
   
   // Fetch pending jury count for admin users
   const { data: pendingJuryData } = useSWR(
@@ -299,7 +299,13 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
   const isCertificateur = centerProfile?.data?.isCertificateur || false;
   
   // Get navigation sections based on user type and certificateur status
-  const navigationSections = getNavigationSections(userType, isCertificateur, unreadData?.unreadCount, pendingJuryData?.count);
+  const navigationSections = getNavigationSections(
+    userType, 
+    isCertificateur, 
+    unreadCount, 
+    pendingJuryData?.count,
+    requestCount
+  );
 
   // Close mobile menu when clicking on a link
   const handleLinkClick = () => {
@@ -389,7 +395,7 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
                         <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                         <span className="flex-1">{item.name}</span>
                         {item.badge && (
-                          <span className="ml-2 bg-[#fdce0f] text-[#0d4a70] text-xs font-bold px-2 py-1 rounded-full">
+                          <span className="ml-2 bg-[#fdce0f] text-[#0d4a70] text-xs font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full">
                             {item.badge}
                           </span>
                         )}

@@ -22,6 +22,7 @@ export default function JuryProfilePage() {
   const [expandedSection, setExpandedSection] = useState<number>(1);
   
   const [formData, setFormData] = useState({
+    displayName: '',
     firstName: '',
     lastName: '',
     region: '',
@@ -42,6 +43,7 @@ export default function JuryProfilePage() {
   useEffect(() => {
     if (profile) {
       setFormData({
+        displayName: profile.displayName || '',
         firstName: profile.firstName || '',
         lastName: profile.lastName || '',
         region: profile.region || '',
@@ -94,6 +96,7 @@ export default function JuryProfilePage() {
     // Reset form data to original values
     if (profile) {
       setFormData({
+        displayName: profile.displayName || '',
         firstName: profile.firstName || '',
         lastName: profile.lastName || '',
         region: profile.region || '',
@@ -436,6 +439,27 @@ export default function JuryProfilePage() {
                   </button>
                   <p className="text-sm text-gray-500 mt-2">Format JPG, PNG, taille max. 2MB</p>
                 </div>
+              )}
+            </div>
+
+            {/* Display Name Section */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Pseudonyme</label>
+              <p className="text-sm text-gray-500 mb-2">
+                Nom d'affichage public qui apparaîtra dans les recherches et conversations
+              </p>
+              {editingSection === 1 ? (
+                <input
+                  type="text"
+                  value={formData.displayName}
+                  onChange={(e) => handleInputChange('displayName', e.target.value)}
+                  placeholder="Ex: cedric2, JohnnyD, ExpertFormation..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+                />
+              ) : (
+                <p className="px-4 py-3 bg-gray-50 rounded-lg">
+                  {profile.displayName || 'Aucun pseudonyme défini'}
+                </p>
               )}
             </div>
 

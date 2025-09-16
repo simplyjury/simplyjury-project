@@ -142,7 +142,7 @@ export async function GET(
     // Format conversation info for frontend
     const conversationInfo = {
       id: conversation.id.toString(),
-      juryName: juryUser.name || 'Jury',
+      juryName: juryUser.name || 'Jury', // Display name from users table
       juryEmail: juryUser.email,
       juryInitials,
     };
