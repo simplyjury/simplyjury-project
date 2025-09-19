@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import useSWR from 'swr';
 import { Save, X, Plus, Upload, Trash2, Camera, User, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { AvailabilityModal } from '@/components/ui/availability-modal';
+import JuryRatingsSection from '@/components/profile/jury-ratings-section';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -20,6 +21,7 @@ export default function JuryProfilePage() {
   const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const [pendingPhotoDeletion, setPendingPhotoDeletion] = useState(false);
   const [expandedSection, setExpandedSection] = useState<number>(1);
+  const [ratingsExpanded, setRatingsExpanded] = useState<boolean>(false);
   
   const [formData, setFormData] = useState({
     displayName: '',
@@ -1102,6 +1104,14 @@ export default function JuryProfilePage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Ratings Section */}
+      <div className="mb-6">
+        <JuryRatingsSection 
+          isExpanded={ratingsExpanded}
+          onToggle={() => setRatingsExpanded(!ratingsExpanded)}
+        />
       </div>
 
       {/* Availability Modal */}

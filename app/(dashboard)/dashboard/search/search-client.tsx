@@ -266,12 +266,18 @@ export default function SearchPageClient() {
               {jury.location}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#fdce0f] text-sm font-semibold">
-                {renderStars(jury.rating)}
-              </span>
-              <span className="text-xs text-gray-500">
-                {jury.rating.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ({jury.reviewCount} avis)
-              </span>
+              {jury.rating > 0 && jury.reviewCount > 0 ? (
+                <>
+                  <span className="text-[#fdce0f] text-sm font-semibold">
+                    {renderStars(jury.rating)}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {jury.rating.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ({jury.reviewCount} avis)
+                  </span>
+                </>
+              ) : (
+                <span className="text-xs text-gray-400">Aucune évaluation</span>
+              )}
             </div>
           </div>
         </div>

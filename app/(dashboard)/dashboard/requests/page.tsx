@@ -854,7 +854,6 @@ function JuryRequestsPage() {
               <option value="pending">En attente</option>
               <option value="accepted">Acceptées</option>
               <option value="declined">Refusées</option>
-              <option value="completed">Terminées</option>
             </select>
           </div>
           <div className="flex items-end">

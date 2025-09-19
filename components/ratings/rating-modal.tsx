@@ -95,6 +95,11 @@ export default function RatingModal({
     punctuality_rating: 0,
     expertise_rating: 0
   });
+  const [hoverStates, setHoverStates] = useState({
+    communication_rating: 0,
+    punctuality_rating: 0,
+    expertise_rating: 0
+  });
   const [comment, setComment] = useState('');
   const [wouldRecommend, setWouldRecommend] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -155,6 +160,11 @@ export default function RatingModal({
         punctuality_rating: 0,
         expertise_rating: 0
       });
+      setHoverStates({
+        communication_rating: 0,
+        punctuality_rating: 0,
+        expertise_rating: 0
+      });
       setComment('');
       setWouldRecommend(null);
       
@@ -209,14 +219,34 @@ export default function RatingModal({
               
               {criteria.map((criterion) => (
                 <div key={criterion.key} className="border rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="text-[#0d4a70]">{criterion.icon}</div>
-                    <StarRating
-                      rating={ratings[criterion.key]}
-                      onRatingChange={(rating) => handleRatingChange(criterion.key, rating)}
-                      label={criterion.label}
-                      description={criterion.description}
-                    />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="text-[#0d4a70]">{criterion.icon}</div>
+                      <div>
+                        <h4 className="font-semibold text-[#0d4a70]">{criterion.label}</h4>
+                        <p className="text-sm text-gray-600">{criterion.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          className="focus:outline-none transition-colors"
+                          onMouseEnter={() => setHoverStates(prev => ({ ...prev, [criterion.key]: star }))}
+                          onMouseLeave={() => setHoverStates(prev => ({ ...prev, [criterion.key]: 0 }))}
+                          onClick={() => handleRatingChange(criterion.key, star)}
+                        >
+                          <Star
+                            className={`w-6 h-6 ${
+                              star <= (hoverStates[criterion.key] || ratings[criterion.key])
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -347,7 +347,10 @@ export async function GET(request: NextRequest) {
 
     // Check if user is jury or center
     if (user.user_type === 'jury') {
-      // Fetch requests sent TO this jury
+      // Get today's date in YYYY-MM-DD format for filtering
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Fetch requests sent TO this jury (only future or today's sessions)
       let query = supabase
         .from('jury_requests')
         .select(`
@@ -356,6 +359,7 @@ export async function GET(request: NextRequest) {
           conversations(id, created_at)
         `)
         .eq('jury_id', user.id)
+        .gte('session_date', today) // Only show sessions from today onwards
         .order('created_at', { ascending: false });
 
       if (status) {

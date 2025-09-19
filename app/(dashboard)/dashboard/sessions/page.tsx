@@ -89,6 +89,7 @@ function CenterSessionsPage() {
     juryId: number | null;
   }>({ isOpen: false, session: null, juryId: null });
   const [sessionRatings, setSessionRatings] = useState<Record<number, boolean>>({});
+  const [juryRatings, setJuryRatings] = useState<Record<number, { averageRating: number; totalRatings: number }>>({});
 
   useEffect(() => {
     fetchCenterSessions();
@@ -106,6 +107,8 @@ function CenterSessionsPage() {
         calculateStats(result.data || []);
         // Check which sessions have been rated
         checkSessionRatings(result.data || []);
+        // Fetch jury ratings summary
+        fetchJuryRatings(result.data || []);
       } else {
         setError(result.error);
       }
@@ -136,6 +139,24 @@ function CenterSessionsPage() {
       setSessionRatings(ratingsStatus);
     } catch (error) {
       console.error('Error checking session ratings:', error);
+    }
+  };
+
+  const fetchJuryRatings = async (sessionsData: Session[]) => {
+    try {
+      // Get unique jury IDs from sessions
+      const juryIds = [...new Set(sessionsData.map(session => session.jury_id))];
+      
+      if (juryIds.length === 0) return;
+
+      const response = await fetch(`/api/jury-ratings-summary?jury_ids=${juryIds.join(',')}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setJuryRatings(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching jury ratings:', error);
     }
   };
 
@@ -174,6 +195,44 @@ function CenterSessionsPage() {
     } catch (error) {
       console.error('Error submitting rating:', error);
       throw error;
+    }
+  };
+
+  const handleMarkAsCompleted = async (sessionId: number) => {
+    try {
+      const response = await fetch(`/api/jury-requests/${sessionId}/complete`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update the session status in local state
+        setSessions(prev => prev.map(session => 
+          session.id === sessionId 
+            ? { ...session, status: 'completed' as const }
+            : session
+        ));
+        
+        // Recalculate stats
+        const updatedSessions = sessions.map(session => 
+          session.id === sessionId 
+            ? { ...session, status: 'completed' as const }
+            : session
+        );
+        calculateStats(updatedSessions);
+        
+        // Show success message
+        alert('Session marquée comme terminée avec succès!');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error marking session as completed:', error);
+      alert(`Erreur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     }
   };
 
@@ -279,6 +338,20 @@ function CenterSessionsPage() {
   const formatTime = (timeString: string) => {
     if (!timeString) return '';
     return timeString.substring(0, 5); // Format HH:MM
+  };
+
+  const renderStars = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    
+    return (
+      <>
+        {'⭐'.repeat(fullStars)}
+        {hasHalfStar && '⭐'}
+        {'☆'.repeat(emptyStars)}
+      </>
+    );
   };
 
   if (loading) {
@@ -467,8 +540,18 @@ function CenterSessionsPage() {
                   <div>
                     <div className="font-semibold text-[#0d4a70]">{session.jury_name}</div>
                     <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <span className="text-yellow-500">⭐⭐⭐⭐⭐</span>
-                      <span>{session.jury_rating || '4.9'} ({session.jury_reviews || '45'} avis)</span>
+                      {juryRatings[session.jury_id] && juryRatings[session.jury_id].totalRatings > 0 ? (
+                        <>
+                          <span className="text-yellow-500">
+                            {renderStars(juryRatings[session.jury_id].averageRating)}
+                          </span>
+                          <span>
+                            {juryRatings[session.jury_id].averageRating} ({juryRatings[session.jury_id].totalRatings} avis)
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">Aucune évaluation</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -515,20 +598,37 @@ function CenterSessionsPage() {
                     <Eye className="w-4 h-4 mr-1" />
                     Voir détails
                   </Button>
-                  {sessionRatings[session.id] ? (
-                    <Button size="sm" variant="outline" disabled className="text-green-600">
-                      <Star className="w-4 h-4 mr-1 fill-current" />
-                      Évalué
-                    </Button>
-                  ) : (
+                  
+                  {/* Mark as completed button - only for accepted sessions with past dates */}
+                  {session.status === 'accepted' && new Date(session.session_date) < new Date() && (
                     <Button 
                       size="sm" 
-                      className="bg-[#0d4a70] hover:bg-[#0d4a70]/90"
-                      onClick={() => handleOpenRatingModal(session)}
+                      variant="outline"
+                      className="border-green-500 text-green-600 hover:bg-green-50"
+                      onClick={() => handleMarkAsCompleted(session.id)}
                     >
-                      <Star className="w-4 h-4 mr-1" />
-                      Donner un avis
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Marquer comme terminée
                     </Button>
+                  )}
+                  
+                  {/* Rating button - only for completed sessions */}
+                  {session.status === 'completed' && (
+                    sessionRatings[session.id] ? (
+                      <Button size="sm" variant="outline" disabled className="text-green-600">
+                        <Star className="w-4 h-4 mr-1 fill-current" />
+                        Évalué
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        className="bg-[#0d4a70] hover:bg-[#0d4a70]/90"
+                        onClick={() => handleOpenRatingModal(session)}
+                      >
+                        <Star className="w-4 h-4 mr-1" />
+                        Donner un avis
+                      </Button>
+                    )
                   )}
                 </div>
               </div>

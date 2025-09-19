@@ -139,6 +139,42 @@ export async function GET(request: NextRequest) {
     const totalCount = totalCountResult[0]?.count || 0;
     const totalPages = Math.ceil(totalCount / limit);
 
+    // Fetch ratings for all juries in one query
+    const juryUserIds = juries.map(jury => jury.userId);
+    let ratingsMap: Record<number, { averageRating: number; totalRatings: number }> = {};
+    
+    if (juryUserIds.length > 0) {
+      const { data: ratings } = await supabase
+        .from('session_ratings')
+        .select('rated_id, overall_rating')
+        .in('rated_id', juryUserIds)
+        .eq('rater_type', 'centre')
+        .eq('status', 'active');
+
+      // Group ratings by jury user ID and calculate averages
+      if (ratings) {
+        const groupedRatings = ratings.reduce((acc: Record<number, number[]>, rating) => {
+          if (!acc[rating.rated_id]) {
+            acc[rating.rated_id] = [];
+          }
+          acc[rating.rated_id].push(parseFloat(rating.overall_rating));
+          return acc;
+        }, {});
+
+        ratingsMap = Object.keys(groupedRatings).reduce((acc, juryId) => {
+          const juryIdNum = parseInt(juryId);
+          const juryRatings = groupedRatings[juryIdNum];
+          const averageRating = juryRatings.reduce((sum, rating) => sum + rating, 0) / juryRatings.length;
+          
+          acc[juryIdNum] = {
+            averageRating: Math.round(averageRating * 10) / 10,
+            totalRatings: juryRatings.length
+          };
+          return acc;
+        }, {} as Record<number, { averageRating: number; totalRatings: number }>);
+      }
+    }
+
     // Generate signed URLs for profile pictures
     const transformedJuries = await Promise.all(juries.map(async (jury) => {
       let signedPhotoUrl = null;
@@ -198,8 +234,8 @@ export async function GET(request: NextRequest) {
         displayName: jury.displayName,
         formalName: `${jury.firstName} ${jury.lastName}`,
         location: `${jury.city}, ${jury.region}`,
-        rating: Math.random() * 1 + 4, // Mock rating between 4-5
-        reviewCount: Math.floor(Math.random() * 50) + 5, // Mock review count
+        rating: ratingsMap[jury.userId]?.averageRating || 0,
+        reviewCount: ratingsMap[jury.userId]?.totalRatings || 0,
         avatar: getAvatarEmoji(jury.expertiseDomains?.[0] || ''),
         expertise: jury.expertiseDomains || [],
         expertiseDomains: jury.expertiseDomains || [],
