@@ -5,6 +5,8 @@ import { PasswordResetEmail } from '@/components/emails/password-reset-email';
 import { ProfileValidationEmail } from '@/components/emails/profile-validation-email';
 import { JuryValidationRequest } from '@/components/emails/jury-validation-request';
 import { JuryProfileValidationEmail } from '@/components/emails/jury-profile-validation-email';
+import { JuryRequestResponseCenter } from '@/components/emails/jury-request-response-center';
+import { JuryRequestResponseJury } from '@/components/emails/jury-request-response-jury';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy-key-for-build');
 
@@ -180,6 +182,100 @@ export class EmailService {
     } catch (error) {
       console.error('Error sending jury profile validation email:', error);
       throw new Error('Failed to send jury profile validation email');
+    }
+  }
+
+  static async sendJuryRequestResponseEmails(
+    centerEmail: string,
+    centerName: string,
+    contactPersonName: string,
+    juryEmail: string,
+    juryName: string,
+    juryPhone: string,
+    requestData: {
+      certificationType: string;
+      sessionDate: string;
+      sessionAddress: string;
+      candidateCount: number;
+      modality: string;
+      rncp?: string;
+    },
+    status: 'accepted' | 'declined'
+  ) {
+    const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`;
+    const isAccepted = status === 'accepted';
+    
+    try {
+      this.checkApiKey();
+      
+      // Send email to center
+      const centerSubject = isAccepted 
+        ? `Mission acceptée par ${juryName} - SimplyJury`
+        : `Mission refusée par ${juryName} - SimplyJury`;
+        
+      const centerEmailPromise = resend.emails.send({
+        from: this.FROM_EMAIL,
+        to: centerEmail,
+        subject: centerSubject,
+        react: JuryRequestResponseCenter({
+          centerName,
+          contactPersonName,
+          juryFirstName: juryName.split(' ')[0] || juryName,
+          juryLastName: juryName.split(' ').slice(1).join(' ') || '',
+          juryEmail,
+          juryPhone,
+          certificationType: requestData.certificationType,
+          sessionDate: requestData.sessionDate,
+          sessionAddress: requestData.sessionAddress,
+          candidateCount: requestData.candidateCount,
+          modality: requestData.modality,
+          rncp: requestData.rncp,
+          status,
+          dashboardUrl,
+        }),
+      });
+
+      // Send confirmation email to jury
+      const jurySubject = isAccepted 
+        ? 'Mission acceptée - Confirmation - SimplyJury'
+        : 'Mission refusée - Confirmation - SimplyJury';
+        
+      const juryEmailPromise = resend.emails.send({
+        from: this.FROM_EMAIL,
+        to: juryEmail,
+        subject: jurySubject,
+        react: JuryRequestResponseJury({
+          juryName,
+          centerName,
+          certificationType: requestData.certificationType,
+          sessionDate: requestData.sessionDate,
+          sessionAddress: requestData.sessionAddress,
+          candidateCount: requestData.candidateCount,
+          modality: requestData.modality,
+          rncp: requestData.rncp,
+          status,
+          dashboardUrl,
+        }),
+      });
+
+      // Send both emails in parallel
+      const results = await Promise.allSettled([centerEmailPromise, juryEmailPromise]);
+      
+      const centerResult = results[0];
+      const juryResult = results[1];
+      
+      return {
+        centerEmail: centerResult.status === 'fulfilled' ? centerResult.value : null,
+        juryEmail: juryResult.status === 'fulfilled' ? juryResult.value : null,
+        errors: [
+          ...(centerResult.status === 'rejected' ? [`Center email: ${centerResult.reason}`] : []),
+          ...(juryResult.status === 'rejected' ? [`Jury email: ${juryResult.reason}`] : [])
+        ]
+      };
+      
+    } catch (error) {
+      console.error('Error sending jury request response emails:', error);
+      throw new Error('Failed to send jury request response emails');
     }
   }
 }

@@ -27,6 +27,7 @@ export class JuryProfileService {
         profilePhotoUrl: juryProfiles.profilePhotoUrl,
         region: juryProfiles.region,
         city: juryProfiles.city,
+        phone: juryProfiles.phone,
         expertiseDomains: juryProfiles.expertiseDomains,
         certifications: juryProfiles.certifications,
         experienceYears: juryProfiles.experienceYears,

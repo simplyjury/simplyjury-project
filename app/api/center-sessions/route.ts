@@ -33,7 +33,7 @@ async function getCurrentUser() {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get current user using the same method as jury-requests
+    // Get current user
     const user = await getCurrentUser();
 
     if (!user) {
@@ -65,15 +65,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse query parameters
+    // Parse query parameters for filtering
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const period = searchParams.get('period');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const offset = (page - 1) * limit;
+    const certification = searchParams.get('certification');
 
-    // Build query for center's outgoing requests (only upcoming sessions)
+    // Build query for center's past sessions (session_date < today)
     let query = supabase
       .from('jury_requests')
       .select(`
@@ -85,10 +83,10 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('training_center_id', trainingCenter.id)
-      .gte('session_date', new Date().toISOString().split('T')[0]) // Only upcoming sessions
-      .order('session_date', { ascending: true }); // Order by session date (soonest first)
+      .lt('session_date', new Date().toISOString().split('T')[0]) // Only past sessions
+      .order('session_date', { ascending: false });
 
-    // Apply filters
+    // Apply additional filters
     if (status) {
       query = query.eq('status', status);
     }
@@ -112,44 +110,32 @@ export async function GET(request: NextRequest) {
           startDate = new Date(0);
       }
       
-      query = query.gte('created_at', startDate.toISOString());
+      query = query.gte('session_date', startDate.toISOString().split('T')[0]);
     }
 
+    if (certification) {
+      query = query.ilike('certification_title', `%${certification}%`);
+    }
 
-    // Execute query with pagination
-    const { data: requests, error, count } = await query
-      .range(offset, offset + limit - 1);
+    // Execute query
+    const { data: sessions, error } = await query;
 
     if (error) {
-      console.error('Error fetching center requests:', error);
+      console.error('Error fetching center sessions:', error);
       return NextResponse.json(
-        { error: 'Erreur lors de la récupération des demandes' },
+        { error: 'Erreur lors de la récupération des sessions' },
         { status: 500 }
       );
     }
 
     // Transform data to match the expected format
-    const transformedRequests = (requests || []).map(request => {
+    const transformedSessions = (sessions || []).map(session => {
       let juryName = 'Jury Non Assigné';
       let juryProfilePhoto = null;
       
-      // Debug logging for profile photo
-      console.log('🔍 CENTER-REQUESTS DEBUG: Processing request', {
-        requestId: request.id,
-        hasUsers: !!request.users,
-        hasJuryProfiles: !!(request.users && request.users.jury_profiles),
-        juryProfilesData: request.users?.jury_profiles
-      });
-      
       // Extract jury name and profile photo from the nested users.jury_profiles relationship
-      if (request.users && request.users.jury_profiles && request.users.jury_profiles.length > 0) {
-        const profile = request.users.jury_profiles[0]; // Take the first profile (should only be one)
-        console.log('🔍 CENTER-REQUESTS: Found jury profile', {
-          firstName: profile.first_name,
-          lastName: profile.last_name,
-          profilePhotoUrl: profile.profile_photo_url,
-          hasProfilePhoto: !!profile.profile_photo_url
-        });
+      if (session.users && session.users.jury_profiles && session.users.jury_profiles.length > 0) {
+        const profile = session.users.jury_profiles[0];
         
         if (profile.first_name && profile.last_name) {
           juryName = `${profile.first_name} ${profile.last_name}`;
@@ -158,53 +144,43 @@ export async function GET(request: NextRequest) {
       }
       
       // Fallback to user name if no jury profile
-      if (juryName === 'Jury Non Assigné' && request.users?.name) {
-        juryName = request.users.name;
+      if (juryName === 'Jury Non Assigné' && session.users?.name) {
+        juryName = session.users.name;
       }
 
-      const transformedRequest = {
-        id: request.id,
-        status: request.status,
-        certification_type: request.certification_title || request.certification_type,
-        rncp_code: request.certification_code || request.rncp_code,
-        level: request.level,
-        session_date: request.session_date,
-        candidate_count: request.candidate_count,
-        modality: request.modality,
-        location: request.session_location || request.location,
-        duration: request.duration,
-        city: request.city,
-        created_at: request.created_at,
+      return {
+        id: session.id,
+        status: session.status,
+        certification_title: session.certification_title,
+        certification_code: session.certification_code,
+        session_date: session.session_date,
+        session_start_time: session.session_start_time,
+        session_end_time: session.session_end_time,
+        candidate_count: session.candidate_count,
+        modality: session.modality,
+        session_location: session.session_location,
+        transport_covered: session.transport_covered,
+        meals_covered: session.meals_covered,
+        accommodation_covered: session.accommodation_covered,
+        custom_message: session.custom_message,
+        jury_response: session.jury_response,
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+        jury_id: session.jury_id, // Add jury ID for rating functionality
         jury_name: juryName,
         jury_profile_photo: juryProfilePhoto,
         jury_rating: '4.9', // Mock data - would come from ratings system
-        jury_reviews: '45', // Mock data - would come from reviews system
-        jury_message: request.jury_response || request.jury_response_message || null
+        jury_reviews: '45' // Mock data - would come from reviews system
       };
-      
-      console.log('🔍 CENTER-REQUESTS: Final transformed request', {
-        requestId: transformedRequest.id,
-        juryName: transformedRequest.jury_name,
-        juryProfilePhoto: transformedRequest.jury_profile_photo,
-        hasProfilePhoto: !!transformedRequest.jury_profile_photo
-      });
-      
-      return transformedRequest;
     });
 
     return NextResponse.json({
       success: true,
-      data: transformedRequests,
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
-      }
+      data: transformedSessions
     });
 
   } catch (error) {
-    console.error('Error in center-requests API:', error);
+    console.error('Error in center-sessions API:', error);
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

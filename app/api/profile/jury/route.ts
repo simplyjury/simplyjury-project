@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
         profilePhotoUrl: profileData.profilePhotoUrl || null,
         region: profileData.region,
         city: profileData.city || null,
+        phone: profileData.phone || null,
         expertiseDomains: Array.isArray(profileData.expertiseDomains) ? profileData.expertiseDomains : [],
         certifications: profileData.certifications ? [profileData.certifications] : [],
         experienceYears: profileData.yearsExperience ? parseInt(profileData.yearsExperience) : null,

@@ -67,7 +67,36 @@ export async function GET(request: NextRequest) {
     }
 
     if (modality) {
-      conditions.push(sql`${juryProfiles.workModalities}::text ILIKE ${'%' + modality + '%'}`);
+      if (modality === 'hybride') {
+        // For hybrid, jury must have both "presentiel" and "visio" modalities
+        conditions.push(sql`
+          ${juryProfiles.workModalities}::text ILIKE '%presentiel%' 
+          AND ${juryProfiles.workModalities}::text ILIKE '%visio%'
+        `);
+      } else {
+        // For other modalities, check if the array contains the specific modality
+        conditions.push(sql`${juryProfiles.workModalities}::text ILIKE ${'%' + modality + '%'}`);
+      }
+    }
+
+    // Add availability filter
+    if (availability === 'immediate') {
+      // Filter for juries that have current availability (available now)
+      conditions.push(sql`
+        EXISTS (
+          SELECT 1 FROM jsonb_array_elements(${juryProfiles.availabilityPreferences}) AS pref
+          WHERE (pref->>'startDate')::date <= CURRENT_DATE 
+          AND (pref->>'endDate')::date >= CURRENT_DATE
+        )
+      `);
+    } else if (availability === 'planifiee') {
+      // Filter for juries that have future availability (planned)
+      conditions.push(sql`
+        EXISTS (
+          SELECT 1 FROM jsonb_array_elements(${juryProfiles.availabilityPreferences}) AS pref
+          WHERE (pref->>'startDate')::date > CURRENT_DATE
+        )
+      `);
     }
 
     // Fetch jury profiles with user data
@@ -115,17 +144,52 @@ export async function GET(request: NextRequest) {
       let signedPhotoUrl = null;
       
       if (jury.profilePhotoUrl) {
-        // Extract the file path from the URL
-        const urlParts = jury.profilePhotoUrl.split('/storage/v1/object/public/profile-pictures/');
-        if (urlParts.length > 1) {
-          const filePath = urlParts[1];
-          const { data } = await supabase.storage
-            .from('profile-pictures')
-            .createSignedUrl(filePath, 3600); // 1 hour expiry
+        console.log('🔍 SEARCH-API: Processing profile photo for', {
+          juryName: `${jury.firstName} ${jury.lastName}`,
+          originalUrl: jury.profilePhotoUrl,
+          hasToken: jury.profilePhotoUrl.includes('token=')
+        });
+        
+        // Check if it's already a signed URL (contains token parameter)
+        if (jury.profilePhotoUrl.includes('token=')) {
+          // Already a signed URL, use it directly
+          signedPhotoUrl = jury.profilePhotoUrl;
+          console.log('🔍 SEARCH-API: Using existing signed URL');
+        } else {
+          // Extract the file path from the URL - handle both public and sign URLs
+          let filePath = null;
           
-          signedPhotoUrl = data?.signedUrl || null;
+          // Try public URL format first
+          let urlParts = jury.profilePhotoUrl.split('/storage/v1/object/public/profile-pictures/');
+          if (urlParts.length > 1) {
+            filePath = urlParts[1];
+            console.log('🔍 SEARCH-API: Extracted path from public URL:', filePath);
+          } else {
+            // Try sign URL format
+            urlParts = jury.profilePhotoUrl.split('/storage/v1/object/sign/profile-pictures/');
+            if (urlParts.length > 1) {
+              filePath = urlParts[1].split('?')[0]; // Remove any existing query parameters
+              console.log('🔍 SEARCH-API: Extracted path from sign URL:', filePath);
+            }
+          }
+          
+          if (filePath) {
+            const { data } = await supabase.storage
+              .from('profile-pictures')
+              .createSignedUrl(filePath, 3600); // 1 hour expiry
+            
+            signedPhotoUrl = data?.signedUrl || null;
+            console.log('🔍 SEARCH-API: Generated new signed URL:', !!signedPhotoUrl);
+          } else {
+            console.log('🔍 SEARCH-API: Could not extract file path from URL');
+          }
         }
       }
+      
+      console.log('🔍 SEARCH-API: Final result for', `${jury.firstName} ${jury.lastName}`, {
+        hasProfilePhoto: !!signedPhotoUrl,
+        profilePhotoUrl: signedPhotoUrl
+      });
 
       return {
         id: jury.id,

@@ -14,6 +14,91 @@ import { useJuryRequestCount } from '@/lib/hooks/use-jury-request-count';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+// Shared utility functions for both center and jury components
+const calculateDaysUntilSession = (sessionDate: string) => {
+  const today = new Date();
+  const session = new Date(sessionDate);
+  const diffTime = session.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+const getDaysLabel = (sessionDate: string) => {
+  const days = calculateDaysUntilSession(sessionDate);
+  
+  if (days === 0) {
+    return (
+      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+        🔥 Aujourd'hui
+      </div>
+    );
+  } else if (days === 1) {
+    return (
+      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-200">
+        ⚡ Demain
+      </div>
+    );
+  } else if (days <= 7) {
+    return (
+      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
+        ⏰ Dans {days} jours
+      </div>
+    );
+  } else if (days <= 30) {
+    return (
+      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+        📅 Dans {days} jours
+      </div>
+    );
+  } else {
+    return (
+      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
+        📆 Dans {days} jours
+      </div>
+    );
+  }
+};
+
+// Jury Avatar Component with fallback to initials
+interface JuryAvatarProps {
+  profilePhoto?: string | null;
+  juryName?: string | null;
+}
+
+function JuryAvatar({ profilePhoto, juryName }: JuryAvatarProps) {
+  const [imageError, setImageError] = useState(false);
+  
+  // Debug logging
+  console.log('🔍 JURY-AVATAR: Rendering with props', {
+    juryName,
+    profilePhoto,
+    hasProfilePhoto: !!profilePhoto,
+    imageError
+  });
+  
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'JU';
+    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+  };
+
+  if (!profilePhoto || imageError) {
+    return (
+      <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+        {getInitials(juryName)}
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={profilePhoto} 
+      alt={juryName || 'Jury'} 
+      className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+      onError={() => setImageError(true)}
+    />
+  );
+}
+
 interface JuryRequest {
   id: number;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
@@ -58,24 +143,29 @@ function CenterRequestsPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [periodFilter, setPeriodFilter] = useState<string>('');
-  const [certificationFilter, setCertificationFilter] = useState<string>('');
 
   useEffect(() => {
     fetchCenterRequests();
-  }, [statusFilter, periodFilter, certificationFilter]);
+  }, []); // Remove filter dependencies to prevent refetch on filter change
 
   const fetchCenterRequests = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (statusFilter) params.append('status', statusFilter);
-      if (periodFilter) params.append('period', periodFilter);
-      if (certificationFilter) params.append('certification', certificationFilter);
-      
-      const response = await fetch(`/api/center-requests?${params.toString()}`);
+      // Fetch all requests without filters for client-side filtering
+      const response = await fetch(`/api/center-requests`);
       const result = await response.json();
       
       if (result.success) {
+        console.log('🔍 FRONTEND: Received center requests data', {
+          requestsCount: result.data?.length || 0,
+          firstRequest: result.data?.[0],
+          profilePhotos: result.data?.map((req: any) => ({
+            id: req.id,
+            name: req.jury_name,
+            hasPhoto: !!req.jury_profile_photo,
+            photoUrl: req.jury_profile_photo
+          }))
+        });
         setRequests(result.data || []);
         calculateStats(result.data || []);
       } else {
@@ -108,6 +198,36 @@ function CenterRequestsPage() {
     
     setStats(stats);
   };
+
+  // Client-side filtering logic
+  const filteredRequests = requests.filter(request => {
+    // Apply status filter
+    const matchesStatus = !statusFilter || request.status === statusFilter;
+    
+    // Apply period filter (basic implementation - you can enhance this)
+    let matchesPeriod = true;
+    if (periodFilter) {
+      const requestDate = new Date(request.created_at);
+      const now = new Date();
+      
+      switch (periodFilter) {
+        case 'week':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          matchesPeriod = requestDate >= weekAgo;
+          break;
+        case 'month':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          matchesPeriod = requestDate >= monthAgo;
+          break;
+        case 'quarter':
+          const quarterAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          matchesPeriod = requestDate >= quarterAgo;
+          break;
+      }
+    }
+    
+    return matchesStatus && matchesPeriod;
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -150,6 +270,7 @@ function CenterRequestsPage() {
     });
   };
 
+
   if (loading) {
     return (
       <section className="flex-1 p-4 lg:p-8">
@@ -167,7 +288,7 @@ function CenterRequestsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[#0d4a70] mb-2">Mes demandes</h1>
-            <p className="text-gray-600">Suivez le statut de vos demandes de jurys</p>
+            <p className="text-gray-600">Suivez le statut de vos demandes à venir</p>
           </div>
         </div>
       </div>
@@ -252,18 +373,17 @@ function CenterRequestsPage() {
               <option value="quarter">Ce trimestre</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Certification</label>
-            <select
-              value={certificationFilter}
-              onChange={(e) => setCertificationFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d4a70] focus:border-transparent"
+          <div className="flex items-end">
+            <Button
+              onClick={() => {
+                setStatusFilter('');
+                setPeriodFilter('');
+              }}
+              variant="outline"
+              className="w-full"
             >
-              <option value="">Toutes les certifications</option>
-              <option value="informatique">Informatique</option>
-              <option value="management">Management</option>
-              <option value="commerce">Commerce</option>
-            </select>
+              Réinitialiser
+            </Button>
           </div>
         </div>
       </Card>
@@ -272,8 +392,11 @@ function CenterRequestsPage() {
       <Card className="overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-[#0d4a70]">Historique des demandes</h3>
-            <div className="text-sm text-gray-600">{stats.total} demandes au total</div>
+            <h3 className="text-lg font-semibold text-[#0d4a70]">Demandes à venir</h3>
+            <div className="text-sm text-gray-600">
+              {filteredRequests.length} demande{filteredRequests.length > 1 ? 's' : ''} affichée{filteredRequests.length > 1 ? 's' : ''} 
+              {filteredRequests.length !== stats.total && ` sur ${stats.total} au total`}
+            </div>
           </div>
         </div>
 
@@ -282,17 +405,20 @@ function CenterRequestsPage() {
             <div className="text-red-600 mb-2">Erreur</div>
             <div className="text-gray-600">{error}</div>
           </div>
-        ) : requests.length === 0 ? (
+        ) : filteredRequests.length === 0 ? (
           <div className="p-8 text-center">
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune demande trouvée</h3>
             <p className="text-gray-600">
-              Vous n'avez pas encore envoyé de demandes de jury.
+              {requests.length === 0 
+                ? "Vous n'avez pas de demandes à venir."
+                : "Aucune demande ne correspond à vos critères de recherche."
+              }
             </p>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {requests.map((request, index) => (
+            {filteredRequests.map((request, index) => (
               <div key={request.id || index} className="p-6 hover:bg-gray-50 transition-colors">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
@@ -301,6 +427,7 @@ function CenterRequestsPage() {
                         {request.certification_type || 'Certification'}
                       </h3>
                       {getStatusBadge(request.status || 'pending')}
+                      {request.session_date && getDaysLabel(request.session_date)}
                     </div>
                     <p className="text-sm text-gray-600 mb-1">
                       RNCP{request.rncp_code || '00000'} - Niveau {request.level || 'N/A'}
@@ -310,9 +437,10 @@ function CenterRequestsPage() {
 
                 {/* Jury Info */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {request.jury_name ? request.jury_name.split(' ').map((n: string) => n[0]).join('') : 'JU'}
-                  </div>
+                  <JuryAvatar 
+                    profilePhoto={request.jury_profile_photo} 
+                    juryName={request.jury_name} 
+                  />
                   <div>
                     <div className="font-semibold text-[#0d4a70]">{request.jury_name || 'Jury Non Assigné'}</div>
                     <div className="flex items-center gap-1 text-sm text-gray-600">
@@ -507,6 +635,16 @@ function JuryRequestsPage() {
       const result = await response.json();
 
       if (result.success) {
+        // Send notification emails
+        try {
+          const { sendJuryRequestResponseEmails } = await import('@/lib/actions/jury-request-actions');
+          await sendJuryRequestResponseEmails(requestId, 'accepted');
+          console.log('Notification emails sent successfully');
+        } catch (emailError) {
+          console.error('Failed to send notification emails:', emailError);
+          // Continue with UI updates even if emails fail
+        }
+
         // Update the request in the local state
         setRequests(prevRequests =>
           prevRequests.map(req =>
@@ -552,6 +690,16 @@ function JuryRequestsPage() {
       const result = await response.json();
 
       if (result.success) {
+        // Send notification emails
+        try {
+          const { sendJuryRequestResponseEmails } = await import('@/lib/actions/jury-request-actions');
+          await sendJuryRequestResponseEmails(requestId, 'declined');
+          console.log('Notification emails sent successfully');
+        } catch (emailError) {
+          console.error('Failed to send notification emails:', emailError);
+          // Continue with UI updates even if emails fail
+        }
+
         // Update the request in the local state
         setRequests(prevRequests =>
           prevRequests.map(req =>
@@ -752,6 +900,7 @@ function JuryRequestsPage() {
                       {request.training_centers.name}
                     </h3>
                     {getStatusBadge(request.status)}
+                    {request.session_date && getDaysLabel(request.session_date)}
                   </div>
                   <p className="text-gray-600 text-sm mb-1">
                     Contact: {request.training_centers.contact_person_name}

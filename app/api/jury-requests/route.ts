@@ -281,8 +281,8 @@ export async function POST(request: NextRequest) {
         juryFirstName: jury.jury_profiles[0].first_name,
         juryLastName: jury.jury_profiles[0].last_name,
         centerName: trainingCenter.name,
-        centerEmail: trainingCenter.contact_person_email,
-        centerCcEmail: trainingCenter.email, // Add CC email
+        centerEmail: trainingCenter.contact_person_email || trainingCenter.email, // Use main email as fallback
+        centerCcEmail: trainingCenter.contact_person_email ? trainingCenter.email : undefined, // Only CC if contact_person_email exists
         contactPersonName: trainingCenter.contact_person_name,
         certificationType: requestData.certificationType,
         sessionDate: requestData.sessionDate,
