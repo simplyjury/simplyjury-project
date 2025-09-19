@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { AuthService } from '@/lib/auth/auth-service';
 import { withRLSContext } from '@/lib/auth/rls-context';
+import { sendRatingInvitationEmails } from '@/lib/actions/rating-invitation-actions';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -138,6 +139,22 @@ export async function PATCH(
 
     // Log the status change for audit purposes
     console.log(`Jury request ${requestId} marked as completed by center user ${user.id}`);
+
+    // Send rating invitation emails to both center and jury
+    try {
+      console.log(`Sending rating invitation emails for request ${requestId}`);
+      const emailResult = await sendRatingInvitationEmails(requestId);
+      
+      if (emailResult.success) {
+        console.log(`Rating invitation emails sent successfully for request ${requestId}:`, emailResult.details);
+      } else {
+        console.error(`Failed to send rating invitation emails for request ${requestId}:`, emailResult.error);
+        // Don't fail the whole request if emails fail - just log the error
+      }
+    } catch (emailError) {
+      console.error(`Error sending rating invitation emails for request ${requestId}:`, emailError);
+      // Don't fail the whole request if emails fail - just log the error
+    }
 
     return NextResponse.json({
       success: true,

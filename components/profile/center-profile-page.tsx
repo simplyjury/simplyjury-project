@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import useSWR from 'swr';
 import { Save, X, Plus, Upload, Trash2, Building2, ChevronDown, ChevronUp } from 'lucide-react';
+import CenterRatingsSection from './center-ratings-section';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -16,6 +17,7 @@ export default function CenterProfilePage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [signedLogoUrl, setSignedLogoUrl] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<number>(1);
+  const [ratingsExpanded, setRatingsExpanded] = useState<boolean>(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -674,6 +676,12 @@ export default function CenterProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Ratings Section */}
+      <CenterRatingsSection 
+        isExpanded={ratingsExpanded}
+        onToggle={() => setRatingsExpanded(!ratingsExpanded)}
+      />
     </section>
   );
 }

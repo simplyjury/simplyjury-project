@@ -26,6 +26,7 @@ interface RatingData {
   communication_rating: number;
   punctuality_rating: number;
   expertise_rating: number;
+  overall_rating?: number; // For jury global rating
   comment?: string;
   would_recommend?: boolean;
 }
@@ -100,6 +101,8 @@ export default function RatingModal({
     punctuality_rating: 0,
     expertise_rating: 0
   });
+  const [globalRating, setGlobalRating] = useState(0); // For jury global rating
+  const [globalHover, setGlobalHover] = useState(0); // For jury global rating hover
   const [comment, setComment] = useState('');
   const [wouldRecommend, setWouldRecommend] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,22 +140,45 @@ export default function RatingModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate that all ratings are provided
-    if (ratings.communication_rating === 0 || ratings.punctuality_rating === 0 || ratings.expertise_rating === 0) {
-      alert('Veuillez donner une note pour tous les critères');
-      return;
+    // Validate ratings based on user type
+    if (userType === 'centre') {
+      // Centers must provide all 3 criteria ratings
+      if (ratings.communication_rating === 0 || ratings.punctuality_rating === 0 || ratings.expertise_rating === 0) {
+        alert('Veuillez donner une note pour tous les critères');
+        return;
+      }
+    } else {
+      // Juries only need to provide global rating
+      if (globalRating === 0) {
+        alert('Veuillez donner une note globale');
+        return;
+      }
     }
 
     setIsSubmitting(true);
     
     try {
-      await onSubmit({
+      const ratingData: any = {
         jury_request_id: session.id,
         rated_id: ratedUserId,
-        ...ratings,
         comment: comment.trim() || undefined,
         would_recommend: wouldRecommend || undefined
-      });
+      };
+
+      if (userType === 'centre') {
+        // Centers provide individual criteria ratings
+        ratingData.communication_rating = ratings.communication_rating;
+        ratingData.punctuality_rating = ratings.punctuality_rating;
+        ratingData.expertise_rating = ratings.expertise_rating;
+      } else {
+        // Juries provide global rating - we'll use the same value for all criteria to maintain API compatibility
+        ratingData.communication_rating = globalRating;
+        ratingData.punctuality_rating = globalRating;
+        ratingData.expertise_rating = globalRating;
+        ratingData.overall_rating = globalRating;
+      }
+
+      await onSubmit(ratingData);
       
       // Reset form
       setRatings({
@@ -165,6 +191,8 @@ export default function RatingModal({
         punctuality_rating: 0,
         expertise_rating: 0
       });
+      setGlobalRating(0);
+      setGlobalHover(0);
       setComment('');
       setWouldRecommend(null);
       
@@ -177,9 +205,11 @@ export default function RatingModal({
     }
   };
 
-  const averageRating = ratings.communication_rating && ratings.punctuality_rating && ratings.expertise_rating
-    ? ((ratings.communication_rating + ratings.punctuality_rating + ratings.expertise_rating) / 3).toFixed(1)
-    : '0.0';
+  const averageRating = userType === 'centre'
+    ? (ratings.communication_rating && ratings.punctuality_rating && ratings.expertise_rating
+        ? ((ratings.communication_rating + ratings.punctuality_rating + ratings.expertise_rating) / 3).toFixed(1)
+        : '0.0')
+    : globalRating.toFixed(1);
 
   if (!isOpen) return null;
 
@@ -213,33 +243,73 @@ export default function RatingModal({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Rating Criteria */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-[#0d4a70]">Évaluation par critères</h3>
-              
-              {criteria.map((criterion) => (
-                <div key={criterion.key} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-[#0d4a70]">{criterion.icon}</div>
-                      <div>
-                        <h4 className="font-semibold text-[#0d4a70]">{criterion.label}</h4>
-                        <p className="text-sm text-gray-600">{criterion.description}</p>
+            {/* Rating Section - Different for Centers vs Juries */}
+            {userType === 'centre' ? (
+              /* Center Rating - 3 Criteria */
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-[#0d4a70]">Évaluation par critères</h3>
+                
+                {criteria.map((criterion) => (
+                  <div key={criterion.key} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="text-[#0d4a70]">{criterion.icon}</div>
+                        <div>
+                          <h4 className="font-semibold text-[#0d4a70]">{criterion.label}</h4>
+                          <p className="text-sm text-gray-600">{criterion.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            className="focus:outline-none transition-colors"
+                            onMouseEnter={() => setHoverStates(prev => ({ ...prev, [criterion.key]: star }))}
+                            onMouseLeave={() => setHoverStates(prev => ({ ...prev, [criterion.key]: 0 }))}
+                            onClick={() => handleRatingChange(criterion.key, star)}
+                          >
+                            <Star
+                              className={`w-6 h-6 ${
+                                star <= (hoverStates[criterion.key] || ratings[criterion.key])
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          </button>
+                        ))}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1">
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Jury Rating - Single Global Rating */
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-[#0d4a70]">Évaluation globale</h3>
+                
+                <div className="border rounded-lg p-6">
+                  <div className="text-center space-y-4">
+                    <div className="flex items-center justify-center gap-3">
+                      <Star className="w-6 h-6 text-[#0d4a70]" />
+                      <div>
+                        <h4 className="font-semibold text-[#0d4a70]">Note générale</h4>
+                        <p className="text-sm text-gray-600">Évaluez votre expérience globale avec ce centre</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
                           type="button"
                           className="focus:outline-none transition-colors"
-                          onMouseEnter={() => setHoverStates(prev => ({ ...prev, [criterion.key]: star }))}
-                          onMouseLeave={() => setHoverStates(prev => ({ ...prev, [criterion.key]: 0 }))}
-                          onClick={() => handleRatingChange(criterion.key, star)}
+                          onMouseEnter={() => setGlobalHover(star)}
+                          onMouseLeave={() => setGlobalHover(0)}
+                          onClick={() => setGlobalRating(star)}
                         >
                           <Star
-                            className={`w-6 h-6 ${
-                              star <= (hoverStates[criterion.key] || ratings[criterion.key])
+                            className={`w-8 h-8 ${
+                              star <= (globalHover || globalRating)
                                 ? 'fill-yellow-400 text-yellow-400'
                                 : 'text-gray-300'
                             }`}
@@ -247,13 +317,18 @@ export default function RatingModal({
                         </button>
                       ))}
                     </div>
+                    {globalRating > 0 && (
+                      <div className="text-2xl font-bold text-[#0d4a70]">
+                        {globalRating}/5
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
 
-            {/* Overall Rating Display */}
-            {averageRating !== '0.0' && (
+            {/* Overall Rating Display - Only for Centers */}
+            {userType === 'centre' && averageRating !== '0.0' && (
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-[#0d4a70]">Note globale</span>
@@ -337,7 +412,7 @@ export default function RatingModal({
               <Button
                 type="submit"
                 className="flex-1 bg-[#0d4a70] hover:bg-[#0d4a70]/90"
-                disabled={isSubmitting || averageRating === '0.0'}
+                disabled={isSubmitting || (userType === 'centre' ? averageRating === '0.0' : globalRating === 0)}
               >
                 {isSubmitting ? 'Envoi...' : 'Publier l\'avis'}
               </Button>
