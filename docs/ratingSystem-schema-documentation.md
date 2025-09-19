@@ -346,6 +346,89 @@ CREATE INDEX idx_rating_reports_created_at ON rating_reports(created_at);
 - **Admin Panel**: Moderation tools and report management
 - **Rating History**: Personal rating dashboard for users
 
+## Email Notification System
+
+### 📧 **Rating Invitation Emails**
+
+When a center changes a jury request status from "accepted" to "completed", the system automatically sends rating invitation emails to both parties to encourage mutual evaluation.
+
+#### **Trigger Conditions**
+- Session status changes to "completed"
+- Session date is in the past (prevents premature rating requests)
+- Both center and jury users have valid email addresses
+- No duplicate emails for the same session
+
+#### **Email Templates**
+
+**Center Rating Invitation Email:**
+- **Subject**: `Évaluez votre jury - Session [Certification Title]`
+- **Template**: `center-rating-invitation`
+- **Call-to-Action**: Links to `/dashboard/sessions` 
+- **Content**: Invites center to rate jury on 3 criteria (Communication, Punctuality, Expertise)
+- **Session Details**: Includes certification info, jury details, session specifics
+
+**Jury Rating Invitation Email:**
+- **Subject**: `Évaluez le centre de formation - Mission [Certification Title]`
+- **Template**: `jury-rating-invitation`
+- **Call-to-Action**: Links to `/dashboard/missions`
+- **Content**: Invites jury to provide global rating for the center
+- **Session Details**: Includes certification info, center details, session specifics
+
+#### **Implementation Details**
+
+**Server Action**: `sendRatingInvitationEmails(requestId: number)`
+- **Location**: `/lib/actions/rating-invitation-actions.ts`
+- **Trigger**: Called when session status changes to "completed"
+- **Process**: 
+  1. Validates session eligibility
+  2. Fetches session and participant data
+  3. Sends parallel emails to both parties
+  4. Returns success/failure status for each email
+
+**Email Service Integration**:
+```typescript
+EmailService.sendRatingInvitationEmails(
+  centerEmail: string,
+  centerName: string,
+  contactPersonName: string,
+  juryEmail: string,
+  juryFirstName: string,
+  juryLastName: string,
+  sessionData: SessionData
+)
+```
+
+#### **Email Content Structure**
+
+Both emails include:
+- **Header**: Branded header with appropriate colors (blue for centers, green for juries)
+- **Session Summary**: Complete session details in a formatted card
+- **Rating Invitation**: Personalized message explaining the rating process
+- **Call-to-Action Button**: Direct link to appropriate dashboard page
+- **Footer**: Professional closing with SimplyJury branding
+
+#### **Error Handling**
+- **Partial Success**: If one email fails, the other can still succeed
+- **Retry Logic**: Failed emails are logged for potential retry
+- **Validation**: Pre-flight checks ensure data completeness
+- **Fallback**: Graceful degradation if email service is unavailable
+
+#### **Usage Integration**
+
+The rating invitation system integrates with:
+- **Session Management**: Triggered by status changes
+- **Dashboard Pages**: Email links direct users to rating interfaces
+- **Rating Modal**: Simplified interface for juries vs detailed for centers
+- **Audit Trail**: All email attempts are logged for tracking
+
+**Example Integration in Session Status Update:**
+```typescript
+// When updating session status to "completed"
+if (newStatus === 'completed' && oldStatus === 'accepted') {
+  await sendRatingInvitationEmails(sessionId);
+}
+```
+
 ## Security Considerations
 
 ### 🛡️ **Data Protection**

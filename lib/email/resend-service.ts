@@ -7,6 +7,8 @@ import { JuryValidationRequest } from '@/components/emails/jury-validation-reque
 import { JuryProfileValidationEmail } from '@/components/emails/jury-profile-validation-email';
 import { JuryRequestResponseCenter } from '@/components/emails/jury-request-response-center';
 import { JuryRequestResponseJury } from '@/components/emails/jury-request-response-jury';
+import { CenterRatingInvitation } from '@/components/emails/center-rating-invitation';
+import { JuryRatingInvitation } from '@/components/emails/jury-rating-invitation';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy-key-for-build');
 
@@ -276,6 +278,92 @@ export class EmailService {
     } catch (error) {
       console.error('Error sending jury request response emails:', error);
       throw new Error('Failed to send jury request response emails');
+    }
+  }
+
+  static async sendRatingInvitationEmails(
+    centerEmail: string,
+    centerName: string,
+    contactPersonName: string,
+    juryEmail: string,
+    juryFirstName: string,
+    juryLastName: string,
+    requestData: {
+      certificationType: string;
+      sessionDate: string;
+      sessionAddress: string;
+      candidateCount: number;
+      modality: string;
+      rncp?: string;
+    }
+  ) {
+    const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}`;
+    
+    try {
+      this.checkApiKey();
+      
+      // Send email to center (inviting to rate the jury)
+      const centerSubject = `Évaluez votre jury - Session ${requestData.certificationType}`;
+        
+      const centerEmailPromise = resend.emails.send({
+        from: this.FROM_EMAIL,
+        to: centerEmail,
+        subject: centerSubject,
+        react: CenterRatingInvitation({
+          centerName,
+          contactPersonName,
+          juryFirstName,
+          juryLastName,
+          certificationType: requestData.certificationType,
+          sessionDate: requestData.sessionDate,
+          sessionAddress: requestData.sessionAddress,
+          candidateCount: requestData.candidateCount,
+          modality: requestData.modality,
+          rncp: requestData.rncp,
+          dashboardUrl,
+        }),
+      });
+
+      // Send email to jury (inviting to rate the center)
+      const jurySubject = `Évaluez le centre de formation - Mission ${requestData.certificationType}`;
+        
+      const juryEmailPromise = resend.emails.send({
+        from: this.FROM_EMAIL,
+        to: juryEmail,
+        subject: jurySubject,
+        react: JuryRatingInvitation({
+          juryFirstName,
+          juryLastName,
+          centerName,
+          contactPersonName,
+          certificationType: requestData.certificationType,
+          sessionDate: requestData.sessionDate,
+          sessionAddress: requestData.sessionAddress,
+          candidateCount: requestData.candidateCount,
+          modality: requestData.modality,
+          rncp: requestData.rncp,
+          dashboardUrl,
+        }),
+      });
+
+      // Send both emails in parallel
+      const results = await Promise.allSettled([centerEmailPromise, juryEmailPromise]);
+      
+      const centerResult = results[0];
+      const juryResult = results[1];
+      
+      return {
+        centerEmail: centerResult.status === 'fulfilled' ? centerResult.value : null,
+        juryEmail: juryResult.status === 'fulfilled' ? juryResult.value : null,
+        errors: [
+          ...(centerResult.status === 'rejected' ? [`Center email: ${centerResult.reason}`] : []),
+          ...(juryResult.status === 'rejected' ? [`Jury email: ${juryResult.reason}`] : [])
+        ]
+      };
+      
+    } catch (error) {
+      console.error('Error sending rating invitation emails:', error);
+      throw new Error('Failed to send rating invitation emails');
     }
   }
 }
