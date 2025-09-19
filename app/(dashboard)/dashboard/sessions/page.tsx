@@ -1,64 +1,603 @@
 'use client';
 
-import { Calendar, Clock, MapPin, Award, TrendingUp } from 'lucide-react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import useSWR from 'swr';
+import { Calendar, Clock, CheckCircle, XCircle, FileText, MapPin, Users, Eye, Award, Star } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import RatingModal from '@/components/ratings/rating-modal';
 
-export default function SessionsPage() {
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+// Jury Avatar Component with fallback to initials
+interface JuryAvatarProps {
+  profilePhoto?: string | null;
+  juryName?: string | null;
+}
+
+function JuryAvatar({ profilePhoto, juryName }: JuryAvatarProps) {
+  const [imageError, setImageError] = useState(false);
+  
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'JU';
+    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+  };
+
+  if (!profilePhoto || imageError) {
+    return (
+      <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+        {getInitials(juryName)}
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
+    <img 
+      src={profilePhoto} 
+      alt={juryName || 'Jury'} 
+      className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+      onError={() => setImageError(true)}
+    />
+  );
+}
+
+interface Session {
+  id: number;
+  status: 'pending' | 'accepted' | 'rejected' | 'completed';
+  certification_title: string;
+  certification_code?: string;
+  session_date: string;
+  session_start_time?: string;
+  session_end_time?: string;
+  candidate_count: number;
+  modality: 'presentiel' | 'visio' | 'hybride';
+  session_location?: string;
+  transport_covered: boolean;
+  meals_covered: boolean;
+  accommodation_covered: boolean;
+  custom_message?: string;
+  jury_response?: string;
+  created_at: string;
+  jury_id: number;
+  jury_name: string;
+  jury_profile_photo?: string;
+  jury_rating?: string;
+  jury_reviews?: string;
+}
+
+interface SessionStats {
+  total: number;
+  completed: number;
+  accepted: number;
+  rejected: number;
+}
+
+// Center sessions component
+function CenterSessionsPage() {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [stats, setStats] = useState<SessionStats>({ total: 0, completed: 0, accepted: 0, rejected: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [periodFilter, setPeriodFilter] = useState<string>('');
+  const [certificationFilter, setCertificationFilter] = useState<string>('');
+  const [ratingModal, setRatingModal] = useState<{
+    isOpen: boolean;
+    session: Session | null;
+    juryId: number | null;
+  }>({ isOpen: false, session: null, juryId: null });
+  const [sessionRatings, setSessionRatings] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    fetchCenterSessions();
+  }, []); // Fetch all data once for client-side filtering
+
+  const fetchCenterSessions = async () => {
+    try {
+      setLoading(true);
+      // Fetch all past sessions without filters for client-side filtering
+      const response = await fetch(`/api/center-sessions`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setSessions(result.data || []);
+        calculateStats(result.data || []);
+        // Check which sessions have been rated
+        checkSessionRatings(result.data || []);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('Erreur lors du chargement des sessions');
+      console.error('Error fetching center sessions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkSessionRatings = async (sessionsData: Session[]) => {
+    try {
+      const ratingsStatus: Record<number, boolean> = {};
+      
+      // Check each session for existing ratings
+      for (const session of sessionsData) {
+        const response = await fetch(`/api/session-ratings?jury_request_id=${session.id}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          // Check if center has already rated this session
+          const centerRating = result.data.find((rating: any) => rating.rater_type === 'centre');
+          ratingsStatus[session.id] = !!centerRating;
+        }
+      }
+      
+      setSessionRatings(ratingsStatus);
+    } catch (error) {
+      console.error('Error checking session ratings:', error);
+    }
+  };
+
+  const handleOpenRatingModal = (session: Session) => {
+    setRatingModal({
+      isOpen: true,
+      session,
+      juryId: session.jury_id
+    });
+  };
+
+  const handleSubmitRating = async (ratingData: any) => {
+    try {
+      const response = await fetch('/api/session-ratings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ratingData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update the ratings status
+        setSessionRatings(prev => ({
+          ...prev,
+          [ratingData.jury_request_id]: true
+        }));
+        
+        // Show success message
+        alert('Évaluation envoyée avec succès!');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      throw error;
+    }
+  };
+
+  const closeRatingModal = () => {
+    setRatingModal({ isOpen: false, session: null, juryId: null });
+  };
+
+  const calculateStats = (sessionsData: Session[]) => {
+    const stats = sessionsData.reduce((acc, session) => {
+      acc.total++;
+      switch (session.status) {
+        case 'completed':
+          acc.completed++;
+          break;
+        case 'accepted':
+          acc.accepted++;
+          break;
+        case 'rejected':
+          acc.rejected++;
+          break;
+      }
+      return acc;
+    }, { total: 0, completed: 0, accepted: 0, rejected: 0 });
+    
+    setStats(stats);
+  };
+
+  // Client-side filtering logic
+  const filteredSessions = sessions.filter(session => {
+    // Apply status filter
+    const matchesStatus = !statusFilter || session.status === statusFilter;
+    
+    // Apply period filter
+    let matchesPeriod = true;
+    if (periodFilter) {
+      const sessionDate = new Date(session.session_date);
+      const now = new Date();
+      
+      switch (periodFilter) {
+        case 'week':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          matchesPeriod = sessionDate >= weekAgo;
+          break;
+        case 'month':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          matchesPeriod = sessionDate >= monthAgo;
+          break;
+        case 'quarter':
+          const quarterAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          matchesPeriod = sessionDate >= quarterAgo;
+          break;
+      }
+    }
+    
+    // Apply certification filter
+    const matchesCertification = !certificationFilter || 
+      (session.certification_title && session.certification_title.toLowerCase().includes(certificationFilter.toLowerCase()));
+    
+    return matchesStatus && matchesPeriod && matchesCertification;
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return (
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            Terminée
+          </div>
+        );
+      case 'accepted':
+        return (
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            Acceptée
+          </div>
+        );
+      case 'rejected':
+        return (
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+            Refusée
+          </div>
+        );
+      default:
+        return (
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+            {status}
+          </div>
+        );
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (timeString: string) => {
+    if (!timeString) return '';
+    return timeString.substring(0, 5); // Format HH:MM
+  };
+
+  if (loading) {
+    return (
+      <section className="flex-1 p-4 lg:p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Chargement des sessions...</div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="flex-1 p-4 lg:p-8 bg-gray-50">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#0d4a70] mb-2">Sessions réalisées</h1>
-        <p className="text-gray-600">Consultez l'historique de vos examens</p>
-      </div>
-
-      {/* Coming Soon Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-        <div className="max-w-md mx-auto">
-          <div className="w-20 h-20 bg-[#0d4a70] rounded-full flex items-center justify-center mx-auto mb-6">
-            <Calendar className="w-10 h-10 text-white" />
-          </div>
-          
-          <h2 className="text-2xl font-bold text-[#0d4a70] mb-4">
-            Historique des sessions en cours de développement
-          </h2>
-          
-          <p className="text-gray-600 mb-6 leading-relaxed">
-            Cette section permettra de consulter l'historique complet de vos sessions 
-            de certification et de suivre vos statistiques de performance.
-          </p>
-          
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-[#0d4a70] mb-2">Fonctionnalités à venir :</h3>
-            <ul className="text-sm text-gray-600 space-y-1 text-left">
-              <li>• Historique complet des sessions</li>
-              <li>• Détails par certification et centre</li>
-              <li>• Statistiques de performance</li>
-              <li>• Calendrier des sessions passées</li>
-              <li>• Rapports d'évaluation</li>
-              <li>• Export des données</li>
-            </ul>
-          </div>
-          
-          <div className="flex justify-center space-x-6 mb-6">
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <Clock className="w-4 h-4 text-blue-500" />
-              <span>Durée</span>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <Award className="w-4 h-4 text-yellow-500" />
-              <span>Certifications</span>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <TrendingUp className="w-4 h-4 text-green-500" />
-              <span>Statistiques</span>
-            </div>
-          </div>
-          
-          <div className="text-sm text-gray-500">
-            Cette page sera bientôt disponible dans une prochaine mise à jour.
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-[#0d4a70] mb-2">Sessions réalisées</h1>
+            <p className="text-gray-600">Consultez l'historique de vos sessions passées</p>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-[#0d4a70]/10 rounded-lg flex items-center justify-center mr-4">
+              <FileText className="w-6 h-6 text-[#0d4a70]" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-[#0d4a70]">{stats.total}</div>
+              <div className="text-sm text-gray-600">Total</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+              <Award className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-[#0d4a70]">{stats.completed}</div>
+              <div className="text-sm text-gray-600">Terminées</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-[#0d4a70]">{stats.accepted}</div>
+              <div className="text-sm text-gray-600">Acceptées</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+              <XCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-[#0d4a70]">{stats.rejected}</div>
+              <div className="text-sm text-gray-600">Refusées</div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="p-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Statut</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d4a70] focus:border-transparent"
+            >
+              <option value="">Tous les statuts</option>
+              <option value="completed">Terminées</option>
+              <option value="accepted">Acceptées</option>
+              <option value="rejected">Refusées</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Période</label>
+            <select
+              value={periodFilter}
+              onChange={(e) => setPeriodFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d4a70] focus:border-transparent"
+            >
+              <option value="">Toute période</option>
+              <option value="week">Cette semaine</option>
+              <option value="month">Ce mois</option>
+              <option value="quarter">Ce trimestre</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Certification</label>
+            <select
+              value={certificationFilter}
+              onChange={(e) => setCertificationFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0d4a70] focus:border-transparent"
+            >
+              <option value="">Toutes les certifications</option>
+              <option value="informatique">Informatique</option>
+              <option value="management">Management</option>
+              <option value="commerce">Commerce</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <Button
+              onClick={() => {
+                setStatusFilter('');
+                setPeriodFilter('');
+                setCertificationFilter('');
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              Réinitialiser
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Sessions List */}
+      <Card className="overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-[#0d4a70]">Historique des sessions</h3>
+            <div className="text-sm text-gray-600">
+              {filteredSessions.length} session{filteredSessions.length > 1 ? 's' : ''} affichée{filteredSessions.length > 1 ? 's' : ''} 
+              {filteredSessions.length !== stats.total && ` sur ${stats.total} au total`}
+            </div>
+          </div>
+        </div>
+
+        {error ? (
+          <div className="p-8 text-center">
+            <div className="text-red-600 mb-2">Erreur</div>
+            <div className="text-gray-600">{error}</div>
+          </div>
+        ) : filteredSessions.length === 0 ? (
+          <div className="p-8 text-center">
+            <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune session trouvée</h3>
+            <p className="text-gray-600">
+              {sessions.length === 0 
+                ? "Vous n'avez pas encore de sessions passées."
+                : "Aucune session ne correspond à vos critères de recherche."
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {filteredSessions.map((session, index) => (
+              <div key={session.id || index} className="p-6 hover:bg-gray-50 transition-colors">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold text-[#0d4a70]">
+                        {session.certification_title || 'Certification'}
+                      </h3>
+                      {getStatusBadge(session.status)}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">
+                      {session.certification_code && `${session.certification_code} - `}Session du {formatDate(session.session_date)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Jury Info */}
+                <div className="flex items-center gap-3 mb-4">
+                  <JuryAvatar 
+                    profilePhoto={session.jury_profile_photo} 
+                    juryName={session.jury_name} 
+                  />
+                  <div>
+                    <div className="font-semibold text-[#0d4a70]">{session.jury_name}</div>
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <span className="text-yellow-500">⭐⭐⭐⭐⭐</span>
+                      <span>{session.jury_rating || '4.9'} ({session.jury_reviews || '45'} avis)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Session Details Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div className="bg-gray-50 p-3 rounded-lg text-center">
+                    <div className="font-semibold text-[#0d4a70] text-sm">Candidats</div>
+                    <div className="text-gray-600 text-sm">{session.candidate_count}</div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-lg text-center">
+                    <div className="font-semibold text-[#0d4a70] text-sm">Modalité</div>
+                    <div className="text-gray-600 text-sm">
+                      {session.modality === 'presentiel' ? 'Présentiel' : 
+                       session.modality === 'visio' ? 'Visioconférence' : 'Hybride'}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-lg text-center">
+                    <div className="font-semibold text-[#0d4a70] text-sm">Horaires</div>
+                    <div className="text-gray-600 text-sm">
+                      {session.session_start_time && session.session_end_time 
+                        ? `${formatTime(session.session_start_time)} - ${formatTime(session.session_end_time)}`
+                        : 'Non défini'}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-lg text-center">
+                    <div className="font-semibold text-[#0d4a70] text-sm">Lieu</div>
+                    <div className="text-gray-600 text-sm">{session.session_location || 'À distance'}</div>
+                  </div>
+                </div>
+
+                {/* Jury Response if available */}
+                {session.jury_response && (
+                  <div className="bg-gray-50 p-3 rounded-lg border-l-4 border-blue-500 mb-4">
+                    <div className="text-sm text-[#0d4a70] italic">
+                      💬 "{session.jury_response}" - {session.jury_name}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2 justify-end">
+                  <Button size="sm" variant="outline">
+                    <Eye className="w-4 h-4 mr-1" />
+                    Voir détails
+                  </Button>
+                  {sessionRatings[session.id] ? (
+                    <Button size="sm" variant="outline" disabled className="text-green-600">
+                      <Star className="w-4 h-4 mr-1 fill-current" />
+                      Évalué
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      className="bg-[#0d4a70] hover:bg-[#0d4a70]/90"
+                      onClick={() => handleOpenRatingModal(session)}
+                    >
+                      <Star className="w-4 h-4 mr-1" />
+                      Donner un avis
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Rating Modal */}
+      {ratingModal.isOpen && ratingModal.session && ratingModal.juryId && (
+        <RatingModal
+          isOpen={ratingModal.isOpen}
+          onClose={closeRatingModal}
+          onSubmit={handleSubmitRating}
+          session={{
+            id: ratingModal.session.id,
+            certification_title: ratingModal.session.certification_title,
+            session_date: ratingModal.session.session_date,
+            jury_name: ratingModal.session.jury_name
+          }}
+          userType="centre"
+          ratedUserId={ratingModal.juryId}
+        />
+      )}
+    </section>
+  );
+}
+
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function SessionsPageContent() {
+  const searchParams = useSearchParams();
+  const { data: user } = useSWR('/api/user', fetcher);
+  
+  // Show loading state while determining user type
+  if (!user) {
+    return (
+      <section className="flex-1 p-4 lg:p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Chargement...</div>
+        </div>
+      </section>
+    );
+  }
+  
+  // Only allow center users to access this page
+  if (user.userType !== 'centre') {
+    return (
+      <section className="flex-1 p-4 lg:p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-600">Accès non autorisé pour ce type d'utilisateur</div>
+        </div>
+      </section>
+    );
+  }
+  
+  return <CenterSessionsPage />;
+}
+
+// Main component with Suspense boundary
+export default function SessionsPage() {
+  return (
+    <Suspense fallback={
+      <section className="flex-1 p-4 lg:p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Chargement...</div>
+        </div>
+      </section>
+    }>
+      <SessionsPageContent />
+    </Suspense>
   );
 }

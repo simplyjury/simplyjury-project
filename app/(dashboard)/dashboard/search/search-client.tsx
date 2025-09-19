@@ -31,6 +31,13 @@ interface JuryProfile {
   bio?: string;
   profilePhotoUrl?: string;
   interventionZones?: string[];
+  availabilityPreferences?: Array<{
+    id: string;
+    startDate: string;
+    endDate: string;
+    modalities: string[];
+    note?: string;
+  }>;
 }
 
 interface SearchFilters {
@@ -547,7 +554,8 @@ export default function SearchPageClient() {
             currentPosition: selectedJury.currentPosition || '',
             experienceYears: selectedJury.experienceYears || 0,
             hourlyRate: parseFloat(selectedJury.hourlyRate?.replace('€/h', '') || '0'),
-            profilePhotoUrl: selectedJury.profilePhotoUrl
+            profilePhotoUrl: selectedJury.profilePhotoUrl,
+            availabilityPreferences: selectedJury.availabilityPreferences || []
           }}
           onContact={handleModalContact}
         />

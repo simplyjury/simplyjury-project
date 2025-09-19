@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { AuthService } from '@/lib/auth/auth-service';
 import { withRLSContext } from '@/lib/auth/rls-context';
+import { sendJuryRequestResponseEmails } from '@/lib/actions/jury-request-actions';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -118,6 +119,25 @@ export async function PATCH(
 
     // Log the status change for audit purposes
     console.log(`Jury request ${requestId} status changed to ${status} by user ${user.id}`);
+
+    // Send notification emails to both parties
+    try {
+      console.log(`Sending notification emails for request ${requestId} with status: ${status}`);
+      const emailResult = await sendJuryRequestResponseEmails(
+        requestId,
+        status === 'accepted' ? 'accepted' : 'declined'
+      );
+      
+      if (emailResult.success) {
+        console.log('Notification emails sent successfully:', emailResult.message);
+      } else {
+        console.warn('Failed to send notification emails:', emailResult.error);
+        // Don't fail the request if emails fail - the status update was successful
+      }
+    } catch (emailError) {
+      console.error('Error sending notification emails:', emailError);
+      // Continue with success response even if emails fail
+    }
 
     return NextResponse.json({
       success: true,

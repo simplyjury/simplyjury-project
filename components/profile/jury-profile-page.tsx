@@ -27,6 +27,7 @@ export default function JuryProfilePage() {
     lastName: '',
     region: '',
     city: '',
+    phone: '',
     expertiseDomains: [] as string[],
     certifications: [] as string[],
     experienceYears: 0,
@@ -48,6 +49,7 @@ export default function JuryProfilePage() {
         lastName: profile.lastName || '',
         region: profile.region || '',
         city: profile.city || '',
+        phone: profile.phone || '',
         expertiseDomains: profile.expertiseDomains || [],
         certifications: profile.certifications || [],
         experienceYears: profile.experienceYears || 0,
@@ -101,6 +103,7 @@ export default function JuryProfilePage() {
         lastName: profile.lastName || '',
         region: profile.region || '',
         city: profile.city || '',
+        phone: profile.phone || '',
         expertiseDomains: profile.expertiseDomains || [],
         certifications: profile.certifications || [],
         experienceYears: profile.experienceYears || 0,
@@ -530,6 +533,21 @@ export default function JuryProfilePage() {
               />
             ) : (
               <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.city}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Téléphone</label>
+            {editingSection === 1 ? (
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                placeholder="Ex: 06 12 34 56 78"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+              />
+            ) : (
+              <p className="px-4 py-3 bg-gray-50 rounded-lg">{profile.phone || 'Non renseigné'}</p>
             )}
           </div>
 
