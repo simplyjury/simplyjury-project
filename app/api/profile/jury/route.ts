@@ -69,6 +69,14 @@ export async function POST(request: NextRequest) {
     const profileData = await request.json();
 
     const result = await withRLSContext(userId, async () => {
+      // Check if a jury profile already exists for this user
+      const existingProfile = await JuryProfileService.getByUserId(userId);
+      
+      if (existingProfile) {
+        // Return the existing profile instead of creating a duplicate
+        return { id: existingProfile.id, alreadyExists: true };
+      }
+
       // Create jury profile
       const juryProfileId = await JuryProfileService.createProfile(userId, {
         firstName: profileData.firstName,
@@ -97,26 +105,32 @@ export async function POST(request: NextRequest) {
       return { id: juryProfileId };
     });
 
-    // Send notification emails to validators after successful profile creation
-    try {
-      console.log('Sending validator notifications for new jury profile...');
-      const notificationResult = await notifyValidatorsOfNewJury(userId);
-      
-      if (notificationResult.success) {
-        console.log('Validator notifications sent successfully:', notificationResult.message);
-      } else {
-        console.error('Failed to send validator notifications:', notificationResult.error);
-        // Don't fail the profile creation if email notifications fail
+    // Send notification emails to validators after successful profile creation (only for new profiles)
+    if (!result.alreadyExists) {
+      try {
+        console.log('Sending validator notifications for new jury profile...');
+        const notificationResult = await notifyValidatorsOfNewJury(userId);
+        
+        if (notificationResult.success) {
+          console.log('Validator notifications sent successfully:', notificationResult.message);
+        } else {
+          console.error('Failed to send validator notifications:', notificationResult.error);
+          // Don't fail the profile creation if email notifications fail
+        }
+      } catch (emailError) {
+        console.error('Error sending validator notifications:', emailError);
+        // Continue with successful response even if email fails
       }
-    } catch (emailError) {
-      console.error('Error sending validator notifications:', emailError);
-      // Continue with successful response even if email fails
     }
+
+    const message = result.alreadyExists 
+      ? 'Profil déjà existant' 
+      : 'Profil créé avec succès';
 
     return NextResponse.json({ 
       success: true, 
       data: result,
-      message: 'Profil créé avec succès'
+      message: message
     });
 
   } catch (error) {

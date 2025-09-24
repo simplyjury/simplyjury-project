@@ -51,6 +51,8 @@ export default function JuryProfilePage() {
     profilePhoto: null as File | null
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [availabilityPeriods, setAvailabilityPeriods] = useState<Array<{
     id: string;
     startDate: string;
@@ -176,6 +178,13 @@ export default function JuryProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent double submission
+    if (isSubmitting) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
       let profilePhotoUrl = null;
 
@@ -194,6 +203,8 @@ export default function JuryProfilePage() {
           profilePhotoUrl = uploadResult.url;
         } else {
           console.error('Erreur lors du téléchargement de la photo');
+          setIsSubmitting(false);
+          return;
         }
       }
 
@@ -220,12 +231,15 @@ export default function JuryProfilePage() {
       });
 
       if (response.ok) {
+        // Don't reset isSubmitting here since we're redirecting
         window.location.href = '/dashboard';
       } else {
         console.error('Erreur lors de la création du profil');
+        setIsSubmitting(false);
       }
     } catch (error) {
       console.error('Erreur:', error);
+      setIsSubmitting(false);
     }
   };
 
@@ -616,9 +630,10 @@ export default function JuryProfilePage() {
             <div className="flex justify-end">
               <Button
                 type="submit"
-                className="bg-[#0d4a70] hover:bg-[#0c608a] text-white px-8 py-2"
+                disabled={isSubmitting}
+                className="bg-[#0d4a70] hover:bg-[#0c608a] text-white px-8 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Créer mon profil
+                {isSubmitting ? 'Création en cours...' : 'Créer mon profil'}
               </Button>
             </div>
           </form>
