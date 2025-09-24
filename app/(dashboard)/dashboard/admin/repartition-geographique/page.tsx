@@ -7,10 +7,31 @@ import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+interface RegionalStat {
+  rank: number;
+  region: string;
+  count: number;
+  percentage: string;
+}
+
+interface RegionalStatsResponse {
+  success: boolean;
+  data: RegionalStat[];
+  total: number;
+  type: string;
+}
+
 export default function RepartitionGeographiquePage() {
   const router = useRouter();
   const { data: user, error: userError, isLoading: userLoading } = useSWR('/api/user', fetcher);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [activeTab, setActiveTab] = useState<'centres' | 'juries'>('centres');
+  
+  // Fetch regional statistics based on active tab
+  const { data: regionalStats, error: statsError, isLoading: statsLoading } = useSWR<RegionalStatsResponse>(
+    isAuthorized ? `/api/admin/regional-stats?type=${activeTab}` : null,
+    fetcher
+  );
 
   useEffect(() => {
     if (userLoading) return;
@@ -62,14 +83,24 @@ export default function RepartitionGeographiquePage() {
         </button>
       </div>
 
-      {/* Map Placeholder */}
+      {/* Map Placeholder - V2 Feature */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <h3 className="text-lg font-semibold text-[#0d4a70] mb-4">Carte de France interactive</h3>
-        <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-[#0d4a70]">Carte de France interactive</h3>
+          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+            Fonctionnalité V2
+          </span>
+        </div>
+        <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
           <div className="text-center text-gray-500">
             <MapPin className="w-16 h-16 mx-auto mb-4 opacity-30" />
             <p className="text-lg font-medium">Carte interactive</p>
-            <p className="text-sm">Visualisation de la répartition des utilisateurs par région</p>
+            <p className="text-sm mb-2">Visualisation de la répartition des utilisateurs par région</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4 max-w-md mx-auto">
+              <p className="text-xs text-blue-700 font-medium">
+                Cette fonctionnalité sera disponible dans la version 2.0 de SimplyJury
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -79,82 +110,95 @@ export default function RepartitionGeographiquePage() {
         {/* Top Regions */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-[#0d4a70] mb-4">Top 5 des régions</h3>
+          
+          {/* Tabs */}
+          <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-4">
+            <button
+              onClick={() => setActiveTab('centres')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'centres'
+                  ? 'bg-white text-[#0d4a70] shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Building2 className="w-4 h-4" />
+                Centres de formation
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('juries')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'juries'
+                  ? 'bg-white text-[#0d4a70] shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Users className="w-4 h-4" />
+                Jurys
+              </div>
+            </button>
+          </div>
+
+          {/* Regional Statistics */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-[#0d4a70] rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
-                <div>
-                  <div className="font-medium">Île-de-France</div>
-                  <div className="text-sm text-gray-600">342 utilisateurs</div>
+            {statsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-gray-500">Chargement des données...</div>
+              </div>
+            ) : statsError || !regionalStats?.success ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-red-500">Erreur lors du chargement des données</div>
+              </div>
+            ) : regionalStats.data.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-gray-500">
+                  Aucune donnée disponible pour {activeTab === 'centres' ? 'les centres de formation' : 'les jurys'}
                 </div>
               </div>
-              <div className="text-right">
-                <div className="font-semibold">27.4%</div>
-                <div className="text-xs text-gray-500">du total</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-[#13d090] rounded-full flex items-center justify-center text-white text-sm font-bold">2</div>
-                <div>
-                  <div className="font-medium">Provence-Alpes-Côte d'Azur</div>
-                  <div className="text-sm text-gray-600">198 utilisateurs</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-semibold">15.9%</div>
-                <div className="text-xs text-gray-500">du total</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">3</div>
-                <div>
-                  <div className="font-medium">Auvergne-Rhône-Alpes</div>
-                  <div className="text-sm text-gray-600">156 utilisateurs</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-semibold">12.5%</div>
-                <div className="text-xs text-gray-500">du total</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">4</div>
-                <div>
-                  <div className="font-medium">Nouvelle-Aquitaine</div>
-                  <div className="text-sm text-gray-600">134 utilisateurs</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-semibold">10.7%</div>
-                <div className="text-xs text-gray-500">du total</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-bold">5</div>
-                <div>
-                  <div className="font-medium">Occitanie</div>
-                  <div className="text-sm text-gray-600">123 utilisateurs</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-semibold">9.9%</div>
-                <div className="text-xs text-gray-500">du total</div>
-              </div>
-            </div>
+            ) : (
+              regionalStats.data.map((region, index) => {
+                const colors = ['bg-[#0d4a70]', 'bg-[#13d090]', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500'];
+                const bgColor = colors[index] || 'bg-gray-500';
+                
+                return (
+                  <div key={region.region} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 ${bgColor} rounded-full flex items-center justify-center text-white text-sm font-bold`}>
+                        {region.rank}
+                      </div>
+                      <div>
+                        <div className="font-medium">{region.region}</div>
+                        <div className="text-sm text-gray-600">
+                          {region.count} {activeTab === 'centres' ? 'centres' : 'jurys'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">{region.percentage}%</div>
+                      <div className="text-xs text-gray-500">du total</div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
         {/* Growth by Region */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-[#0d4a70] mb-4">Croissance par région</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-[#0d4a70]">Croissance par région</h3>
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+              Fonctionnalité V2
+            </span>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+            <p className="text-xs text-amber-700 font-medium">
+              Données simulées - Cette fonctionnalité sera disponible dans la version 2.0
+            </p>
+          </div>
           <div className="space-y-4">
             <div className="p-3 border border-gray-200 rounded-lg">
               <div className="flex items-center justify-between mb-2">
@@ -203,107 +247,6 @@ export default function RepartitionGeographiquePage() {
         </div>
       </div>
 
-      {/* Detailed Regional Data */}
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-[#0d4a70]">Données détaillées par région</h3>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Région
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Jurys
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Centres
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Croissance
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                  Île-de-France
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    245
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Building2 className="w-4 h-4" />
-                    97
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                  342
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-green-600 font-semibold">+15%</span>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                  Provence-Alpes-Côte d'Azur
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    142
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Building2 className="w-4 h-4" />
-                    56
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                  198
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-green-600 font-semibold">+22%</span>
-                </td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                  Auvergne-Rhône-Alpes
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    112
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Building2 className="w-4 h-4" />
-                    44
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                  156
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-green-600 font-semibold">+18%</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
     </section>
   );
 }
