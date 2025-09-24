@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { signUpAction, ActionState } from './simplyjury-actions';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SimplyJuryLoginProps {
   mode?: 'signin' | 'signup';
@@ -18,12 +18,20 @@ interface SimplyJuryLoginProps {
 export function SimplyJuryLogin({ mode = 'signin' }: SimplyJuryLoginProps) {
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
+  const errorParam = searchParams.get('error');
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedUserType, setSelectedUserType] = useState<string>('centre');
+  
+  // Check for deactivation error from URL parameter
+  useEffect(() => {
+    if (errorParam === 'account_deactivated') {
+      setError('Votre compte a été désactivé car il ne respectait pas les conditions d\'utilisation de SimplyJury. Veuillez contacter un administrateur pour plus d\'informations.');
+    }
+  }, [errorParam]);
   
   // For sign-up, use server action; for sign-in, use API route
   const [state, formAction] = useActionState<ActionState, FormData>(

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BarChart3, Users, AlertTriangle, TrendingUp, FileText, Settings, Activity, Shield } from 'lucide-react';
+import { BarChart3, Users, AlertTriangle, TrendingUp, FileText, Settings, Activity, Shield, Info, X, Calendar, MapPin, Video, User, ChevronDown, ChevronRight, Clock } from 'lucide-react';
 import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -27,6 +27,16 @@ const getStatusInfo = (status: string) => {
     cancelled: { label: 'Annulées', color: '#ef4444', bgColor: '#fecaca' },
   };
   return statusMap[status] || { label: status, color: '#6b7280', bgColor: '#f3f4f6' };
+};
+
+// Helper function to format session modality
+const getModalityInfo = (modality: string | null) => {
+  if (modality === 'presentiel') {
+    return { label: 'Présentiel', icon: MapPin };
+  } else if (modality === 'visioconference') {
+    return { label: 'Visioconférence', icon: Video };
+  }
+  return { label: 'Non spécifié', icon: User };
 };
 
 interface PendingValidationsResponse {
@@ -98,11 +108,148 @@ interface SessionStatusBreakdownResponse {
   data: SessionStatusBreakdown;
 }
 
+interface SessionDetail {
+  id: number;
+  status: string;
+  sessionDate: string | null;
+  sessionModality: string | null;
+  createdAt: string;
+  certificationTitle: string | null;
+  sessionLocation: string | null;
+  daysUntilSession: number | null;
+  centre: {
+    name: string | null;
+    city: string | null;
+  };
+  jury: {
+    firstName: string | null;
+    lastName: string | null;
+    city: string | null;
+  };
+}
+
+interface DetailedSessionInfo {
+  id: number;
+  status: string;
+  sessionDate: string | null;
+  sessionModality: string | null;
+  createdAt: string;
+  certificationTitle: string | null;
+  certificationCode: string | null;
+  sessionLocation: string | null;
+  candidateCount: number | null;
+  sessionStartTime: string | null;
+  sessionEndTime: string | null;
+  transportCovered: boolean | null;
+  mealsCovered: boolean | null;
+  accommodationCovered: boolean | null;
+  customMessage: string | null;
+  centre: {
+    name: string | null;
+    city: string | null;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    userEmail: string | null;
+  };
+  jury: {
+    firstName: string | null;
+    lastName: string | null;
+    region: string | null;
+    position: string | null;
+    experience: number | null;
+    expertise: string[] | null;
+    email: string | null;
+  };
+}
+
+interface SessionDetailsResponse {
+  success: boolean;
+  data: {
+    status: string;
+    sessions: SessionDetail[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalCount: number;
+      actualCount: number;
+      limit: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+      isLimited: boolean;
+    };
+  };
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { data: user, error: userError, isLoading: userLoading } = useSWR('/api/user', fetcher);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [expandedSessionId, setExpandedSessionId] = useState<number | null>(null);
+  const [sessionDetails, setSessionDetails] = useState<Record<number, DetailedSessionInfo>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Handle info icon click for status details
+  const handleStatusInfoClick = (status: string) => {
+    setSelectedStatus(status);
+    setShowStatusModal(true);
+    setCurrentPage(1); // Reset to first page when opening modal
+  };
+
+  // Handle pagination
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setExpandedSessionId(null); // Close any expanded session when changing page
+  };
+
+  // Helper function to get time-based tag
+  const getTimeTag = (daysUntilSession: number | null) => {
+    if (daysUntilSession === null) {
+      return { label: 'Date non définie', color: 'bg-gray-100 text-gray-600' };
+    }
+    if (daysUntilSession === -1) {
+      return { label: 'Date de session passée', color: 'bg-red-100 text-red-700' };
+    }
+    if (daysUntilSession === 0) {
+      return { label: "Aujourd'hui", color: 'bg-green-100 text-green-700' };
+    }
+    if (daysUntilSession === 1) {
+      return { label: 'Demain', color: 'bg-blue-100 text-blue-700' };
+    }
+    return { 
+      label: `Dans ${daysUntilSession} jours`, 
+      color: 'bg-blue-100 text-blue-700' 
+    };
+  };
+
+  // Handle session row click (expand/collapse)
+  const handleSessionClick = async (sessionId: number) => {
+    if (expandedSessionId === sessionId) {
+      setExpandedSessionId(null);
+      return;
+    }
+
+    setExpandedSessionId(sessionId);
+
+    // Lazy load detailed session info if not already loaded
+    if (!sessionDetails[sessionId]) {
+      try {
+        const response = await fetch(`/api/admin/session-details/${sessionId}`);
+        const result = await response.json();
+        if (result.success) {
+          setSessionDetails(prev => ({
+            ...prev,
+            [sessionId]: result.data
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading session details:', error);
+      }
+    }
+  };
   
   // Fetch pending validations data
   const { data: pendingValidations, error: pendingError } = useSWR<PendingValidationsResponse>(
@@ -139,6 +286,12 @@ export default function AdminDashboardPage() {
   // Fetch session status breakdown
   const { data: sessionStatusStats } = useSWR<SessionStatusBreakdownResponse>(
     isAuthorized ? '/api/admin/session-status-breakdown' : null,
+    fetcher
+  );
+
+  // Fetch session details for selected status
+  const { data: sessionsList } = useSWR<SessionDetailsResponse>(
+    isAuthorized && selectedStatus ? `/api/admin/session-details?status=${selectedStatus}&page=${currentPage}` : null,
     fetcher
   );
 
@@ -522,7 +675,16 @@ export default function AdminDashboardPage() {
                   return (
                     <div key={item.status} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-gray-900">{statusInfo.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900">{statusInfo.label}</span>
+                          <button
+                            onClick={() => handleStatusInfoClick(item.status)}
+                            className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                            title={`Voir les détails pour ${statusInfo.label}`}
+                          >
+                            <Info className="w-3 h-3 text-gray-400 hover:text-gray-600" />
+                          </button>
+                        </div>
                         <div className="flex items-center gap-2">
                           <span className="text-gray-600">{item.count}</span>
                           <span className="text-xs text-gray-500">({item.percentage}%)</span>
@@ -556,6 +718,249 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Session Details Modal */}
+      {showStatusModal && selectedStatus && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-[#0d4a70]">
+                Sessions {getStatusInfo(selectedStatus).label}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowStatusModal(false);
+                  setSelectedStatus(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              {sessionsList?.success ? (
+                <>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      {sessionsList.data.pagination.isLimited ? (
+                        <>
+                          Affichage de {sessionsList.data.sessions.length} sessions sur {sessionsList.data.pagination.totalCount} 
+                          (limité aux {sessionsList.data.pagination.totalCount} plus récentes)
+                        </>
+                      ) : (
+                        <>
+                          {sessionsList.data.sessions.length} session(s) trouvée(s)
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Pagination Controls */}
+                    {sessionsList.data.pagination.totalPages > 1 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={!sessionsList.data.pagination.hasPrevPage}
+                          className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Précédent
+                        </button>
+                        
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: sessionsList.data.pagination.totalPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                              key={page}
+                              onClick={() => handlePageChange(page)}
+                              className={`px-2 py-1 text-sm rounded ${
+                                page === currentPage
+                                  ? 'bg-blue-600 text-white'
+                                  : 'hover:bg-gray-100'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={!sessionsList.data.pagination.hasNextPage}
+                          className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Suivant
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {sessionsList.data.sessions.length > 0 ? (
+                    <div className="space-y-2">
+                      {sessionsList.data.sessions.map((session) => {
+                        const timeTag = getTimeTag(session.daysUntilSession);
+                        const modalityInfo = getModalityInfo(session.sessionModality);
+                        const isExpanded = expandedSessionId === session.id;
+                        const detailedInfo = sessionDetails[session.id];
+                        
+                        return (
+                          <div key={session.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                            {/* Collapsed Row - Always Visible */}
+                            <div 
+                              className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                              onClick={() => handleSessionClick(session.id)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  {/* Expand/Collapse Icon */}
+                                  {isExpanded ? (
+                                    <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                  )}
+                                  
+                                  {/* Session Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-medium text-gray-900 truncate">
+                                        #{session.id} - {session.certificationTitle || 'Certification non spécifiée'}
+                                      </span>
+                                      <span className={`px-2 py-1 text-xs rounded-full ${timeTag.color}`}>
+                                        {timeTag.label}
+                                      </span>
+                                    </div>
+                                    <div className="text-sm text-gray-600 flex items-center gap-4">
+                                      <span className="truncate">
+                                        {session.centre.name || 'Centre non spécifié'}
+                                      </span>
+                                      <span className="text-gray-400">•</span>
+                                      <span className="truncate">
+                                        {session.jury.firstName && session.jury.lastName 
+                                          ? `${session.jury.firstName} ${session.jury.lastName}`
+                                          : 'Jury non spécifié'
+                                        }
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Quick Info */}
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  {session.sessionDate && (
+                                    <span>{formatDate(session.sessionDate)}</span>
+                                  )}
+                                  {modalityInfo.icon && (
+                                    <modalityInfo.icon className="w-4 h-4" />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Expanded Details - Lazy Loaded */}
+                            {isExpanded && (
+                              <div className="border-t border-gray-200 bg-gray-50 p-4">
+                                {detailedInfo ? (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Centre Details */}
+                                    <div className="space-y-3">
+                                      <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                                        <Users className="w-4 h-4 text-blue-600" />
+                                        Centre de formation
+                                      </h4>
+                                      <div className="pl-6 space-y-2 text-sm">
+                                        <div className="font-medium">{detailedInfo.centre.name || 'Non spécifié'}</div>
+                                        <div className="text-gray-600">{detailedInfo.centre.city || 'Ville non spécifiée'}</div>
+                                        <div className="text-gray-600">{detailedInfo.centre.email || 'Email non spécifié'}</div>
+                                        {detailedInfo.centre.phone && (
+                                          <div className="text-gray-600">{detailedInfo.centre.phone}</div>
+                                        )}
+                                        {detailedInfo.centre.address && (
+                                          <div className="text-gray-600">{detailedInfo.centre.address}</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Jury Details */}
+                                    <div className="space-y-3">
+                                      <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                                        <User className="w-4 h-4 text-purple-600" />
+                                        Jury
+                                      </h4>
+                                      <div className="pl-6 space-y-2 text-sm">
+                                        <div className="font-medium">
+                                          {detailedInfo.jury.firstName && detailedInfo.jury.lastName 
+                                            ? `${detailedInfo.jury.firstName} ${detailedInfo.jury.lastName}`
+                                            : 'Non spécifié'
+                                          }
+                                        </div>
+                                        <div className="text-gray-600">{detailedInfo.jury.region || 'Région non spécifiée'}</div>
+                                        <div className="text-gray-600">{detailedInfo.jury.email || 'Email non spécifié'}</div>
+                                        {detailedInfo.jury.position && (
+                                          <div className="text-gray-600">{detailedInfo.jury.position}</div>
+                                        )}
+                                        {detailedInfo.jury.experience && (
+                                          <div className="text-gray-600">{detailedInfo.jury.experience} ans d'expérience</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Session Details */}
+                                    <div className="md:col-span-2 space-y-3">
+                                      <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 text-green-600" />
+                                        Détails de la session
+                                      </h4>
+                                      <div className="pl-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                        <div className="space-y-2">
+                                          {detailedInfo.certificationCode && (
+                                            <div><span className="font-medium">Code:</span> {detailedInfo.certificationCode}</div>
+                                          )}
+                                          {detailedInfo.candidateCount && (
+                                            <div><span className="font-medium">Candidats:</span> {detailedInfo.candidateCount}</div>
+                                          )}
+                                          {detailedInfo.sessionStartTime && (
+                                            <div><span className="font-medium">Heure début:</span> {detailedInfo.sessionStartTime}</div>
+                                          )}
+                                          {detailedInfo.sessionEndTime && (
+                                            <div><span className="font-medium">Heure fin:</span> {detailedInfo.sessionEndTime}</div>
+                                          )}
+                                        </div>
+                                        <div className="space-y-2">
+                                          {detailedInfo.sessionLocation && (
+                                            <div><span className="font-medium">Lieu:</span> {detailedInfo.sessionLocation}</div>
+                                          )}
+                                          <div><span className="font-medium">Transport:</span> {detailedInfo.transportCovered ? 'Pris en charge' : 'Non pris en charge'}</div>
+                                          <div><span className="font-medium">Repas:</span> {detailedInfo.mealsCovered ? 'Pris en charge' : 'Non pris en charge'}</div>
+                                          <div><span className="font-medium">Hébergement:</span> {detailedInfo.accommodationCovered ? 'Pris en charge' : 'Non pris en charge'}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-center py-4">
+                                    <div className="text-gray-500 text-sm">Chargement des détails...</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>Aucune session trouvée pour ce statut</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-gray-500">Chargement des sessions...</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
