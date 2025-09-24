@@ -10,6 +10,8 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export default function ParametresPage() {
   const router = useRouter();
   const { data: user, error: userError, isLoading: userLoading } = useSWR('/api/user', fetcher);
+  
+  // All state hooks must be at the top level
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
@@ -17,10 +19,16 @@ export default function ParametresPage() {
   const [saving, setSaving] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingMaintenanceState, setPendingMaintenanceState] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Handle client-side mounting to prevent hydration issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Authorization check
   useEffect(() => {
-    if (userLoading) return;
+    if (!mounted || userLoading) return;
     
     if (userError || !user) {
       router.push('/sign-in');
@@ -33,7 +41,34 @@ export default function ParametresPage() {
     }
 
     setIsAuthorized(true);
-  }, [user, userError, userLoading, router]);
+  }, [user, userError, userLoading, router, mounted]);
+
+  // Load current maintenance settings
+  useEffect(() => {
+    if (!isAuthorized) return;
+    
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/admin/maintenance');
+        if (response.ok) {
+          const data = await response.json();
+          setMaintenanceMode(data.maintenanceMode);
+          setMaintenanceMessage(data.maintenanceMessage || '');
+        }
+      } catch (error) {
+        console.error('Error loading maintenance settings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [isAuthorized]);
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return null;
+  }
 
   // Show loading state while checking authorization
   if (userLoading || !isAuthorized) {
@@ -53,26 +88,6 @@ export default function ParametresPage() {
       </section>
     );
   }
-
-  // Load current maintenance settings
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const response = await fetch('/api/admin/maintenance');
-        if (response.ok) {
-          const data = await response.json();
-          setMaintenanceMode(data.maintenanceMode);
-          setMaintenanceMessage(data.maintenanceMessage || '');
-        }
-      } catch (error) {
-        console.error('Error loading maintenance settings:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSettings();
-  }, []);
 
   // Handle maintenance mode toggle with confirmation
   const handleMaintenanceToggle = (enabled: boolean) => {
@@ -186,9 +201,14 @@ export default function ParametresPage() {
 
         {/* Security Settings */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Shield className="w-6 h-6 text-[#0d4a70]" />
-            <h3 className="text-lg font-semibold text-[#0d4a70]">Sécurité</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-6 h-6 text-[#0d4a70]" />
+              <h3 className="text-lg font-semibold text-[#0d4a70]">Sécurité</h3>
+            </div>
+            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+              Fonctionnalité V2
+            </span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -220,9 +240,14 @@ export default function ParametresPage() {
 
         {/* Email Settings */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Mail className="w-6 h-6 text-[#0d4a70]" />
-            <h3 className="text-lg font-semibold text-[#0d4a70]">Configuration email</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Mail className="w-6 h-6 text-[#0d4a70]" />
+              <h3 className="text-lg font-semibold text-[#0d4a70]">Configuration email</h3>
+            </div>
+            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+              Fonctionnalité V2
+            </span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -266,9 +291,14 @@ export default function ParametresPage() {
 
         {/* API Settings */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Key className="w-6 h-6 text-[#0d4a70]" />
-            <h3 className="text-lg font-semibold text-[#0d4a70]">API et intégrations</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Key className="w-6 h-6 text-[#0d4a70]" />
+              <h3 className="text-lg font-semibold text-[#0d4a70]">API et intégrations</h3>
+            </div>
+            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+              Fonctionnalité V2
+            </span>
           </div>
           
           <div className="space-y-4">
@@ -300,9 +330,14 @@ export default function ParametresPage() {
 
         {/* Platform Settings */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Globe className="w-6 h-6 text-[#0d4a70]" />
-            <h3 className="text-lg font-semibold text-[#0d4a70]">Paramètres de la plateforme</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Globe className="w-6 h-6 text-[#0d4a70]" />
+              <h3 className="text-lg font-semibold text-[#0d4a70]">Paramètres de la plateforme</h3>
+            </div>
+            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+              Fonctionnalité V2
+            </span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

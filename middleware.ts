@@ -3,6 +3,9 @@ import type { NextRequest } from 'next/server';
 import { signToken, verifyToken } from '@/lib/auth/session';
 import { SystemSettingsService } from '@/lib/services/system-settings-service';
 import { debugAuthIssue, logJWTError } from '@/lib/debug/auth-debug';
+import { db } from '@/lib/db/drizzle';
+import { users } from '@/lib/db/schema';
+import { eq, isNull } from 'drizzle-orm';
 
 const protectedRoutes = ['/dashboard'];
 const excludedRoutes: string[] = []; // No excluded routes - all dashboard routes require authentication
@@ -89,6 +92,32 @@ export async function middleware(request: NextRequest) {
         userType: parsed?.userType,
         hasExpires: !!parsed?.expires
       });
+      
+      // Check if user is deactivated in database (only for protected routes)
+      if (parsed?.userId && isProtectedRoute) {
+        const userCheck = await db
+          .select({ id: users.id, deletedAt: users.deletedAt })
+          .from(users)
+          .where(eq(users.id, parsed.userId))
+          .limit(1);
+        
+        if (userCheck.length === 0 || userCheck[0].deletedAt) {
+          console.log('❌ MIDDLEWARE: User is deactivated, clearing session and redirecting:', {
+            userId: parsed.userId,
+            userExists: userCheck.length > 0,
+            isDeactivated: userCheck[0]?.deletedAt ? true : false,
+            pathname
+          });
+          
+          // Clear the session cookie
+          res.cookies.delete('session');
+          
+          // Redirect to sign-in with deactivation message
+          const signInUrl = new URL('/sign-in', request.url);
+          signInUrl.searchParams.set('error', 'account_deactivated');
+          return NextResponse.redirect(signInUrl);
+        }
+      }
       
       const expiresInOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
 

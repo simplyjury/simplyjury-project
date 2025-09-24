@@ -86,6 +86,21 @@ export const signIn = validatedAction(signInSchema, async (data, formData) => {
     };
   }
 
+  // Check if user is deactivated
+  if (foundUser.deletedAt) {
+    return {
+      error: 'Votre compte a été désactivé. Veuillez contacter un administrateur pour plus d\'informations.',
+      email,
+      password
+    };
+  }
+
+  // Update last login timestamp
+  await db
+    .update(users)
+    .set({ lastLogin: new Date() })
+    .where(eq(users.id, foundUser.id));
+
   await Promise.all([
     setSession(foundUser),
     logActivity(foundTeam?.id, foundUser.id, ActivityType.SIGN_IN)
