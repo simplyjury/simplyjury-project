@@ -306,7 +306,7 @@ export function CenterRequestConfirmation({
           <div className="header">
             <div className="logo">SJ</div>
             <h1>Demande envoyée</h1>
-            <p>Votre demande de jury a été transmise avec succès</p>
+            <p>Votre demande a été transmise au jury</p>
           </div>
           
           <div className="content">
@@ -321,7 +321,7 @@ export function CenterRequestConfirmation({
             </div>
             
             <div className="message">
-              Votre demande de jury a été transmise avec succès. Voici un récapitulatif de votre demande :
+              Voici un récapitulatif de votre demande :
             </div>
             
             <div className="details-card">

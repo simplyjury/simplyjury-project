@@ -51,8 +51,33 @@ function StatsCard({ title, value, icon: Icon, trend, color = "text-[#0d4a70]" }
 }
 
 function RecentRequests() {
-  // TODO: Implement /api/jury/requests endpoint
-  const { data: requests } = useSWR(null, fetcher); // Disabled until endpoint exists
+  const { data: requests, error: requestsError } = useSWR('/api/jury/recent-requests', fetcher);
+  
+  // Show loading state
+  if (!requests && !requestsError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Demandes récentes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="text-gray-500">Chargement des demandes...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Handle error state
+  if (requestsError) {
+    console.error('Error loading recent requests:', requestsError);
+  }
+
+  const recentRequests = requests?.data || [];
   
   return (
     <Card>
@@ -63,24 +88,40 @@ function RecentRequests() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {requests?.data?.length > 0 ? (
+        {recentRequests.length > 0 ? (
           <div className="space-y-4">
-            {requests.data.slice(0, 3).map((request: any, index: number) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
+            {recentRequests.map((request: any) => (
+              <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
                   <p className="font-medium text-sm">{request.certificationName}</p>
+                  {request.certificationCode && (
+                    <p className="text-xs text-gray-500 mb-1">Code: {request.certificationCode}</p>
+                  )}
                   <p className="text-xs text-gray-600">{request.centerName}</p>
-                  <p className="text-xs text-gray-500">{request.date}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-xs text-gray-500">{request.date}</p>
+                    <span className="text-xs text-gray-400">•</span>
+                    <p className="text-xs text-gray-500">{request.candidateCount} candidat{request.candidateCount > 1 ? 's' : ''}</p>
+                  </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right ml-3">
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                     request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                     request.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                    request.status === 'declined' ? 'bg-red-100 text-red-800' :
+                    request.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {request.status === 'pending' ? 'En attente' :
-                     request.status === 'accepted' ? 'Acceptée' : 'Terminée'}
+                     request.status === 'accepted' ? 'Acceptée' :
+                     request.status === 'declined' ? 'Refusée' :
+                     request.status === 'completed' ? 'Terminée' : request.status}
                   </span>
+                  <p className="text-xs text-gray-500 mt-1 capitalize">
+                    {request.modality === 'presentiel' ? 'Présentiel' :
+                     request.modality === 'visio' ? 'Visio' :
+                     request.modality === 'hybride' ? 'Hybride' : request.modality}
+                  </p>
                 </div>
               </div>
             ))}
@@ -94,7 +135,7 @@ function RecentRequests() {
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-500 font-medium">Aucune demande récente</p>
-            <p className="text-sm text-gray-400">Les nouvelles demandes apparaîtront ici</p>
+            <p className="text-sm text-gray-400">Les demandes reçues dans les 10 derniers jours apparaîtront ici</p>
           </div>
         )}
       </CardContent>
@@ -102,51 +143,6 @@ function RecentRequests() {
   );
 }
 
-function UpcomingMissions() {
-  // TODO: Implement /api/jury/missions/upcoming endpoint
-  const { data: missions } = useSWR(null, fetcher); // Disabled until endpoint exists
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Prochaines missions
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {missions?.data?.length > 0 ? (
-          <div className="space-y-4">
-            {missions.data.slice(0, 3).map((mission: any, index: number) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">{mission.certificationName}</p>
-                  <p className="text-xs text-gray-600">{mission.centerName}</p>
-                  <p className="text-xs text-blue-600 font-medium">{mission.date} à {mission.time}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-[#0d4a70]">{mission.modality}</p>
-                  <p className="text-xs text-gray-500">{mission.duration}</p>
-                </div>
-              </div>
-            ))}
-            <Link href="/dashboard/missions">
-              <Button variant="outline" className="w-full">
-                Voir toutes les missions
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Aucune mission programmée</p>
-            <p className="text-sm text-gray-400">Vos prochaines missions apparaîtront ici</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 function QuickActions() {
   return (
@@ -181,8 +177,7 @@ function QuickActions() {
 }
 
 export default function JuryDashboard() {
-  // TODO: Implement /api/jury/stats endpoint
-  const { data: stats } = useSWR(null, fetcher); // Disabled until endpoint exists
+  const { data: stats, error: statsError } = useSWR('/api/jury/stats', fetcher);
   const { data: profile } = useSWR('/api/profile/jury', fetcher);
 
   const juryStats: JuryStats = stats?.data || {
@@ -192,6 +187,22 @@ export default function JuryDashboard() {
     averageRating: 0,
     totalEarnings: 0
   };
+
+  // Show loading state while fetching stats
+  if (!stats && !statsError) {
+    return (
+      <section className="flex-1 p-4 lg:p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Chargement des statistiques...</div>
+        </div>
+      </section>
+    );
+  }
+
+  // Show error state if stats failed to load
+  if (statsError) {
+    console.error('Error loading jury stats:', statsError);
+  }
 
   return (
     <section className="flex-1 p-4 lg:p-8">
@@ -210,33 +221,35 @@ export default function JuryDashboard() {
           title="Demandes reçues"
           value={juryStats.totalRequests}
           icon={FileText}
-          trend="+2 cette semaine"
+          trend={`${juryStats.totalRequests} au total`}
         />
         <StatsCard
           title="En attente"
           value={juryStats.pendingRequests}
           icon={Clock}
           color="text-orange-600"
+          trend={juryStats.pendingRequests > 0 ? "Nécessite une réponse" : "Aucune demande en attente"}
         />
         <StatsCard
           title="Missions réalisées"
           value={juryStats.completedMissions}
           icon={CheckCircle}
           color="text-green-600"
+          trend={`${juryStats.completedMissions} mission${juryStats.completedMissions > 1 ? 's' : ''} terminée${juryStats.completedMissions > 1 ? 's' : ''}`}
         />
         <StatsCard
           title="Note moyenne"
           value={juryStats.averageRating > 0 ? `${juryStats.averageRating}/5` : '-'}
           icon={Star}
           color="text-yellow-600"
+          trend={juryStats.averageRating > 0 ? `Basée sur ${(stats?.data?.totalRatings || 0)} évaluation${(stats?.data?.totalRatings || 0) > 1 ? 's' : ''}` : 'Aucune évaluation'}
         />
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
           <RecentRequests />
-          <UpcomingMissions />
         </div>
         <div>
           <QuickActions />

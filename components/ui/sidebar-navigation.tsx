@@ -26,7 +26,8 @@ import {
   Download,
   Activity,
   Building,
-  BookOpen
+  BookOpen,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
@@ -70,6 +71,11 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             name: 'Gestion utilisateurs',
             href: '/dashboard/admin/gestion-utilisateurs',
             icon: Users,
+          },
+          {
+            name: 'Sessions',
+            href: '/dashboard/admin/sessions',
+            icon: ClipboardList,
           },
           {
             name: 'Modération avis',
