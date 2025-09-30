@@ -46,6 +46,33 @@ export async function PATCH(
       );
     }
 
+    // If accepting, check if jury has a phone number
+    if (status === 'accepted') {
+      const { data: juryProfile, error: profileError } = await supabase
+        .from('jury_profiles')
+        .select('phone')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) {
+        return NextResponse.json(
+          { success: false, error: 'Erreur lors de la vérification du profil' },
+          { status: 500 }
+        );
+      }
+
+      if (!juryProfile?.phone || juryProfile.phone.trim() === '') {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Vous devez renseigner votre numéro de téléphone dans votre profil avant d\'accepter une demande.',
+            errorCode: 'PHONE_REQUIRED'
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Execute database operations with RLS context
     const result = await withRLSContext(user.id, async () => {
       // First, verify that the request exists and belongs to this jury

@@ -668,12 +668,17 @@ function JuryRequestsPage() {
         // You could add a toast notification here
         console.log(result.message);
       } else {
-        console.error('Error accepting request:', result.error);
-        // You could add error handling/toast here
+        // Handle phone number validation error
+        if (result.errorCode === 'PHONE_REQUIRED') {
+          alert(`⚠️ Numéro de téléphone requis\n\n${result.error}\n\nVeuillez compléter votre profil avant d'accepter une demande.`);
+        } else {
+          console.error('Error accepting request:', result.error);
+          alert(`Erreur: ${result.error}`);
+        }
       }
     } catch (error) {
       console.error('Error accepting request:', error);
-      // You could add error handling/toast here
+      alert('Une erreur est survenue lors de l\'acceptation de la demande.');
     }
   };
 
