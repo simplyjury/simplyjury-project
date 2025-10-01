@@ -2,37 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/drizzle';
 import { franceCompetenceCertifications, certificationStats, trainingCenters, users } from '@/lib/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
-import { AuthService } from '@/lib/auth/auth-service';
+import { getSession } from '@/lib/auth/session';
 
-async function getCurrentUser(request: NextRequest) {
+async function getCurrentUser() {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const session = await getSession();
+    if (!session || !session.userId) {
       return null;
     }
 
-    const token = authHeader.split(' ')[1];
-    const payload = await AuthService.verifyJWT(token);
-    const userId = payload.userId;
-
-    if (!userId) {
-      return null;
-    }
-
-    // Check if user's training center is a certificateur
-    const trainingCenter = await db.query.trainingCenters.findFirst({
-      where: eq(trainingCenters.userId, userId),
-      columns: {
-        id: true,
-        isCertificateur: true
-      }
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.userId)
     });
 
-    if (!trainingCenter?.isCertificateur) {
-      return null;
-    }
-
-    return await AuthService.getUserWithProfile(payload.userId);
+    return user;
   } catch (error) {
     return null;
   }
@@ -40,7 +23,7 @@ async function getCurrentUser(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -73,6 +56,7 @@ export async function GET(request: NextRequest) {
         validity_start: franceCompetenceCertifications.validityStart,
         validity_end: franceCompetenceCertifications.validityEnd,
         created_at: franceCompetenceCertifications.createdAt,
+        certification_details: franceCompetenceCertifications.certificationDetails,
       })
       .from(franceCompetenceCertifications)
       .where(eq(franceCompetenceCertifications.trainingCenterId, trainingCenterId))
@@ -106,6 +90,35 @@ export async function GET(request: NextRequest) {
         calculatedStatus = 'inactive';
       }
 
+      // Extract competency blocks from certification_details JSONB
+      const competencyBlocks: string[] = [];
+      if (cert.certification_details && typeof cert.certification_details === 'object') {
+        const details = cert.certification_details as any;
+        if (details.blocs_competences?.rncp && Array.isArray(details.blocs_competences.rncp)) {
+          details.blocs_competences.rncp.forEach((bloc: any) => {
+            if (bloc.intitule) {
+              competencyBlocks.push(bloc.intitule);
+            }
+          });
+        }
+      }
+
+      // Extract tags from domains
+      const tags: string[] = [];
+      if (cert.domain) {
+        tags.push(cert.domain);
+      }
+      if (cert.certification_details && typeof cert.certification_details === 'object') {
+        const details = cert.certification_details as any;
+        if (details.domaines?.rome?.rncp && Array.isArray(details.domaines.rome.rncp)) {
+          details.domaines.rome.rncp.slice(0, 3).forEach((rome: any) => {
+            if (rome.intitule && !tags.includes(rome.intitule)) {
+              tags.push(rome.intitule);
+            }
+          });
+        }
+      }
+
       return {
         ...cert,
         status: calculatedStatus,
@@ -115,9 +128,8 @@ export async function GET(request: NextRequest) {
           : 0,
         total_sessions: certStats?.total_sessions || 0,
         last_session_date: certStats?.last_session_date,
-        // Mock competency blocks and tags for now - these would come from France Compétences API
-        competency_blocks: [],
-        tags: cert.domain ? [cert.domain] : [],
+        competency_blocks: competencyBlocks,
+        tags: tags.slice(0, 5), // Limit to 5 tags
       };
     });
 
@@ -134,7 +146,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

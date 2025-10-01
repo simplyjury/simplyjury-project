@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Users, Video, Building, Phone, Mail, Globe, MessageCircle, Eye, Clock } from 'lucide-react';
+import { Search, MapPin, Users, Video, Building, Phone, Mail, Globe, MessageCircle, Eye, Clock, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -9,6 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
 import { ContactCenterModal } from '@/components/jury/contact-center-modal';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface TrainingCenter {
   id: number;
@@ -38,10 +45,13 @@ interface CentersResponse {
   count: number;
 }
 
+type SearchFilterType = 'name' | 'rncp' | 'domain';
+
 export default function CentersPage() {
   const [centers, setCenters] = useState<TrainingCenter[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchFilter, setSearchFilter] = useState<SearchFilterType>('name');
   const [error, setError] = useState<string | null>(null);
   const [selectedCenter, setSelectedCenter] = useState<TrainingCenter | null>(null);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -67,12 +77,13 @@ export default function CentersPage() {
     }
   };
 
-  const fetchCenters = async (search = '') => {
+  const fetchCenters = async (search = '', filter: SearchFilterType = 'name') => {
     try {
       setLoading(true);
       const url = new URL('/api/centers', window.location.origin);
       if (search.trim()) {
         url.searchParams.set('search', search);
+        url.searchParams.set('searchType', filter);
       }
       
       const response = await fetch(url.toString());
@@ -97,8 +108,8 @@ export default function CentersPage() {
   }, []);
 
   useEffect(() => {
-    fetchCenters(searchTerm);
-  }, [searchTerm]);
+    fetchCenters(searchTerm, searchFilter);
+  }, [searchTerm, searchFilter]);
 
   useEffect(() => {
     if (centers.length > 0) {
@@ -109,7 +120,26 @@ export default function CentersPage() {
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    fetchCenters(value);
+    fetchCenters(value, searchFilter);
+  };
+
+  const handleFilterChange = (value: SearchFilterType) => {
+    setSearchFilter(value);
+    // Re-fetch with current search term and new filter
+    if (searchTerm) {
+      fetchCenters(searchTerm, value);
+    }
+  };
+
+  const getSearchPlaceholder = () => {
+    switch (searchFilter) {
+      case 'rncp':
+        return 'Rechercher par code RNCP (ex: RNCP37674)...';
+      case 'domain':
+        return 'Rechercher par domaine de compétence...';
+      default:
+        return 'Rechercher un centre par nom...';
+    }
   };
 
   const getInitials = (name: string) => {
@@ -193,16 +223,43 @@ export default function CentersPage() {
       {isValidated && (
         <Card className="mb-8">
           <CardContent className="p-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Rechercher un centre par nom..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Filter Type Selector */}
+              <div className="w-full sm:w-48">
+                <Select value={searchFilter} onValueChange={handleFilterChange}>
+                  <SelectTrigger className="w-full">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Type de recherche" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Par nom</SelectItem>
+                    <SelectItem value="rncp">Par code RNCP</SelectItem>
+                    <SelectItem value="domain" disabled>
+                      Par domaine (bientôt)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder={getSearchPlaceholder()}
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
+            
+            {/* Helper text for RNCP search */}
+            {searchFilter === 'rncp' && (
+              <p className="text-sm text-gray-500 mt-2">
+                💡 Recherchez les centres qui proposent une certification spécifique (ex: RNCP37674 pour "Développeur web et web mobile")
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

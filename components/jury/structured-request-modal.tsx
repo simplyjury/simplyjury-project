@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Star, MapPin, Video, Users, Calendar, Clock, Mail, Send } from 'lucide-react';
+import RNCPInput from '@/components/ui/rncp-input';
 
 interface JuryProfile {
   id: number;
@@ -24,6 +25,7 @@ interface StructuredRequestModalProps {
 interface StructuredRequestData {
   juryId: number;
   certificationType: string;
+  certificationTitle?: string;
   sessionDate: string;
   candidateCount: number;
   startTime: string;
@@ -36,13 +38,6 @@ interface StructuredRequestData {
   customMessage: string;
 }
 
-const certificationOptions = [
-  { value: 'RNCP31114', label: 'Développeur Web et Web Mobile (RNCP31114)' },
-  { value: 'RNCP34838', label: 'Concepteur Développeur d\'Applications (RNCP34838)' },
-  { value: 'RNCP36061', label: 'Expert en Technologies de l\'Information (RNCP36061)' },
-  { value: 'RNCP35475', label: 'Administrateur d\'infrastructures sécurisées (RNCP35475)' },
-  { value: 'autre', label: 'Autre certification' }
-];
 
 export default function StructuredRequestModal({ 
   isOpen, 
@@ -53,6 +48,7 @@ export default function StructuredRequestModal({
   const [formData, setFormData] = useState<StructuredRequestData>({
     juryId: jury.id,
     certificationType: '',
+    certificationTitle: '',
     sessionDate: '',
     candidateCount: 1,
     startTime: '09:00',
@@ -86,6 +82,18 @@ export default function StructuredRequestModal({
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleRNCPChange = (code: string, certificationDetails?: any) => {
+    setFormData(prev => ({
+      ...prev,
+      certificationType: code,
+      certificationTitle: certificationDetails?.title || ''
+    }));
+    // Clear error when RNCP is entered
+    if (errors.certificationType) {
+      setErrors(prev => ({ ...prev, certificationType: '' }));
     }
   };
 
@@ -207,23 +215,14 @@ export default function StructuredRequestModal({
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-semibold text-[#0d4a70] mb-2">
-                    Certification visée <span className="text-red-500">*</span>
+                    Code RNCP de la certification <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <RNCPInput
                     value={formData.certificationType}
-                    onChange={(e) => handleInputChange('certificationType', e.target.value)}
-                    className={`w-full p-4 border-2 rounded-xl font-medium transition-all ${
-                      errors.certificationType ? 'border-red-500' : 'border-slate-200 focus:border-[#13d090]'
-                    } focus:outline-none focus:ring-3 focus:ring-[#13d090]/10`}
-                  >
-                    <option value="">Sélectionnez une certification</option>
-                    {certificationOptions.map(option => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                  {errors.certificationType && (
-                    <p className="text-red-500 text-sm mt-1">{errors.certificationType}</p>
-                  )}
+                    onChange={handleRNCPChange}
+                    error={errors.certificationType}
+                    required={true}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

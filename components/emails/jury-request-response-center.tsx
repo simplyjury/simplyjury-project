@@ -13,7 +13,7 @@ interface JuryRequestResponseCenterProps {
   candidateCount: number;
   modality: string;
   rncp?: string;
-  status: 'accepted' | 'declined';
+  status: 'accepted' | 'rejected';
   dashboardUrl: string;
 }
 

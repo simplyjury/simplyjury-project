@@ -39,9 +39,9 @@ export async function PATCH(
     const { status } = body;
 
     // Validate status
-    if (!['accepted', 'declined'].includes(status)) {
+    if (!['accepted', 'rejected'].includes(status)) {
       return NextResponse.json(
-        { success: false, error: 'Statut invalide. Utilisez "accepted" ou "declined".' },
+        { success: false, error: 'Statut invalide. Utilisez "accepted" ou "rejected".' },
         { status: 400 }
       );
     }
@@ -152,7 +152,7 @@ export async function PATCH(
       console.log(`Sending notification emails for request ${requestId} with status: ${status}`);
       const emailResult = await sendJuryRequestResponseEmails(
         requestId,
-        status === 'accepted' ? 'accepted' : 'declined'
+        status === 'accepted' ? 'accepted' : 'rejected'
       );
       
       if (emailResult.success) {
