@@ -236,7 +236,7 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             icon: Calendar,
           },
           {
-            name: 'Avis donnés',
+            name: 'Avis',
             href: '/dashboard/reviews',
             icon: Star,
           },

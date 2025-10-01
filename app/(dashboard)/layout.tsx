@@ -42,7 +42,7 @@ const getPageTitle = (pathname: string, isJury: boolean = false, isAdmin: boolea
     '/dashboard/requests': { title: 'Mes demandes', subtitle: 'Suivez vos demandes en cours' },
     '/dashboard/certifications': { title: 'Mes certifications', subtitle: 'Gérez vos certifications et synchronisations' },
     '/dashboard/sessions': { title: 'Sessions réalisées', subtitle: 'Consultez l\'historique de vos examens' },
-    '/dashboard/reviews': { title: 'Avis donnés', subtitle: 'Consultez les avis reçus' },
+    '/dashboard/reviews': { title: 'Avis', subtitle: 'Consultez les avis donnés et reçus' },
     '/dashboard/settings': { title: 'Paramètres', subtitle: 'Configurez votre compte' },
     '/dashboard/upgrade': { title: 'Passer au Pro', subtitle: 'Découvrez nos offres premium' },
     '/dashboard/profile': { title: 'Mon profil', subtitle: 'Gérez vos informations personnelles et professionnelles' },
@@ -103,6 +103,7 @@ function FreemiumBanner({ onClose }: { onClose: () => void }) {
 function UserMenu() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [juryPhotoUrl, setJuryPhotoUrl] = useState<string | null>(null);
+  const [centerLogoUrl, setCenterLogoUrl] = useState<string | null>(null);
   const { data: user } = useSWR('/api/user', fetcher);
   const { data: centerProfile } = useSWR(
     user?.userType === 'centre' ? '/api/profile/center' : null, 
@@ -114,7 +115,7 @@ function UserMenu() {
   );
   const router = useRouter();
 
-  // Always call useEffect hook, but conditionally execute the logic inside
+  // Fetch jury photo URL
   useEffect(() => {
     if (juryProfile?.data?.profilePhotoUrl) {
       fetch('/api/profile/jury/photo-url')
@@ -127,6 +128,20 @@ function UserMenu() {
         .catch(err => console.error('Failed to get jury photo URL:', err));
     }
   }, [juryProfile?.data?.profilePhotoUrl]);
+
+  // Fetch center logo URL
+  useEffect(() => {
+    if (centerProfile?.data?.logoUrl) {
+      fetch('/api/profile/center/logo-url')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setCenterLogoUrl(data.url);
+          }
+        })
+        .catch(err => console.error('Failed to get center logo URL:', err));
+    }
+  }, [centerProfile?.data?.logoUrl]);
 
   async function handleSignOut() {
     await signOut();
@@ -161,9 +176,9 @@ function UserMenu() {
   const profileName = activeProfile?.firstName && activeProfile?.lastName 
     ? `${activeProfile.firstName} ${activeProfile.lastName}`
     : activeProfile?.name;
-  const profileImage = activeProfile?.logoUrl; // Only use logoUrl for training centers
   
-  const displayImage = juryPhotoUrl || profileImage;
+  // Use the appropriate image based on user type
+  const displayImage = user?.userType === 'jury' ? juryPhotoUrl : centerLogoUrl;
 
   return (
     <div className="flex items-center space-x-4">
@@ -191,7 +206,7 @@ function UserMenu() {
       <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DropdownMenuTrigger>
           <Avatar className="cursor-pointer size-10">
-            <AvatarImage src={displayImage} alt={profileName || user.email} />
+            <AvatarImage src={displayImage || undefined} alt={profileName || user.email} />
             <AvatarFallback className="bg-[#13d090] text-white font-semibold">
               {profileName 
                 ? profileName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
