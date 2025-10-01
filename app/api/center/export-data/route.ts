@@ -108,42 +108,47 @@ export async function GET(request: NextRequest) {
       .eq('training_center_id', trainingCenter.id)
       .order('created_at', { ascending: false });
 
-    // Get ratings given by this center
+    // Get ratings given by this center (to juries)
     const { data: ratingsGiven, error: ratingsGivenError } = await supabase
-      .from('jury_ratings')
+      .from('session_ratings')
       .select(`
         *,
         jury_requests!inner(
           id,
-          certification_type,
+          certification_title,
+          certification_code,
           session_date,
-          jury_id
+          jury_id,
+          training_center_id
         ),
-        users!jury_ratings_jury_id_fkey(
+        users!session_ratings_rated_id_fkey(
           name,
           email
         )
       `)
       .eq('jury_requests.training_center_id', trainingCenter.id)
-      .eq('rated_by_center', true);
+      .eq('rater_type', 'centre');
 
-    // Get ratings received by this center
+    // Get ratings received by this center (from juries)
     const { data: ratingsReceived, error: ratingsReceivedError } = await supabase
-      .from('center_ratings')
+      .from('session_ratings')
       .select(`
         *,
         jury_requests!inner(
           id,
-          certification_type,
+          certification_title,
+          certification_code,
           session_date,
-          jury_id
+          jury_id,
+          training_center_id
         ),
-        users!center_ratings_jury_id_fkey(
+        users!session_ratings_rater_id_fkey(
           name,
           email
         )
       `)
-      .eq('jury_requests.training_center_id', trainingCenter.id);
+      .eq('jury_requests.training_center_id', trainingCenter.id)
+      .eq('rater_type', 'jury');
 
     // Get France Compétence certifications (if certificateur)
     let franceCompetenceCertifications = [];
@@ -258,7 +263,7 @@ export async function GET(request: NextRequest) {
 
     // Sheet 4: Ratings Given
     const ratingsGivenData = [
-      ['ID Évaluation', 'Jury', 'Certification', 'Date de session', 'Note globale', 'Ponctualité', 'Professionnalisme', 'Pédagogie', 'Commentaire', 'Date d\'évaluation']
+      ['ID Évaluation', 'Jury', 'Certification', 'Date de session', 'Note globale', 'Ponctualité', 'Expertise', 'Communication', 'Commentaire', 'Date d\'évaluation']
     ];
 
     if (ratingsGiven && ratingsGiven.length > 0) {
@@ -266,12 +271,12 @@ export async function GET(request: NextRequest) {
         ratingsGivenData.push([
           rating.id,
           rating.users?.name || 'N/A',
-          rating.jury_requests?.certification_type || 'N/A',
+          rating.jury_requests?.certification_title || rating.jury_requests?.certification_code || 'N/A',
           formatDate(rating.jury_requests?.session_date),
           rating.overall_rating || 'N/A',
           rating.punctuality_rating || 'N/A',
-          rating.professionalism_rating || 'N/A',
-          rating.pedagogy_rating || 'N/A',
+          rating.expertise_rating || 'N/A',
+          rating.communication_rating || 'N/A',
           rating.comment || 'Aucun commentaire',
           formatDateTime(rating.created_at),
         ]);
@@ -287,7 +292,7 @@ export async function GET(request: NextRequest) {
 
     // Sheet 5: Ratings Received
     const ratingsReceivedData = [
-      ['ID Évaluation', 'Jury', 'Certification', 'Date de session', 'Note globale', 'Communication', 'Organisation', 'Conditions', 'Commentaire', 'Date d\'évaluation']
+      ['ID Évaluation', 'Jury', 'Certification', 'Date de session', 'Note globale', 'Communication', 'Ponctualité', 'Expertise', 'Commentaire', 'Date d\'évaluation']
     ];
 
     if (ratingsReceived && ratingsReceived.length > 0) {
@@ -295,12 +300,12 @@ export async function GET(request: NextRequest) {
         ratingsReceivedData.push([
           rating.id,
           rating.users?.name || 'N/A',
-          rating.jury_requests?.certification_type || 'N/A',
+          rating.jury_requests?.certification_title || rating.jury_requests?.certification_code || 'N/A',
           formatDate(rating.jury_requests?.session_date),
           rating.overall_rating || 'N/A',
           rating.communication_rating || 'N/A',
-          rating.organization_rating || 'N/A',
-          rating.conditions_rating || 'N/A',
+          rating.punctuality_rating || 'N/A',
+          rating.expertise_rating || 'N/A',
           rating.comment || 'Aucun commentaire',
           formatDateTime(rating.created_at),
         ]);

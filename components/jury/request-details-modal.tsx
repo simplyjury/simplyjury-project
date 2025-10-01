@@ -5,7 +5,7 @@ import { X, Calendar, Users, MapPin, Clock, Building, Mail, Phone, FileText, Che
 
 interface JuryRequest {
   id: number;
-  status: 'pending' | 'accepted' | 'declined' | 'completed';
+  status: 'pending' | 'accepted' | 'rejected' | 'completed';
   certification_title: string;
   certification_code?: string;
   session_date: string;
@@ -73,7 +73,7 @@ export default function RequestDetailsModal({
             Acceptée
           </div>
         );
-      case 'declined':
+      case 'rejected':
         return (
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
             <XCircle className="w-4 h-4" />

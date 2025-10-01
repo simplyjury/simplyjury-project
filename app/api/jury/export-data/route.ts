@@ -113,38 +113,41 @@ export async function GET(request: NextRequest) {
 
     // Get ratings given by this jury to centers
     const { data: ratingsGiven, error: ratingsGivenError } = await supabase
-      .from('center_ratings')
+      .from('session_ratings')
       .select(`
         *,
         jury_requests!inner(
           id,
-          certification_type,
+          certification_title,
+          certification_code,
           session_date,
           training_center_id
         ),
-        training_centers!center_ratings_training_center_id_fkey(
+        training_centers!session_ratings_rated_id_fkey(
           name
         )
       `)
-      .eq('jury_id', user.id);
+      .eq('rater_id', user.id)
+      .eq('rater_type', 'jury');
 
     // Get ratings received by this jury from centers
     const { data: ratingsReceived, error: ratingsReceivedError } = await supabase
-      .from('jury_ratings')
+      .from('session_ratings')
       .select(`
         *,
         jury_requests!inner(
           id,
-          certification_type,
+          certification_title,
+          certification_code,
           session_date,
           training_center_id
         ),
-        training_centers!jury_ratings_training_center_id_fkey(
+        training_centers!session_ratings_rater_id_fkey(
           name
         )
       `)
-      .eq('jury_id', user.id)
-      .eq('rated_by_center', true);
+      .eq('rated_id', user.id)
+      .eq('rater_type', 'centre');
 
     // Create Excel workbook
     const workbook = XLSX.utils.book_new();
@@ -275,7 +278,7 @@ export async function GET(request: NextRequest) {
 
     // Sheet 5: Ratings Given to Centers
     const ratingsGivenData = [
-      ['ID Évaluation', 'Centre de formation', 'Certification', 'Date de session', 'Note globale', 'Communication', 'Organisation', 'Conditions', 'Commentaire', 'Date d\'évaluation']
+      ['ID Évaluation', 'Centre de formation', 'Certification', 'Date de session', 'Note globale', 'Communication', 'Ponctualité', 'Expertise', 'Commentaire', 'Date d\'évaluation']
     ];
 
     if (ratingsGiven && ratingsGiven.length > 0) {
@@ -283,12 +286,12 @@ export async function GET(request: NextRequest) {
         ratingsGivenData.push([
           rating.id,
           rating.training_centers?.name || 'N/A',
-          rating.jury_requests?.certification_type || 'N/A',
+          rating.jury_requests?.certification_title || rating.jury_requests?.certification_code || 'N/A',
           formatDate(rating.jury_requests?.session_date),
           rating.overall_rating || 'N/A',
           rating.communication_rating || 'N/A',
-          rating.organization_rating || 'N/A',
-          rating.conditions_rating || 'N/A',
+          rating.punctuality_rating || 'N/A',
+          rating.expertise_rating || 'N/A',
           rating.comment || 'Aucun commentaire',
           formatDateTime(rating.created_at),
         ]);
@@ -304,7 +307,7 @@ export async function GET(request: NextRequest) {
 
     // Sheet 6: Ratings Received from Centers
     const ratingsReceivedData = [
-      ['ID Évaluation', 'Centre de formation', 'Certification', 'Date de session', 'Note globale', 'Ponctualité', 'Professionnalisme', 'Pédagogie', 'Commentaire', 'Date d\'évaluation']
+      ['ID Évaluation', 'Centre de formation', 'Certification', 'Date de session', 'Note globale', 'Ponctualité', 'Expertise', 'Communication', 'Commentaire', 'Date d\'évaluation']
     ];
 
     if (ratingsReceived && ratingsReceived.length > 0) {
@@ -312,12 +315,12 @@ export async function GET(request: NextRequest) {
         ratingsReceivedData.push([
           rating.id,
           rating.training_centers?.name || 'N/A',
-          rating.jury_requests?.certification_type || 'N/A',
+          rating.jury_requests?.certification_title || rating.jury_requests?.certification_code || 'N/A',
           formatDate(rating.jury_requests?.session_date),
           rating.overall_rating || 'N/A',
           rating.punctuality_rating || 'N/A',
-          rating.professionalism_rating || 'N/A',
-          rating.pedagogy_rating || 'N/A',
+          rating.expertise_rating || 'N/A',
+          rating.communication_rating || 'N/A',
           rating.comment || 'Aucun commentaire',
           formatDateTime(rating.created_at),
         ]);

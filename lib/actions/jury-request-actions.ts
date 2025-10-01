@@ -10,7 +10,7 @@ const supabase = createClient(
 
 export async function sendJuryRequestResponseEmails(
   requestId: number,
-  status: 'accepted' | 'declined'
+  status: 'accepted' | 'rejected'
 ) {
   try {
     console.log(`Starting email notification process for request ${requestId} with status: ${status}`);

@@ -202,7 +202,7 @@ export class EmailService {
       modality: string;
       rncp?: string;
     },
-    status: 'accepted' | 'declined'
+    status: 'accepted' | 'rejected'
   ) {
     const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`;
     const isAccepted = status === 'accepted';

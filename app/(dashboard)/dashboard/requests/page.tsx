@@ -101,7 +101,7 @@ function JuryAvatar({ profilePhoto, juryName }: JuryAvatarProps) {
 
 interface JuryRequest {
   id: number;
-  status: 'pending' | 'accepted' | 'declined' | 'completed';
+  status: 'pending' | 'accepted' | 'rejected' | 'completed';
   certification_title: string;
   certification_type: string;
   certification_code?: string;
@@ -132,13 +132,13 @@ interface RequestStats {
   total: number;
   pending: number;
   accepted: number;
-  declined: number;
+  rejected: number;
 }
 
 // Center requests component
 function CenterRequestsPage() {
   const [requests, setRequests] = useState<any[]>([]);
-  const [stats, setStats] = useState({ total: 0, pending: 0, accepted: 0, declined: 0 });
+  const [stats, setStats] = useState({ total: 0, pending: 0, accepted: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -189,12 +189,12 @@ function CenterRequestsPage() {
         case 'accepted':
           acc.accepted++;
           break;
-        case 'declined':
-          acc.declined++;
+        case 'rejected':
+          acc.rejected++;
           break;
       }
       return acc;
-    }, { total: 0, pending: 0, accepted: 0, declined: 0 });
+    }, { total: 0, pending: 0, accepted: 0, rejected: 0 });
     
     setStats(stats);
   };
@@ -245,7 +245,7 @@ function CenterRequestsPage() {
             Acceptée
           </div>
         );
-      case 'declined':
+      case 'rejected':
         return (
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
             <div className="w-2 h-2 bg-red-500 rounded-full"></div>
@@ -325,7 +325,7 @@ function CenterRequestsPage() {
               <XCircle className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-[#0d4a70]">{stats.declined}</div>
+              <div className="text-2xl font-bold text-[#0d4a70]">{stats.rejected}</div>
               <div className="text-sm text-gray-600">Refusées</div>
             </div>
           </div>
@@ -357,7 +357,7 @@ function CenterRequestsPage() {
               <option value="">Tous les statuts</option>
               <option value="pending">En attente</option>
               <option value="accepted">Acceptées</option>
-              <option value="declined">Refusées</option>
+              <option value="rejected">Refusées</option>
             </select>
           </div>
           <div>
@@ -522,7 +522,7 @@ function CenterRequestsPage() {
 // Jury requests component
 function JuryRequestsPage() {
   const [requests, setRequests] = useState<JuryRequest[]>([]);
-  const [stats, setStats] = useState<RequestStats>({ total: 0, pending: 0, accepted: 0, declined: 0 });
+  const [stats, setStats] = useState<RequestStats>({ total: 0, pending: 0, accepted: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -566,12 +566,12 @@ function JuryRequestsPage() {
         case 'accepted':
           acc.accepted++;
           break;
-        case 'declined':
-          acc.declined++;
+        case 'rejected':
+          acc.rejected++;
           break;
       }
       return acc;
-    }, { total: 0, pending: 0, accepted: 0, declined: 0 });
+    }, { total: 0, pending: 0, accepted: 0, rejected: 0 });
     
     setStats(stats);
   };
@@ -582,7 +582,7 @@ function JuryRequestsPage() {
         return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">En attente</Badge>;
       case 'accepted':
         return <Badge className="bg-green-100 text-green-800 border-green-200">Acceptée</Badge>;
-      case 'declined':
+      case 'rejected':
         return <Badge className="bg-red-100 text-red-800 border-red-200">Refusée</Badge>;
       case 'completed':
         return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Terminée</Badge>;
@@ -689,7 +689,7 @@ function JuryRequestsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: 'declined' }),
+        body: JSON.stringify({ status: 'rejected' }),
       });
 
       const result = await response.json();
@@ -698,7 +698,7 @@ function JuryRequestsPage() {
         // Send notification emails
         try {
           const { sendJuryRequestResponseEmails } = await import('@/lib/actions/jury-request-actions');
-          await sendJuryRequestResponseEmails(requestId, 'declined');
+          await sendJuryRequestResponseEmails(requestId, 'rejected');
           console.log('Notification emails sent successfully');
         } catch (emailError) {
           console.error('Failed to send notification emails:', emailError);
@@ -708,7 +708,7 @@ function JuryRequestsPage() {
         // Update the request in the local state
         setRequests(prevRequests =>
           prevRequests.map(req =>
-            req.id === requestId ? { ...req, status: 'declined' } : req
+            req.id === requestId ? { ...req, status: 'rejected' } : req
           )
         );
         
@@ -716,7 +716,7 @@ function JuryRequestsPage() {
         setStats(prevStats => ({
           ...prevStats,
           pending: prevStats.pending - 1,
-          declined: prevStats.declined + 1
+          rejected: prevStats.rejected + 1
         }));
 
         // Close modal and show success message
@@ -829,7 +829,7 @@ function JuryRequestsPage() {
               <XCircle className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-[#0d4a70]">{stats.declined}</div>
+              <div className="text-2xl font-bold text-[#0d4a70]">{stats.rejected}</div>
               <div className="text-sm text-gray-600">Refusées</div>
             </div>
           </div>
@@ -858,7 +858,7 @@ function JuryRequestsPage() {
               <option value="">Tous les statuts</option>
               <option value="pending">En attente</option>
               <option value="accepted">Acceptées</option>
-              <option value="declined">Refusées</option>
+              <option value="rejected">Refusées</option>
             </select>
           </div>
           <div className="flex items-end">

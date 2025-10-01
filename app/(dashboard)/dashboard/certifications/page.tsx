@@ -73,72 +73,22 @@ export default function CertificationsPage() {
           return;
         }
 
-        // If authorized, load mock data (replace with real API calls later)
-        const mockCertifications: CertificationData[] = [
-      {
-        id: 1,
-        title: "Manager opérationnel d'activités",
-        code: "RNCP34826",
-        level: "6",
-        domain: "Management",
-        status: "active",
-        validity_end: "2025-07-19",
-        candidates_count: 45,
-        success_rate: 92,
-        competency_blocks: ["Pilotage opérationnel", "Management d'équipe", "Gestion budgétaire", "Communication"],
-        tags: ["Management", "Commerce", "Gestion"]
-      },
-      {
-        id: 2,
-        title: "Concepteur développeur d'applications",
-        code: "RNCP31678",
-        level: "6",
-        domain: "Informatique",
-        status: "active",
-        validity_end: "2025-11-26",
-        candidates_count: 23,
-        success_rate: 87,
-        competency_blocks: ["Conception d'applications", "Développement avancé", "Déploiement d'applications"],
-        tags: ["Informatique", "Développement", "Web"]
-      },
-      {
-        id: 3,
-        title: "Responsable de production industrielle",
-        code: "RNCP35506",
-        level: "6",
-        domain: "Industrie",
-        status: "active",
-        validity_end: "2025-12-18",
-        candidates_count: 31,
-        success_rate: 94,
-        competency_blocks: ["Planification production", "Management équipes", "Contrôle qualité", "Amélioration continue", "Sécurité industrielle"],
-        tags: ["Industrie", "Production", "Qualité"]
-      },
-      {
-        id: 4,
-        title: "Responsable de production industrielle",
-        code: "RNCP35506",
-        level: "6",
-        domain: "Industrie",
-        status: "active",
-        validity_end: "2025-12-18",
-        candidates_count: 31,
-        success_rate: 94,
-        competency_blocks: ["Planification production", "Management équipes", "Contrôle qualité", "Amélioration continue", "Sécurité industrielle"],
-        tags: ["Industrie", "Production", "Qualité"]
-      }
-    ];
+        // Load real certifications from API
+        const certsResponse = await fetch('/api/certifications');
+        if (!certsResponse.ok) {
+          throw new Error('Failed to fetch certifications');
+        }
 
-    const mockStats: StatsData = {
-      active_count: 8,
-      total_count: 12,
-      total_candidates: 247,
-      average_success_rate: 89
-    };
-
-    setCertifications(mockCertifications);
-    setStats(mockStats);
-    setLoading(false);
+        const certsData = await certsResponse.json();
+        
+        setCertifications(certsData.certifications || []);
+        setStats(certsData.stats || {
+          active_count: 0,
+          total_count: 0,
+          total_candidates: 0,
+          average_success_rate: 0
+        });
+        setLoading(false);
       } catch (error) {
         console.error('Error checking authorization:', error);
         setAuthError('Erreur lors de la vérification des autorisations');
@@ -325,10 +275,10 @@ export default function CertificationsPage() {
       <AddCertificationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onAdd={(certification) => {
-          // Handle adding new certification
-          console.log('Adding certification:', certification);
+        onAdd={() => {
+          // Reload certifications after adding
           setIsModalOpen(false);
+          window.location.reload();
         }}
       />
     </div>

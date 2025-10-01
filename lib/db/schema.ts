@@ -167,6 +167,7 @@ export const franceCompetenceCertifications = pgTable('france_competence_certifi
   status: varchar('status', { length: 50 }),
   validityStart: timestamp('validity_start'),
   validityEnd: timestamp('validity_end'),
+  certificationDetails: jsonb('certification_details'), // Complete API response including blocs de compétences
   lastUpdated: timestamp('last_updated').defaultNow(),
   createdAt: timestamp('created_at').defaultNow(),
 });
