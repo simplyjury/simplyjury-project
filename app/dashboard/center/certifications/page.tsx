@@ -325,10 +325,10 @@ export default function CertificationsPage() {
       <AddCertificationModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onAdd={(certification) => {
-          // Handle adding new certification
-          console.log('Adding certification:', certification);
+        onAdd={() => {
+          // Reload certifications after adding
           setIsModalOpen(false);
+          window.location.reload();
         }}
       />
     </div>
