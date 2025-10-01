@@ -1,6 +1,8 @@
 'use client';
 
-import { Star, MessageSquare, Users, Calendar, MapPin, Building, Clock, ThumbsUp, ThumbsDown, AlertCircle, BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import { Star, MessageSquare, Users, Calendar, MapPin, Building, Clock, ThumbsUp, ThumbsDown, AlertCircle, BarChart3, Award, CheckCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -186,129 +188,280 @@ function RatingCard({ rating }: { rating: Rating }) {
   );
 }
 
-export default function CenterReviews() {
+// Tab for ratings given to juries
+function RatingsGivenTab() {
   const { data, error, isLoading } = useSWR<{ success: boolean; data: ReviewsData }>('/api/center/reviews', fetcher);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Chargement des évaluations données...</div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto p-4 md:p-6">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-red-800 mb-2">Erreur de chargement</h2>
-          <p className="text-red-600">Impossible de charger les avis. Veuillez réessayer.</p>
-        </div>
+      <div className="text-center py-8">
+        <div className="text-red-600 mb-2">Erreur</div>
+        <div className="text-gray-600">Impossible de charger les évaluations</div>
       </div>
     );
   }
 
   const reviewsData = data?.data;
-  const hasRatings = reviewsData && reviewsData.stats.totalRatings > 0;
+  const totalRatings = reviewsData?.stats.totalRatings || 0;
+
+  if (totalRatings === 0) {
+    return (
+      <div className="text-center py-12">
+        <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune évaluation donnée</h3>
+        <p className="text-gray-600">
+          Vous pourrez évaluer les jurys après avoir terminé vos sessions.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-[#0d4a70] mb-2">Avis donnés</h1>
-        <p className="text-sm md:text-base text-gray-600">Consultez et gérez tous les avis donnés aux jurys après vos sessions de certification</p>
-      </div>
-
+    <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-          <div className="flex flex-col items-center text-center">
-            <Users className="h-6 w-6 md:h-8 md:w-8 text-blue-500 mb-2" />
-            <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">Jurys évalués</p>
-            <p className="text-xl md:text-2xl font-bold text-[#0d4a70]">
-              {isLoading ? '...' : reviewsData?.stats.uniqueJuries || 0}
-            </p>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-          <div className="flex flex-col items-center text-center">
-            <Star className="h-6 w-6 md:h-8 md:w-8 text-yellow-500 mb-2" />
-            <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">Note moyenne</p>
-            <p className="text-xl md:text-2xl font-bold text-[#0d4a70]">
-              {isLoading ? '...' : reviewsData?.stats.averageRating ? `${reviewsData.stats.averageRating}/5` : '0/5'}
-            </p>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-          <div className="flex flex-col items-center text-center">
-            <MessageSquare className="h-6 w-6 md:h-8 md:w-8 text-green-500 mb-2" />
-            <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">Sessions évaluées</p>
-            <p className="text-xl md:text-2xl font-bold text-[#0d4a70]">
-              {isLoading ? '...' : reviewsData?.stats.uniqueSessions || 0}
-            </p>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-[#0d4a70] mb-2">{reviewsData?.stats.averageRating}/5</div>
+            <div className="text-sm text-gray-600 mb-2">Note moyenne donnée</div>
+            <StarRating rating={reviewsData?.stats.averageRating || 0} size="md" />
+            <div className="text-xs text-gray-500 mt-2">{totalRatings} évaluation{totalRatings > 1 ? 's' : ''}</div>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
-          <div className="flex flex-col items-center text-center">
-            <BarChart3 className="h-6 w-6 md:h-8 md:w-8 text-purple-500 mb-2" />
-            <p className="text-xs md:text-sm font-medium text-gray-600 mb-1">Total avis</p>
-            <p className="text-xl md:text-2xl font-bold text-[#0d4a70]">
-              {isLoading ? '...' : reviewsData?.stats.totalRatings || 0}
-            </p>
-          </div>
-        </div>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-blue-600 mb-2">{reviewsData?.stats.uniqueJuries}</div>
+            <div className="text-sm text-gray-600 mb-2">Jurys évalués</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-green-600 mb-2">{reviewsData?.stats.uniqueSessions}</div>
+            <div className="text-sm text-gray-600 mb-2">Sessions évaluées</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-purple-600 mb-2">{totalRatings}</div>
+            <div className="text-sm text-gray-600 mb-2">Total évaluations</div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Content */}
-      {isLoading ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12 text-center">
-          <div className="animate-pulse">
-            <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-48 mx-auto mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-32 mx-auto"></div>
-          </div>
-        </div>
-      ) : hasRatings ? (
-        <div className="space-y-4 md:space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg md:text-xl font-semibold text-gray-900">Avis récents</h2>
-            <span className="text-sm text-gray-500">{reviewsData.recentRatings.length} avis affichés</span>
-          </div>
-          
-          <div className="grid gap-4 md:gap-6">
-            {reviewsData.recentRatings.map((rating) => (
+      {/* Individual Ratings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="w-5 h-5" />
+            Évaluations données aux jurys ({totalRatings})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {reviewsData?.recentRatings.map((rating) => (
               <RatingCard key={rating.id} rating={rating} />
             ))}
           </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 md:w-20 md:h-20 bg-[#0d4a70] rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
-              <ThumbsUp className="w-8 h-8 md:w-10 md:h-10 text-white" />
-            </div>
-            
-            <h2 className="text-xl md:text-2xl font-bold text-[#0d4a70] mb-3 md:mb-4">
-              Aucun avis donné pour le moment
-            </h2>
-            
-            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 leading-relaxed">
-              Vous pourrez évaluer les jurys après vos sessions de certification terminées.
-            </p>
-            
-            <div className="bg-gray-50 rounded-lg p-4 mb-4 md:mb-6">
-              <h3 className="font-semibold text-[#0d4a70] mb-2 text-sm md:text-base">Comment ça marche :</h3>
-              <ul className="text-xs md:text-sm text-gray-600 space-y-1 text-left">
-                <li>• Organisez une session avec un jury</li>
-                <li>• Attendez la fin de la session</li>
-                <li>• Évaluez le jury sur 3 critères</li>
-                <li>• Laissez un commentaire (optionnel)</li>
-                <li>• Recommandez ou non le jury</li>
-              </ul>
-            </div>
-            
-            <div className="text-xs md:text-sm text-gray-500">
-              Vos évaluations aident à améliorer la qualité du service.
-            </div>
-          </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+// Tab for ratings received from juries
+function RatingsReceivedTab() {
+  const { data, error, isLoading } = useSWR('/api/center/ratings-received', fetcher);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Chargement des évaluations reçues...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-red-600 mb-2">Erreur</div>
+        <div className="text-gray-600">Impossible de charger les évaluations reçues</div>
+      </div>
+    );
+  }
+
+  const ratingsData = data?.data;
+  const totalRatings = ratingsData?.totalRatings || 0;
+
+  if (totalRatings === 0) {
+    return (
+      <div className="text-center py-12">
+        <Star className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune évaluation reçue</h3>
+        <p className="text-gray-600">
+          Vous recevrez des évaluations des jurys après vos sessions terminées.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Average Ratings Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-[#0d4a70] mb-2">{ratingsData?.averages?.overall}/5</div>
+            <div className="text-sm text-gray-600 mb-2">Note globale</div>
+            <StarRating rating={ratingsData?.averages?.overall || 0} size="md" />
+            <div className="text-xs text-gray-500 mt-2">{totalRatings} évaluation{totalRatings > 1 ? 's' : ''}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-blue-600 mb-2">{ratingsData?.averages?.communication}/5</div>
+            <div className="text-sm text-gray-600 mb-2">Communication</div>
+            <StarRating rating={ratingsData?.averages?.communication || 0} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-green-600 mb-2">{ratingsData?.averages?.punctuality}/5</div>
+            <div className="text-sm text-gray-600 mb-2">Ponctualité</div>
+            <StarRating rating={ratingsData?.averages?.punctuality || 0} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-2xl font-bold text-purple-600 mb-2">{ratingsData?.averages?.expertise}/5</div>
+            <div className="text-sm text-gray-600 mb-2">Expertise</div>
+            <StarRating rating={ratingsData?.averages?.expertise || 0} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Individual Ratings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            Évaluations détaillées ({totalRatings})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {ratingsData?.ratings?.map((rating: any) => (
+              <div key={rating.id} className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h4 className="font-medium text-[#0d4a70]">Jury professionnel</h4>
+                    <p className="text-sm text-gray-600">{rating.certificationTitle}</p>
+                    {rating.certificationCode && (
+                      <p className="text-sm text-gray-500">Code: {rating.certificationCode}</p>
+                    )}
+                    <p className="text-sm text-gray-500">{rating.date}</p>
+                  </div>
+                  <div className="text-right">
+                    <StarRating rating={rating.overallRating} />
+                    {rating.wouldRecommend && (
+                      <div className="flex items-center gap-1 mt-1 text-green-600">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-xs">Recommandé</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
+                  <div>
+                    <span className="text-gray-600">Communication:</span>
+                    <StarRating rating={rating.communicationRating} />
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Ponctualité:</span>
+                    <StarRating rating={rating.punctualityRating} />
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Expertise:</span>
+                    <StarRating rating={rating.expertiseRating} />
+                  </div>
+                </div>
+
+                {rating.comment && (
+                  <div className="bg-white p-3 rounded border-l-4 border-blue-400">
+                    <p className="text-sm text-gray-700 italic">"{rating.comment}"</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function CenterReviews() {
+  const [activeTab, setActiveTab] = useState<'given' | 'received'>('given');
+
+  return (
+    <section className="flex-1 p-4 lg:p-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-[#0d4a70] mb-2">Évaluations</h1>
+        <p className="text-gray-600">Consultez vos évaluations données et reçues</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('given')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'given'
+                  ? 'border-[#0d4a70] text-[#0d4a70]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4" />
+                Évaluations données
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('received')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'received'
+                  ? 'border-[#0d4a70] text-[#0d4a70]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                Évaluations reçues
+              </div>
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'given' && <RatingsGivenTab />}
+      {activeTab === 'received' && <RatingsReceivedTab />}
+    </section>
   );
 }

@@ -1,64 +1,314 @@
 'use client';
 
-import { Settings, Building2, Bell, Shield, CreditCard, Users, Globe } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, Shield, CreditCard, Download, Trash2, Crown, Lock, AlertCircle } from 'lucide-react';
 
 export default function CenterSettings() {
+  const [notifications, setNotifications] = useState({
+    email: true,
+    juryResponses: true,
+    jurySuggestions: false,
+  });
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleToggle = (key: keyof typeof notifications) => {
+    setNotifications(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const handleExportData = async () => {
+    try {
+      setIsExporting(true);
+      
+      const response = await fetch('/api/center/export-data');
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'export');
+      }
+
+      // Get the blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Extract filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `SimplyJury_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Une erreur est survenue lors de l\'export des données. Veuillez réessayer.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <section className="flex-1 p-4 lg:p-8">
+    <section className="flex-1 p-4 lg:p-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#0d4a70] mb-2">Paramètres</h1>
-        <p className="text-gray-600">Configurez votre centre de formation</p>
+        <p className="text-gray-600">Gérez vos informations personnelles et préférences</p>
       </div>
 
-      {/* Coming Soon Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-        <div className="max-w-md mx-auto">
-          <div className="w-20 h-20 bg-[#0d4a70] rounded-full flex items-center justify-center mx-auto mb-6">
-            <Settings className="w-10 h-10 text-white" />
-          </div>
-          
-          <h2 className="text-2xl font-bold text-[#0d4a70] mb-4">
-            Paramètres centre en développement
-          </h2>
-          
-          <p className="text-gray-600 mb-6 leading-relaxed">
-            Cette section permettra de gérer tous les aspects de votre centre de formation 
-            et de personnaliser votre expérience SimplyJury.
-          </p>
-          
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-[#0d4a70] mb-2">Fonctionnalités à venir :</h3>
-            <ul className="text-sm text-gray-600 space-y-1 text-left">
-              <li>• Gestion des informations du centre</li>
-              <li>• Paramètres de facturation et abonnement</li>
-              <li>• Gestion de l'équipe et des utilisateurs</li>
-              <li>• Notifications et alertes</li>
-              <li>• Sécurité et accès</li>
-              <li>• Préférences de communication</li>
-              <li>• Configuration des certifications</li>
-              <li>• Intégration France Compétence (si certificateur)</li>
-            </ul>
-          </div>
-          
-          <div className="flex justify-center space-x-6 mb-6">
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <Building2 className="w-4 h-4 text-blue-500" />
-              <span>Centre</span>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <Users className="w-4 h-4 text-green-500" />
-              <span>Équipe</span>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <CreditCard className="w-4 h-4 text-purple-500" />
-              <span>Facturation</span>
+      {/* Notifications Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+        <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <Bell className="w-5 h-5 text-[#0d4a70]" />
+            <div>
+              <h2 className="text-lg font-semibold text-[#0d4a70]">Notifications</h2>
+              <p className="text-sm text-gray-600">Choisissez les notifications que vous souhaitez recevoir</p>
             </div>
           </div>
-          
-          <div className="text-sm text-gray-500">
-            Cette page sera bientôt disponible dans une prochaine mise à jour.
+        </div>
+        <div className="p-6 space-y-6">
+          {/* Email Notifications */}
+          <div className="flex items-start justify-between gap-4 pb-6 border-b border-gray-200">
+            <div className="flex-1">
+              <h4 className="font-semibold text-[#0d4a70] mb-1">Notifications par email</h4>
+              <p className="text-sm text-gray-600">Recevez des notifications pour les nouveaux messages et mises à jour</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={notifications.email}
+                onChange={() => handleToggle('email')}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#13d090]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#13d090]"></div>
+            </label>
           </div>
+
+          {/* Jury Responses */}
+          <div className="flex items-start justify-between gap-4 pb-6 border-b border-gray-200">
+            <div className="flex-1">
+              <h4 className="font-semibold text-[#0d4a70] mb-1">Réponses des jurys</h4>
+              <p className="text-sm text-gray-600">Notification lorsqu'un jury accepte ou refuse votre demande</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={notifications.juryResponses}
+                onChange={() => handleToggle('juryResponses')}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#13d090]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#13d090]"></div>
+            </label>
+          </div>
+
+          {/* Jury Suggestions */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="font-semibold text-[#0d4a70] mb-1">Suggestions de jurys</h4>
+              <p className="text-sm text-gray-600">Recevez des recommandations basées sur vos recherches précédentes</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={notifications.jurySuggestions}
+                onChange={() => handleToggle('jurySuggestions')}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#13d090]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#13d090]"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Preferences Section - PREMIUM */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden relative">
+        {/* Premium Overlay */}
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
+          <div className="text-center px-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#fdce0f] to-[#bea1e5] rounded-full flex items-center justify-center mx-auto mb-4">
+              <Crown className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-[#0d4a70] mb-2">Fonctionnalité Premium</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Personnalisez vos préférences de recherche avec le plan Pro
+            </p>
+            <button className="px-6 py-2 bg-[#13d090] text-white font-semibold rounded-lg hover:bg-[#11b87d] transition-colors">
+              Passer au Pro
+            </button>
+          </div>
+        </div>
+
+        <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <Lock className="w-5 h-5 text-gray-400" />
+            <div>
+              <h2 className="text-lg font-semibold text-gray-400">Préférences</h2>
+              <p className="text-sm text-gray-400">Personnalisez votre expérience sur la plateforme</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6 space-y-6 opacity-50">
+          {/* Preferred Region */}
+          <div className="flex items-start justify-between gap-4 pb-6 border-b border-gray-200">
+            <div className="flex-1">
+              <h4 className="font-semibold text-[#0d4a70] mb-1">Région préférée</h4>
+              <p className="text-sm text-gray-600">Région par défaut pour vos recherches de jurys</p>
+            </div>
+            <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[200px]" disabled>
+              <option>PACA</option>
+              <option>Île-de-France</option>
+              <option>Auvergne-Rhône-Alpes</option>
+              <option>Nouvelle-Aquitaine</option>
+            </select>
+          </div>
+
+          {/* Preferred Modalities */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="font-semibold text-[#0d4a70] mb-1">Modalités préférées</h4>
+              <p className="text-sm text-gray-600">Mode de certification par défaut</p>
+            </div>
+            <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[200px]" disabled>
+              <option>Présentiel</option>
+              <option>Visioconférence</option>
+              <option>Hybride</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Security Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+        <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <Shield className="w-5 h-5 text-[#0d4a70]" />
+            <div>
+              <h2 className="text-lg font-semibold text-[#0d4a70]">Sécurité</h2>
+              <p className="text-sm text-gray-600">Gérez la sécurité de votre compte</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="font-semibold text-[#0d4a70] mb-1">Mot de passe</h4>
+              <p className="text-sm text-gray-600">Dernière modification : 15 mars 2025</p>
+            </div>
+            <button className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors text-sm">
+              Changer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Plan & Billing Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+        <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <CreditCard className="w-5 h-5 text-[#0d4a70]" />
+            <div>
+              <h2 className="text-lg font-semibold text-[#0d4a70]">Plan et facturation</h2>
+              <p className="text-sm text-gray-600">Informations sur votre abonnement</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-amber-900">
+                  <strong>Plan Gratuit</strong> - Vous avez utilisé votre mise en relation gratuite. Passez au plan Pro pour des contacts illimités.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="font-semibold text-[#0d4a70] mb-1">Plan actuel</h4>
+              <p className="text-sm text-gray-600">Plan Gratuit - 1 mise en relation utilisée</p>
+            </div>
+            <button className="px-6 py-2 bg-[#13d090] text-white font-semibold rounded-lg hover:bg-[#11b87d] transition-colors">
+              Passer au Pro
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Data & Privacy Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+        <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <Shield className="w-5 h-5 text-[#0d4a70]" />
+            <div>
+              <h2 className="text-lg font-semibold text-[#0d4a70]">Données et confidentialité</h2>
+              <p className="text-sm text-gray-600">Gérez vos données personnelles</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-blue-900">
+                  Vos données sont traitées conformément au RGPD. Vous pouvez demander l'export ou la suppression de vos données à tout moment.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-6">
+            {/* Export Data */}
+            <div className="flex items-start justify-between gap-4 pb-6 border-b border-gray-200">
+              <div className="flex-1">
+                <h4 className="font-semibold text-[#0d4a70] mb-1">Exporter mes données</h4>
+                <p className="text-sm text-gray-600">Téléchargez toutes vos données au format Excel (.xlsx)</p>
+              </div>
+              <button 
+                onClick={handleExportData}
+                disabled={isExporting}
+                className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className={`w-4 h-4 ${isExporting ? 'animate-bounce' : ''}`} />
+                {isExporting ? 'Export en cours...' : 'Exporter'}
+              </button>
+            </div>
+
+            {/* Delete Account */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h4 className="font-semibold text-[#0d4a70] mb-1">Supprimer mon compte</h4>
+                <p className="text-sm text-gray-600">Suppression définitive de votre compte et de toutes vos données</p>
+              </div>
+              <button className="px-4 py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition-colors text-sm flex items-center gap-2 border border-red-200">
+                <Trash2 className="w-4 h-4" />
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+          <button className="px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors">
+            Annuler
+          </button>
+          <button className="px-6 py-2 bg-[#13d090] text-white font-semibold rounded-lg hover:bg-[#11b87d] transition-colors">
+            Enregistrer les modifications
+          </button>
         </div>
       </div>
     </section>
