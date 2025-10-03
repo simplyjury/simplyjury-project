@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Users, Video, Building, Phone, Mail, Globe, MessageCircle, Eye, Clock, Filter } from 'lucide-react';
+import { Search, MapPin, Users, Video, Building, Phone, Mail, Globe, MessageCircle, Eye, Clock, Filter, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
 import { ContactCenterModal } from '@/components/jury/contact-center-modal';
+import Link from 'next/link';
 import {
   Select,
   SelectContent,
@@ -56,6 +57,7 @@ export default function CentersPage() {
   const [selectedCenter, setSelectedCenter] = useState<TrainingCenter | null>(null);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [userValidationStatus, setUserValidationStatus] = useState<string | null>(null);
+  const [userValidationComment, setUserValidationComment] = useState<string | null>(null);
   const [userLoading, setUserLoading] = useState(true);
 
   const fetchUserValidationStatus = async () => {
@@ -69,6 +71,7 @@ export default function CentersPage() {
       
       const userData = await response.json();
       setUserValidationStatus(userData?.validationStatus || null);
+      setUserValidationComment(userData?.validationComment || null);
     } catch (err) {
       console.error('Erreur lors de la récupération du statut de validation:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
@@ -189,6 +192,8 @@ export default function CentersPage() {
   }
 
   const isValidated = userValidationStatus === 'validated';
+  const isRejected = userValidationStatus === 'rejected';
+  const isPending = userValidationStatus === 'pending';
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -198,6 +203,25 @@ export default function CentersPage() {
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
             <strong>Profil validé avec succès !</strong> Vous pouvez maintenant contacter les centres de formation pour proposer vos services.
+          </AlertDescription>
+        </Alert>
+      ) : isRejected ? (
+        <Alert className="mb-8 border-red-200 bg-red-50">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            <div className="space-y-2">
+              <div>
+                <strong>Profil rejeté par un administrateur</strong>
+              </div>
+              {userValidationComment && (
+                <div>
+                  <span className="font-medium">Motif du rejet :</span> {userValidationComment}
+                </div>
+              )}
+              <div className="text-sm">
+                Votre profil ne peut pas accéder à l'annuaire des centres. Vous pouvez soumettre à nouveau votre profil pour révision.
+              </div>
+            </div>
           </AlertDescription>
         </Alert>
       ) : (
@@ -448,8 +472,59 @@ export default function CentersPage() {
         </div>
       )}
 
-      {/* Pending validation message for non-validated users */}
-      {!isValidated && (
+      {/* Rejection message for rejected users */}
+      {isRejected && (
+        <div className="text-center py-12">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <XCircle className="h-8 w-8 text-red-500" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Profil rejeté
+          </h3>
+          <div className="text-gray-600 max-w-md mx-auto space-y-3">
+            <p>
+              Votre profil de jury a été rejeté par notre équipe de validation.
+            </p>
+            {userValidationComment && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm font-medium text-red-800">Motif du rejet :</p>
+                <p className="text-sm text-red-700">{userValidationComment}</p>
+              </div>
+            )}
+            <p>
+              Vous pouvez corriger les éléments mentionnés et soumettre à nouveau votre profil pour révision.
+            </p>
+            <div className="pt-2 flex gap-2">
+              <Button variant="outline" className="border-red-300 text-red-700 hover:bg-red-100" asChild>
+                <Link href="/dashboard/profile">
+                  Modifier mon profil
+                </Link>
+              </Button>
+              <Button 
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/profile/jury/resubmit', {
+                      method: 'POST',
+                    });
+                    if (response.ok) {
+                      window.location.reload();
+                    }
+                  } catch (error) {
+                    console.error('Erreur lors de la re-soumission:', error);
+                  }
+                }}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Soumettre à nouveau
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending validation message for pending users */}
+      {isPending && (
         <div className="text-center py-12">
           <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Clock className="h-8 w-8 text-orange-500" />
