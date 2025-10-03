@@ -59,7 +59,19 @@ export async function getUser() {
     console.log('🔍 getUser: Querying database for user ID:', sessionData.userId);
     
     const user = await db
-      .select()
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        userType: users.userType,
+        validationStatus: users.validationStatus,
+        validationComment: users.validationComment,
+        profileCompleted: users.profileCompleted,
+        isValidator: users.isValidator,
+        lastLogin: users.lastLogin,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt
+      })
       .from(users)
       .where(and(eq(users.id, sessionData.userId), isNull(users.deletedAt)))
       .limit(1);

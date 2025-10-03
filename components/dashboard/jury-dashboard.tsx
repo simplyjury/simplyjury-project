@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import useSWR from 'swr';
 import Link from 'next/link';
+import RejectionAlert from './rejection-alert';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -179,6 +180,7 @@ function QuickActions() {
 export default function JuryDashboard() {
   const { data: stats, error: statsError } = useSWR('/api/jury/stats', fetcher);
   const { data: profile } = useSWR('/api/profile/jury', fetcher);
+  const { data: user } = useSWR('/api/user', fetcher);
 
   const juryStats: JuryStats = stats?.data || {
     totalRequests: 0,
@@ -214,6 +216,11 @@ export default function JuryDashboard() {
           Voici un aperçu de votre activité sur SimplyJury
         </p>
       </div>
+
+      {/* Rejection Alert */}
+      {user?.validationStatus === 'rejected' && (
+        <RejectionAlert rejectionReason={user?.validationComment} />
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
