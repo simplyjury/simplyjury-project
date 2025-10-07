@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
     const modality = searchParams.get('modality') || '';
     const dateFrom = searchParams.get('dateFrom') || '';
     const dateTo = searchParams.get('dateTo') || '';
+    const sortBy = searchParams.get('sortBy') || '';
+    const sortOrder = searchParams.get('sortOrder') || 'asc';
 
     // Build the base query with filters using sql template
     let whereConditions = [];
@@ -80,6 +82,25 @@ export async function GET(request: NextRequest) {
 
     if (dateTo) {
       whereConditions.push(sql`jr.session_date <= ${dateTo}`);
+    }
+
+    // Determine sort order
+    let orderByClause;
+    const sortDirection = sortOrder === 'asc' ? sql`ASC` : sql`DESC`;
+    
+    if (sortBy === 'certification_title') {
+      orderByClause = sql`ORDER BY jr.certification_title ${sortDirection} NULLS LAST`;
+    } else if (sortBy === 'training_center_name') {
+      orderByClause = sql`ORDER BY tc.name ${sortDirection} NULLS LAST`;
+    } else if (sortBy === 'session_date') {
+      orderByClause = sql`ORDER BY jr.session_date ${sortDirection} NULLS LAST`;
+    } else if (sortBy === 'modality') {
+      orderByClause = sql`ORDER BY jr.modality ${sortDirection} NULLS LAST`;
+    } else if (sortBy === 'status') {
+      orderByClause = sql`ORDER BY jr.status ${sortDirection} NULLS LAST`;
+    } else {
+      // Default sort by session date descending
+      orderByClause = sql`ORDER BY jr.session_date DESC NULLS LAST, jr.created_at DESC`;
     }
 
     // Get sessions with pagination
@@ -113,7 +134,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN users u_jury ON jr.jury_id = u_jury.id
       LEFT JOIN jury_profiles jp ON u_jury.id = jp.user_id
       ${whereConditions.length > 0 ? sql`WHERE ${sql.join(whereConditions, sql` AND `)}` : sql``}
-      ORDER BY jr.session_date DESC NULLS LAST, jr.created_at DESC
+      ${orderByClause}
       LIMIT ${limit}
       OFFSET ${offset}
     `);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, UserPlus, Edit, Trash2, Shield, User, Building2, MoreVertical, Info, Eye, X, Phone, Mail, MapPin, Calendar, Briefcase, DollarSign, Clock, Award, Users, RotateCcw } from 'lucide-react';
+import { Search, Filter, UserPlus, Edit, Trash2, Shield, User, Building2, MoreVertical, Info, Eye, X, Phone, Mail, MapPin, Calendar, Briefcase, DollarSign, Clock, Award, Users, RotateCcw, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -85,6 +85,10 @@ export default function GestionUtilisateursPage() {
   const [selectedUserType, setSelectedUserType] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   
+  // Sort state
+  const [sortBy, setSortBy] = useState<'name' | 'userType' | 'validationStatus' | 'lastLogin' | ''>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -121,6 +125,8 @@ export default function GestionUtilisateursPage() {
     if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
     if (selectedUserType) params.append('userType', selectedUserType);
     if (selectedStatus) params.append('status', selectedStatus);
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortBy) params.append('sortOrder', sortOrder);
     return `/api/admin/users?${params.toString()}`;
   };
   
@@ -306,23 +312,25 @@ export default function GestionUtilisateursPage() {
                 setDebouncedSearchTerm('');
                 setSelectedUserType('');
                 setSelectedStatus('');
+                setSortBy('');
+                setSortOrder('asc');
                 setCurrentPage(1);
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                searchTerm || selectedUserType || selectedStatus
+                searchTerm || selectedUserType || selectedStatus || sortBy
                   ? 'bg-red-100 text-red-700 hover:bg-red-200' 
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               <Filter className="w-4 h-4" />
-              {searchTerm || selectedUserType || selectedStatus ? 'Effacer filtres' : 'Filtres'}
+              {searchTerm || selectedUserType || selectedStatus || sortBy ? 'Effacer filtres' : 'Filtres'}
             </button>
           </div>
         </div>
       </div>
 
       {/* Active Filters Indicator */}
-      {(searchTerm || selectedUserType || selectedStatus) && (
+      {(searchTerm || selectedUserType || selectedStatus || sortBy) && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-blue-700">
@@ -344,6 +352,11 @@ export default function GestionUtilisateursPage() {
                     Statut: {selectedStatus === 'active' ? 'Actifs' : selectedStatus === 'pending' ? 'En attente' : 'Désactivés'}
                   </span>
                 )}
+                {sortBy && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    Tri: {sortBy === 'name' ? 'Nom' : sortBy === 'userType' ? 'Type' : sortBy === 'validationStatus' ? 'Statut' : 'Dernière connexion'} ({sortOrder === 'asc' ? 'Croissant' : 'Décroissant'})
+                  </span>
+                )}
               </div>
             </div>
             <button
@@ -352,6 +365,8 @@ export default function GestionUtilisateursPage() {
                 setDebouncedSearchTerm('');
                 setSelectedUserType('');
                 setSelectedStatus('');
+                setSortBy('');
+                setSortOrder('asc');
                 setCurrentPage(1);
               }}
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -408,17 +423,89 @@ export default function GestionUtilisateursPage() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Utilisateur
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    if (sortBy === 'name') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('name');
+                      setSortOrder('asc');
+                    }
+                    setCurrentPage(1);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Utilisateur</span>
+                    {sortBy === 'name' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-30" />
+                    )}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    if (sortBy === 'userType') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('userType');
+                      setSortOrder('asc');
+                    }
+                    setCurrentPage(1);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Type</span>
+                    {sortBy === 'userType' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-30" />
+                    )}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Statut
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    if (sortBy === 'validationStatus') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('validationStatus');
+                      setSortOrder('asc');
+                    }
+                    setCurrentPage(1);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Statut</span>
+                    {sortBy === 'validationStatus' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-30" />
+                    )}
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Dernière connexion
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    if (sortBy === 'lastLogin') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('lastLogin');
+                      setSortOrder('asc');
+                    }
+                    setCurrentPage(1);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Dernière connexion</span>
+                    {sortBy === 'lastLogin' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-30" />
+                    )}
+                  </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions

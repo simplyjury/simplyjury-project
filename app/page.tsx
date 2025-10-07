@@ -1,42 +1,84 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Users, CheckCircle, Star, Shield, Search, MessageSquare, MessageCircle, Zap, Trophy } from 'lucide-react';
+import { ArrowRight, Users, CheckCircle, Star, Shield, Search, MessageSquare, MessageCircle, Zap, Trophy, Clock, Award, TrendingUp, HeadphonesIcon, Calendar } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
+import { useEffect } from 'react';
 
 export default function HomePage() {
+  const openCalendly = () => {
+    if (typeof window !== 'undefined' && (window as any).Calendly) {
+      (window as any).Calendly.initPopupWidget({
+        url: 'https://calendly.com/cedric-kerbidi/reunion-information-webwiz'
+      });
+    }
+  };
+
   return (
-    <main className="font-jakarta">
+    <>
+      {/* Calendly CSS */}
+      <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet" />
+      
+      {/* Calendly Script */}
+      <Script 
+        src="https://assets.calendly.com/assets/external/widget.js" 
+        strategy="lazyOnload"
+      />
+
+      <main className="font-jakarta">
       {/* Navigation Header */}
-      <header className="border-b border-gray-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link href="/" className="flex items-center">
-            <Image 
-              src="/images/logos/SimplyJury_Logo-Horizontal-Bicolore-Bleu-Jaune.svg"
-              alt="SimplyJury"
-              width={140}
-              height={40}
-              className="h-8 w-auto"
-            />
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Button className="bg-[#0d4a70] hover:bg-[#0c608a] text-white">
-              Passer au Pro
-            </Button>
-            <Link
-              href="/pricing"
-              className="text-sm font-medium text-gray-700 hover:text-gray-900"
-            >
-              Pricing
+      <header className="border-b border-gray-200 bg-white sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <Link href="/" className="flex items-center">
+              <Image 
+                src="/images/logos/SimplyJury_Logo-Horizontal-Bicolore-Bleu-Jaune.svg"
+                alt="SimplyJury"
+                width={140}
+                height={40}
+                className="h-8 w-auto"
+              />
             </Link>
-            <Link
-              href="/sign-in"
-              className="text-sm font-medium text-gray-700 hover:text-gray-900"
-            >
-              Se connecter
-            </Link>
-            <Button asChild className="rounded-full">
-              <Link href="/sign-up">Créer un compte</Link>
-            </Button>
+            
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center space-x-8">
+              <a href="#fonctionnalites" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
+                Fonctionnalités / Solution
+              </a>
+              <a href="#pour-qui" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
+                Pour qui
+              </a>
+              <a href="#tarif" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
+                Tarif
+              </a>
+              <a href="#a-propos" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
+                À propos
+              </a>
+            </nav>
+
+            <div className="flex items-center space-x-3">
+              <Link
+                href="/sign-in"
+                className="text-sm font-medium text-gray-700 hover:text-gray-900"
+              >
+                Se connecter
+              </Link>
+              <Button 
+                asChild 
+                className="bg-[#ec4899] hover:bg-[#db2777] text-white rounded-full px-6"
+              >
+                <Link href="/sign-up">Démarrer</Link>
+              </Button>
+              <Button 
+                onClick={openCalendly}
+                variant="outline" 
+                className="border-[#0d4a70] text-[#0d4a70] hover:bg-[#0d4a70] hover:text-white rounded-full px-6"
+              >
+                Prendre rendez-vous
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -145,79 +187,185 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-white">
+      {/* Fonctionnalités/Solution Section */}
+      <section id="fonctionnalites" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-[#0d4a70] sm:text-4xl mb-4">
+              Fonctionnalités / Solution
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Découvrez comment SimplyJury simplifie la gestion de vos certifications
+            </p>
+          </div>
+
+          {/* Tabs inspired by Indy */}
+          <div className="bg-[#f8f9fa] rounded-2xl p-8">
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 bg-[#13d090] rounded-xl flex items-center justify-center mb-4">
+                  <Search className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-[#0d4a70] mb-2">Recherche de jury</h3>
+                <p className="text-sm text-gray-600">Trouvez rapidement des jurys qualifiés par domaine et région</p>
+              </div>
+              
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 bg-[#bea1e5] rounded-xl flex items-center justify-center mb-4">
+                  <MessageCircle className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-[#0d4a70] mb-2">Messagerie intégrée</h3>
+                <p className="text-sm text-gray-600">Communiquez directement avec les jurys via notre plateforme</p>
+              </div>
+              
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 bg-[#fdce0f] rounded-xl flex items-center justify-center mb-4">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-[#0d4a70] mb-2">Profils vérifiés</h3>
+                <p className="text-sm text-gray-600">Tous les jurys sont qualifiés et leurs compétences vérifiées</p>
+              </div>
+              
+              <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 bg-[#ec4899] rounded-xl flex items-center justify-center mb-4">
+                  <Calendar className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-[#0d4a70] mb-2">Gestion de sessions</h3>
+                <p className="text-sm text-gray-600">Organisez et suivez vos sessions de certification facilement</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Comment ça marche Section */}
+      <section id="pour-qui" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#0d4a70] sm:text-4xl mb-4">
               Comment ça marche ?
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Une plateforme simple et efficace pour connecter centres de formation et jurys professionnels
+              Que vous soyez jury ou organisme de formation, SimplyJury est fait pour vous
             </p>
           </div>
           
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="text-center group">
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="absolute inset-0 bg-[#13d090] rounded-2xl rotate-3 group-hover:rotate-6 transition-transform duration-300"></div>
-                <div className="relative bg-white rounded-2xl w-full h-full flex items-center justify-center shadow-lg">
-                  <Search className="h-8 w-8 text-[#13d090]" />
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Pour les Jurys */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#13d090] rounded-full mb-4">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-[#0d4a70] mb-2">En tant que Jury</h3>
+                <p className="text-gray-600">Valorisez votre expertise professionnelle</p>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#13d090] rounded-full flex items-center justify-center text-white font-bold">1</div>
+                  <div>
+                    <h4 className="font-semibold text-[#0d4a70] mb-1">Créez votre profil</h4>
+                    <p className="text-sm text-gray-600">Renseignez vos domaines d'expertise et vos disponibilités</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#13d090] rounded-full flex items-center justify-center text-white font-bold">2</div>
+                  <div>
+                    <h4 className="font-semibold text-[#0d4a70] mb-1">Recevez des demandes</h4>
+                    <p className="text-sm text-gray-600">Les organismes de formation vous contactent directement</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#13d090] rounded-full flex items-center justify-center text-white font-bold">3</div>
+                  <div>
+                    <h4 className="font-semibold text-[#0d4a70] mb-1">Participez aux sessions</h4>
+                    <p className="text-sm text-gray-600">Acceptez les missions qui vous conviennent et partagez votre expertise</p>
+                  </div>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-[#0d4a70] mb-3">
-                1. Recherchez un jury
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Filtrez par domaine de certification, région et modalités (présentiel/visio) pour trouver le jury parfait.
-              </p>
             </div>
 
-            <div className="text-center group">
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="absolute inset-0 bg-[#bea1e5] rounded-2xl -rotate-3 group-hover:-rotate-6 transition-transform duration-300"></div>
-                <div className="relative bg-white rounded-2xl w-full h-full flex items-center justify-center shadow-lg">
-                  <MessageCircle className="h-8 w-8 text-[#bea1e5]" />
+            {/* Pour les Organismes de Formation */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#bea1e5] rounded-full mb-4">
+                  <Trophy className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-[#0d4a70] mb-2">En tant qu'Organisme de Formation</h3>
+                <p className="text-gray-600">Trouvez les jurys qualifiés dont vous avez besoin</p>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#bea1e5] rounded-full flex items-center justify-center text-white font-bold">1</div>
+                  <div>
+                    <h4 className="font-semibold text-[#0d4a70] mb-1">Recherchez un jury</h4>
+                    <p className="text-sm text-gray-600">Filtrez par domaine de certification, région et modalités</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#bea1e5] rounded-full flex items-center justify-center text-white font-bold">2</div>
+                  <div>
+                    <h4 className="font-semibold text-[#0d4a70] mb-1">Contactez directement</h4>
+                    <p className="text-sm text-gray-600">Envoyez une demande structurée avec tous les détails de votre mission</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#bea1e5] rounded-full flex items-center justify-center text-white font-bold">3</div>
+                  <div>
+                    <h4 className="font-semibold text-[#0d4a70] mb-1">Organisez votre session</h4>
+                    <p className="text-sm text-gray-600">Recevez une réponse rapide et planifiez votre session de certification</p>
+                  </div>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-[#0d4a70] mb-3">
-                2. Contactez directement
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Envoyez une demande structurée avec tous les détails de votre mission via notre messagerie intégrée.
-              </p>
-            </div>
-
-            <div className="text-center group">
-              <div className="relative mx-auto w-20 h-20 mb-6">
-                <div className="absolute inset-0 bg-[#fdce0f] rounded-2xl rotate-2 group-hover:rotate-4 transition-transform duration-300"></div>
-                <div className="relative bg-white rounded-2xl w-full h-full flex items-center justify-center shadow-lg">
-                  <CheckCircle className="h-8 w-8 text-[#fdce0f]" />
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-[#0d4a70] mb-3">
-                3. Organisez votre session
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Recevez une réponse rapide et organisez votre session de certification avec un jury qualifié.
-              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-20 bg-gray-50">
+      {/* Pourquoi choisir SimplyJury - Stats Section */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#0d4a70] sm:text-4xl mb-4">
               Pourquoi choisir SimplyJury ?
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Une solution complète qui simplifie la mise en relation entre centres de formation et jurys professionnels
+              Des chiffres clés qui témoignent de notre efficacité
             </p>
           </div>
           
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-[#13d090] rounded-full mb-4">
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <div className="text-4xl font-bold text-[#0d4a70] mb-2">300+</div>
+              <div className="text-gray-600">Nombre de jury disponibles</div>
+            </div>
+            
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-[#fdce0f] rounded-full mb-4">
+                <Clock className="h-8 w-8 text-white" />
+              </div>
+              <div className="text-4xl font-bold text-[#0d4a70] mb-2">3h</div>
+              <div className="text-gray-600">Temps gagné par recherche</div>
+            </div>
+            
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-[#bea1e5] rounded-full mb-4">
+                <TrendingUp className="h-8 w-8 text-white" />
+              </div>
+              <div className="text-4xl font-bold text-[#0d4a70] mb-2">300+</div>
+              <div className="text-gray-600">Sessions réalisées avec SimplyJury par an</div>
+            </div>
+          </div>
+
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <div className="flex items-start space-x-4">
@@ -270,18 +418,18 @@ export default function HomePage() {
             </div>
 
             <div className="relative">
-              <div className="bg-white rounded-2xl shadow-xl p-8 relative z-10">
+              <div className="bg-gradient-to-br from-[#0d4a70] to-[#0c608a] rounded-2xl shadow-xl p-8 relative z-10">
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-[#13d090] rounded-full mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-6">
                     <Trophy className="h-8 w-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-[#0d4a70] mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-6">
                     Essai gratuit
                   </h3>
-                  <p className="text-gray-600 mb-8">
+                  <p className="text-blue-100 mb-8">
                     Découvrez SimplyJury sans engagement. Testez toutes nos fonctionnalités pendant 30 jours.
                   </p>
-                  <Button size="lg" asChild className="bg-[#13d090] hover:bg-[#10b87a] text-white px-8 py-3 rounded-xl font-semibold">
+                  <Button size="lg" asChild className="bg-white text-[#0d4a70] hover:bg-gray-100 px-8 py-3 rounded-xl font-semibold">
                     <Link href="/sign-up">Commencer l'essai gratuit</Link>
                   </Button>
                 </div>
@@ -293,8 +441,93 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Support & Demo Section */}
+      <section id="contact" className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Support Client */}
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="flex items-start space-x-4 mb-6">
+                <div className="w-12 h-12 bg-[#13d090] rounded-full flex items-center justify-center flex-shrink-0">
+                  <HeadphonesIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-[#0d4a70] mb-2">Support client</h3>
+                  <p className="text-gray-600">Posez-nous vos questions !</p>
+                </div>
+              </div>
+              
+              <div className="bg-[#f8f9fa] rounded-xl p-6 mb-6">
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-medium text-[#0d4a70]">👋</span>
+                    </div>
+                    <div className="bg-white rounded-2xl rounded-tl-none p-4 flex-1">
+                      <p className="text-sm text-gray-700">Bonjour Pierre, comment puis-je vous aider ?</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-medium text-[#0d4a70]">👤</span>
+                    </div>
+                    <div className="bg-white rounded-2xl rounded-tl-none p-4 flex-1">
+                      <p className="text-sm text-gray-700">Est-ce que je peux passer sur SimplyJury Pro ?</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <h4 className="font-semibold text-[#0d4a70] mb-4">Une équipe à votre disposition</h4>
+                <p className="text-gray-600 mb-6">
+                  La satisfaction de nos clients est notre priorité. Notre équipe est disponible pour vous aider et répondre à vos questions.
+                </p>
+                <Button asChild className="bg-[#13d090] hover:bg-[#10b87a] text-white rounded-full px-6">
+                  <Link href="#contact">Contacter l'équipe</Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Démo Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0d4a70] rounded-full mb-4">
+                  <Calendar className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-[#0d4a70] mb-2">
+                  Besoin d'en savoir plus ?
+                </h3>
+                <p className="text-xl text-gray-700 mb-4">
+                  Participez à l'une de nos démos !
+                </p>
+              </div>
+              
+              <div className="bg-[#f8f9fa] rounded-xl p-6 mb-6">
+                <p className="text-gray-700 mb-4">
+                  Chaque semaine, découvrez comment SimplyJury peut vous aider à trouver rapidement des jurys qualifiés pour vos certifications.
+                </p>
+                <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                  <Calendar className="h-4 w-4" />
+                  <span>Sessions disponibles chaque semaine</span>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={openCalendly}
+                size="lg" 
+                className="w-full bg-[#0d4a70] hover:bg-[#0c608a] text-white rounded-full py-6 text-lg font-semibold"
+              >
+                S'inscrire à une démo
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA Section */}
-      <section className="py-20 bg-[#0d4a70] relative overflow-hidden">
+      <section id="tarif" className="py-20 bg-[#0d4a70] relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0d4a70] to-[#0a3a5a]"></div>
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white sm:text-4xl mb-6">
@@ -304,14 +537,18 @@ export default function HomePage() {
             Rejoignez les centres de formation qui font confiance à SimplyJury pour trouver leurs jurys qualifiés.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild className="bg-[#13d090] hover:bg-[#10b87a] text-white px-8 py-4 rounded-xl font-semibold text-lg">
+            <Button size="lg" asChild className="bg-[#ec4899] hover:bg-[#db2777] text-white px-8 py-4 rounded-full font-semibold text-lg">
               <Link href="/sign-up">
-                Commencer gratuitement
+                Démarrer
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-[#0d4a70] px-8 py-4 rounded-xl font-semibold text-lg">
-              Planifier une démo
+            <Button 
+              onClick={openCalendly}
+              size="lg" 
+              className="bg-white text-[#0d4a70] hover:bg-gray-100 border-2 border-white px-8 py-4 rounded-full font-semibold text-lg"
+            >
+              Prendre rendez-vous
             </Button>
           </div>
         </div>
@@ -319,6 +556,7 @@ export default function HomePage() {
         <div className="absolute bottom-10 right-10 w-32 h-32 bg-[#fdce0f] rounded-full opacity-10"></div>
       </section>
 
-    </main>
+      </main>
+    </>
   );
 }
