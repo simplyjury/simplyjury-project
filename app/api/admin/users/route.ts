@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth/session';
 import { db } from '@/lib/db/drizzle';
 import { users, juryProfiles, trainingCenters } from '@/lib/db/schema';
-import { count, desc, ilike, or, eq, isNull, isNotNull, and } from 'drizzle-orm';
+import { count, desc, asc, ilike, or, eq, isNull, isNotNull, and } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const userType = searchParams.get('userType') || '';
     const status = searchParams.get('status') || '';
+    const sortBy = searchParams.get('sortBy') || '';
+    const sortOrder = searchParams.get('sortOrder') || 'asc';
 
     const offset = (page - 1) * limit;
 
@@ -90,6 +92,21 @@ export async function GET(request: NextRequest) {
 
     const totalCount = totalCountResult[0].count;
 
+    // Determine sort order
+    let orderByClause;
+    if (sortBy === 'name') {
+      orderByClause = sortOrder === 'asc' ? asc(users.name) : desc(users.name);
+    } else if (sortBy === 'userType') {
+      orderByClause = sortOrder === 'asc' ? asc(users.userType) : desc(users.userType);
+    } else if (sortBy === 'validationStatus') {
+      orderByClause = sortOrder === 'asc' ? asc(users.validationStatus) : desc(users.validationStatus);
+    } else if (sortBy === 'lastLogin') {
+      orderByClause = sortOrder === 'asc' ? asc(users.lastLogin) : desc(users.lastLogin);
+    } else {
+      // Default sort by creation date descending
+      orderByClause = desc(users.createdAt);
+    }
+
     // Get paginated users with profile photos
     const usersList = await db
       .select({
@@ -110,7 +127,7 @@ export async function GET(request: NextRequest) {
       .leftJoin(juryProfiles, eq(users.id, juryProfiles.userId))
       .leftJoin(trainingCenters, eq(users.id, trainingCenters.userId))
       .where(whereClause)
-      .orderBy(desc(users.createdAt))
+      .orderBy(orderByClause)
       .limit(limit)
       .offset(offset);
 

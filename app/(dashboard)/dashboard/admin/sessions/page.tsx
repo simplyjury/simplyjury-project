@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, Eye, Calendar, Clock, Users, MapPin, CheckCircle, XCircle, AlertCircle, MoreVertical, Info, X } from 'lucide-react';
+import { Search, Filter, Eye, Calendar, Clock, Users, MapPin, CheckCircle, XCircle, AlertCircle, MoreVertical, Info, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import useSWR from 'swr';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 
@@ -97,6 +97,10 @@ export default function AdminSessionsPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   
+  // Sort state
+  const [sortBy, setSortBy] = useState<'certification_title' | 'training_center_name' | 'session_date' | 'modality' | 'status' | ''>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<any>(null);
@@ -124,6 +128,8 @@ export default function AdminSessionsPage() {
     if (selectedModality) params.append('modality', selectedModality);
     if (dateFrom) params.append('dateFrom', dateFrom);
     if (dateTo) params.append('dateTo', dateTo);
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortBy) params.append('sortOrder', sortOrder);
     return `/api/admin/sessions?${params.toString()}`;
   };
   
@@ -238,6 +244,8 @@ export default function AdminSessionsPage() {
                 setSelectedModality('');
                 setDateFrom('');
                 setDateTo('');
+                setSortBy('');
+                setSortOrder('asc');
                 setCurrentPage(1);
               }}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
@@ -260,11 +268,111 @@ export default function AdminSessionsPage() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Session</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Centre / Jury</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Heure</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modalité</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    if (sortBy === 'certification_title') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('certification_title');
+                      setSortOrder('asc');
+                    }
+                    setCurrentPage(1);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Session</span>
+                    {sortBy === 'certification_title' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-30" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    if (sortBy === 'training_center_name') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('training_center_name');
+                      setSortOrder('asc');
+                    }
+                    setCurrentPage(1);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Centre / Jury</span>
+                    {sortBy === 'training_center_name' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-30" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    if (sortBy === 'session_date') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('session_date');
+                      setSortOrder('asc');
+                    }
+                    setCurrentPage(1);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Date & Heure</span>
+                    {sortBy === 'session_date' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-30" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    if (sortBy === 'modality') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('modality');
+                      setSortOrder('asc');
+                    }
+                    setCurrentPage(1);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Modalité</span>
+                    {sortBy === 'modality' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-30" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    if (sortBy === 'status') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('status');
+                      setSortOrder('asc');
+                    }
+                    setCurrentPage(1);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Statut</span>
+                    {sortBy === 'status' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />
+                    ) : (
+                      <ArrowUpDown className="w-4 h-4 opacity-30" />
+                    )}
+                  </div>
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>

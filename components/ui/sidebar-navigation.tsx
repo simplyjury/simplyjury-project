@@ -20,8 +20,6 @@ import {
   HelpCircle,
   Shield,
   Users,
-  AlertTriangle,
-  BarChart3,
   MapPin,
   Download,
   Activity,
@@ -77,22 +75,11 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             href: '/dashboard/admin/sessions',
             icon: ClipboardList,
           },
-          {
-            name: 'Modération avis',
-            href: '/dashboard/admin/moderation-avis',
-            icon: AlertTriangle,
-            badge: 3,
-          },
         ],
       },
       {
         title: 'STATISTIQUES',
         items: [
-          {
-            name: 'Statistiques globales',
-            href: '/dashboard/admin/statistiques-globales',
-            icon: BarChart3,
-          },
           {
             name: 'Répartition géographique',
             href: '/dashboard/admin/repartition-geographique',
