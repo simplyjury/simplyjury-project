@@ -60,7 +60,7 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             icon: LayoutDashboard,
           },
           {
-            name: 'Validation profils',
+            name: 'Tâches à valider',
             href: '/dashboard/admin/validation-profils',
             icon: CheckCircle,
             badge: pendingJuryCount && pendingJuryCount > 0 ? pendingJuryCount : undefined,

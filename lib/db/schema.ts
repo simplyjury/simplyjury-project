@@ -168,6 +168,16 @@ export const franceCompetenceCertifications = pgTable('france_competence_certifi
   validityStart: timestamp('validity_start'),
   validityEnd: timestamp('validity_end'),
   certificationDetails: jsonb('certification_details'), // Complete API response including blocs de compétences
+  // Approval workflow fields
+  approvalStatus: varchar('approval_status', { length: 20 }).default('approved'), // approved, pending, rejected
+  siretMismatch: boolean('siret_mismatch').default(false),
+  certificateurSiret: varchar('certificateur_siret', { length: 14 }),
+  certificateurName: varchar('certificateur_name', { length: 500 }),
+  centerSiret: varchar('center_siret', { length: 14 }),
+  approvalRequestedAt: timestamp('approval_requested_at'),
+  approvedAt: timestamp('approved_at'),
+  approvedBy: integer('approved_by').references(() => users.id),
+  approvalComment: text('approval_comment'),
   lastUpdated: timestamp('last_updated').defaultNow(),
   createdAt: timestamp('created_at').defaultNow(),
 });

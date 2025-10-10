@@ -38,6 +38,12 @@ interface CertificationResponse {
       }>;
     };
   };
+  type?: {
+    certificateurs_rncp?: Array<{
+      siret: string;
+      nom: string;
+    }>;
+  };
   continuite?: {
     rncp: Array<{
       code: string;
@@ -145,6 +151,7 @@ export async function GET(request: NextRequest) {
     const isActive = cert.periode_validite?.rncp?.actif || false;
     const endDate = cert.periode_validite?.rncp?.fin_enregistrement;
     const domain = cert.domaines?.nsf?.rncp?.[0]?.intitule || null;
+    const certificateurs = cert.type?.certificateurs_rncp || [];
 
     // Find replacement certification (if inactive)
     let replacementCode = null;
@@ -194,6 +201,7 @@ export async function GET(request: NextRequest) {
       domain,
       isActive,
       endDate,
+      certificateurs,
       warning: !isActive ? 'Cette certification n\'est plus active' : null,
       replacement: replacementCode ? {
         code: replacementCode,

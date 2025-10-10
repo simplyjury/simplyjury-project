@@ -25,7 +25,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 const getPageTitle = (pathname: string, isJury: boolean = false, isAdmin: boolean = false): { title: string; subtitle: string } => {
   const adminRoutes = {
     '/dashboard/admin': { title: 'Administration', subtitle: 'Tableau de bord administrateur - Vue d\'ensemble de la plateforme' },
-    '/dashboard/admin/validation-profils': { title: 'Validation profils', subtitle: 'Gérez les demandes de validation des profils jury et centres' },
+    '/dashboard/admin/validation-profils': { title: 'Tâches à valider', subtitle: 'Gérez les demandes de validation des profils et certifications' },
     '/dashboard/admin/gestion-utilisateurs': { title: 'Gestion utilisateurs', subtitle: 'Administrez les comptes utilisateurs de la plateforme' },
     '/dashboard/admin/sessions': { title: 'Gestion des sessions', subtitle: 'Gérez toutes les sessions de jury de la plateforme' },
     '/dashboard/admin/repartition-geographique': { title: 'Répartition géographique', subtitle: 'Analysez la distribution géographique des utilisateurs' },
