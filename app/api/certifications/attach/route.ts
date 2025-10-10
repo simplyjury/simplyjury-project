@@ -113,6 +113,27 @@ export async function POST(request: NextRequest) {
     // Use debut_parcours (start of training) and fin_enregistrement (end of registration)
     const validityStart = cert.periode_validite?.rncp?.debut_parcours || cert.periode_validite?.rncp?.activation || null;
     const validityEnd = cert.periode_validite?.rncp?.fin_enregistrement || null;
+    
+    // Extract certificateurs information
+    const certificateurs = cert.type?.certificateurs_rncp || [];
+    const certificateurSiret = certificateurs.length > 0 ? certificateurs[0].siret : null;
+    const certificateurName = certificateurs.length > 0 ? certificateurs[0].nom : null;
+    
+    // Check for SIRET mismatch
+    const centerSiret = trainingCenter.siret;
+    let siretMismatch = false;
+    let approvalStatus = 'approved';
+    let approvalRequestedAt = null;
+    
+    if (certificateurSiret && centerSiret) {
+      const certSirets = certificateurs.map((c: any) => c.siret);
+      siretMismatch = !certSirets.includes(centerSiret);
+      
+      if (siretMismatch) {
+        approvalStatus = 'pending';
+        approvalRequestedAt = new Date();
+      }
+    }
 
     // Check if certification already exists for this training center
     const existing = await db.query.franceCompetenceCertifications.findFirst({
@@ -139,10 +160,36 @@ export async function POST(request: NextRequest) {
         validityStart: validityStart ? new Date(validityStart) : null,
         validityEnd: validityEnd ? new Date(validityEnd) : null,
         certificationDetails: cert, // Store complete API response
+        // Approval workflow fields
+        approvalStatus,
+        siretMismatch,
+        certificateurSiret,
+        certificateurName,
+        centerSiret,
+        approvalRequestedAt,
         lastUpdated: new Date(),
         createdAt: new Date()
       })
       .returning();
+
+    // Send email notification to admins if SIRET mismatch detected
+    if (siretMismatch && certificateurName && certificateurSiret) {
+      // Import dynamically to avoid issues
+      const { sendCertificationValidationEmail } = await import('@/lib/actions/send-certification-validation-email');
+      
+      // Send email asynchronously (don't wait for it)
+      sendCertificationValidationEmail({
+        centerName: trainingCenter.name,
+        certificationTitle: title,
+        certificationCode: rncpCode,
+        centerSiret: centerSiret || 'Non renseigné',
+        certificateurName,
+        certificateurSiret,
+      }).catch((error) => {
+        console.error('Failed to send certification validation email:', error);
+        // Don't fail the request if email fails
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -154,8 +201,13 @@ export async function POST(request: NextRequest) {
         domain: newCertification.domain,
         status: newCertification.status,
         validityEnd: newCertification.validityEnd,
+        approvalStatus: newCertification.approvalStatus,
+        siretMismatch: newCertification.siretMismatch,
         details: newCertification.certificationDetails
-      }
+      },
+      message: siretMismatch 
+        ? 'Certification rattachée avec succès. Elle est en attente d\'approbation en raison d\'une non-concordance du SIRET.'
+        : 'Certification rattachée avec succès.'
     });
 
   } catch (error) {

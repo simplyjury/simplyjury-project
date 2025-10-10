@@ -18,6 +18,10 @@ interface CertificationDetails {
   domain: string | null;
   isActive: boolean;
   endDate: string | null;
+  certificateurs?: Array<{
+    siret: string;
+    nom: string;
+  }>;
   warning: string | null;
   replacement?: {
     code: string;

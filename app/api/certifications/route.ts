@@ -57,6 +57,14 @@ export async function GET(request: NextRequest) {
         validity_end: franceCompetenceCertifications.validityEnd,
         created_at: franceCompetenceCertifications.createdAt,
         certification_details: franceCompetenceCertifications.certificationDetails,
+        // Approval workflow fields
+        approval_status: franceCompetenceCertifications.approvalStatus,
+        siret_mismatch: franceCompetenceCertifications.siretMismatch,
+        certificateur_siret: franceCompetenceCertifications.certificateurSiret,
+        certificateur_name: franceCompetenceCertifications.certificateurName,
+        center_siret: franceCompetenceCertifications.centerSiret,
+        approval_requested_at: franceCompetenceCertifications.approvalRequestedAt,
+        approval_comment: franceCompetenceCertifications.approvalComment,
       })
       .from(franceCompetenceCertifications)
       .where(eq(franceCompetenceCertifications.trainingCenterId, trainingCenterId))

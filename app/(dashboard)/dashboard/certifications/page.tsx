@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Search, Calendar, Users, Star, Settings, BarChart3, AlertTriangle } from 'lucide-react';
+import { Plus, Download, Search, Calendar, Users, Star, Settings, BarChart3, AlertTriangle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { CertificationCard } from '@/components/certifications/certification-card';
 import { AddCertificationModal } from '@/components/certifications/add-certification-modal';
 import { CertificationStats } from '@/components/certifications/certification-stats';
@@ -24,6 +24,11 @@ interface CertificationData {
   success_rate: number;
   competency_blocks: string[];
   tags: string[];
+  approval_status?: 'approved' | 'pending' | 'rejected';
+  siret_mismatch?: boolean;
+  certificateur_name?: string;
+  certificateur_siret?: string;
+  approval_comment?: string;
 }
 
 interface StatsData {
@@ -51,6 +56,7 @@ export default function CertificationsPage() {
     level: '',
     domain: ''
   });
+  const [approvalStatusTab, setApprovalStatusTab] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
 
   // Check authorization and load data
   useEffect(() => {
@@ -73,22 +79,93 @@ export default function CertificationsPage() {
           return;
         }
 
-        // Load real certifications from API
+        // If authorized, load certifications from API
         const certsResponse = await fetch('/api/certifications');
         if (!certsResponse.ok) {
-          throw new Error('Failed to fetch certifications');
+          console.error('Error fetching certifications');
+          setLoading(false);
+          return;
         }
 
         const certsData = await certsResponse.json();
-        
         setCertifications(certsData.certifications || []);
-        setStats(certsData.stats || {
-          active_count: 0,
-          total_count: 0,
-          total_candidates: 0,
-          average_success_rate: 0
-        });
+        
+        // Load stats
+        const statsResponse = await fetch('/api/certifications/stats');
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          setStats(statsData);
+        }
+        
         setLoading(false);
+        
+        /* OLD MOCK DATA - KEEPING FOR REFERENCE
+        const mockCertifications: CertificationData[] = [
+      {
+        id: 1,
+        title: "Manager opérationnel d'activités",
+        code: "RNCP34826",
+        level: "6",
+        domain: "Management",
+        status: "active",
+        validity_end: "2025-07-19",
+        candidates_count: 45,
+        success_rate: 92,
+        competency_blocks: ["Pilotage opérationnel", "Management d'équipe", "Gestion budgétaire", "Communication"],
+        tags: ["Management", "Commerce", "Gestion"]
+      },
+      {
+        id: 2,
+        title: "Concepteur développeur d'applications",
+        code: "RNCP31678",
+        level: "6",
+        domain: "Informatique",
+        status: "active",
+        validity_end: "2025-11-26",
+        candidates_count: 23,
+        success_rate: 87,
+        competency_blocks: ["Conception d'applications", "Développement avancé", "Déploiement d'applications"],
+        tags: ["Informatique", "Développement", "Web"]
+      },
+      {
+        id: 3,
+        title: "Responsable de production industrielle",
+        code: "RNCP35506",
+        level: "6",
+        domain: "Industrie",
+        status: "active",
+        validity_end: "2025-12-18",
+        candidates_count: 31,
+        success_rate: 94,
+        competency_blocks: ["Planification production", "Management équipes", "Contrôle qualité", "Amélioration continue", "Sécurité industrielle"],
+        tags: ["Industrie", "Production", "Qualité"]
+      },
+      {
+        id: 4,
+        title: "Responsable de production industrielle",
+        code: "RNCP35506",
+        level: "6",
+        domain: "Industrie",
+        status: "active",
+        validity_end: "2025-12-18",
+        candidates_count: 31,
+        success_rate: 94,
+        competency_blocks: ["Planification production", "Management équipes", "Contrôle qualité", "Amélioration continue", "Sécurité industrielle"],
+        tags: ["Industrie", "Production", "Qualité"]
+      }
+    ];
+
+    const mockStats: StatsData = {
+      active_count: 8,
+      total_count: 12,
+      total_candidates: 247,
+      average_success_rate: 89
+    };
+
+    // setCertifications(mockCertifications);
+    // setStats(mockStats);
+    // setLoading(false);
+    */
       } catch (error) {
         console.error('Error checking authorization:', error);
         setAuthError('Erreur lors de la vérification des autorisations');
@@ -100,15 +177,32 @@ export default function CertificationsPage() {
   }, []);
 
   const filteredCertifications = certifications.filter(cert => {
+    // Search filter
     if (filters.search && !cert.title.toLowerCase().includes(filters.search.toLowerCase()) && 
         !cert.code.toLowerCase().includes(filters.search.toLowerCase())) {
       return false;
     }
+    // RNCP status filter (active/inactive/expired)
     if (filters.status && filters.status !== 'all' && cert.status !== filters.status) return false;
     if (filters.level && filters.level !== 'all' && cert.level !== filters.level) return false;
     if (filters.domain && filters.domain !== 'all' && cert.domain !== filters.domain) return false;
+    
+    // Approval status tab filter
+    if (approvalStatusTab !== 'all') {
+      const certApprovalStatus = cert.approval_status || 'approved';
+      if (approvalStatusTab !== certApprovalStatus) return false;
+    }
+    
     return true;
   });
+
+  // Calculate counts for tabs
+  const approvalStatusCounts = {
+    all: certifications.length,
+    approved: certifications.filter(c => (c.approval_status || 'approved') === 'approved').length,
+    pending: certifications.filter(c => c.approval_status === 'pending').length,
+    rejected: certifications.filter(c => c.approval_status === 'rejected').length,
+  };
 
   const handleFindJuries = (certificationId: number) => {
     // Navigate to jury search with certification filter
@@ -128,6 +222,12 @@ export default function CertificationsPage() {
   const handleExport = () => {
     // Export certifications to CSV
     console.log('Exporting certifications');
+  };
+
+  const handleResubmit = (certificationId: number) => {
+    // Handle resubmission of rejected certification
+    // This will be implemented later
+    console.log('Resubmitting certification:', certificationId);
   };
 
   if (loading) {
@@ -244,11 +344,75 @@ export default function CertificationsPage() {
 
       {/* Certifications List */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-bold text-[#0d4a70]">Vos certifications</CardTitle>
-          <span className="text-slate-600 text-sm">
-            {filteredCertifications.length} certification{filteredCertifications.length !== 1 ? 's' : ''} trouvée{filteredCertifications.length !== 1 ? 's' : ''}
-          </span>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <CardTitle className="text-xl font-bold text-[#0d4a70]">Vos certifications</CardTitle>
+            <span className="text-slate-600 text-sm">
+              {filteredCertifications.length} certification{filteredCertifications.length !== 1 ? 's' : ''} trouvée{filteredCertifications.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          
+          {/* Approval Status Tabs */}
+          <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+            <button
+              onClick={() => setApprovalStatusTab('all')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-colors ${
+                approvalStatusTab === 'all'
+                  ? 'bg-[#0d4a70] text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Toutes
+              <Badge variant="secondary" className="bg-white/20 text-current">
+                {approvalStatusCounts.all}
+              </Badge>
+            </button>
+            
+            <button
+              onClick={() => setApprovalStatusTab('approved')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-colors ${
+                approvalStatusTab === 'approved'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <CheckCircle className="w-4 h-4" />
+              Validées
+              <Badge variant="secondary" className="bg-white/20 text-current">
+                {approvalStatusCounts.approved}
+              </Badge>
+            </button>
+            
+            <button
+              onClick={() => setApprovalStatusTab('pending')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-colors ${
+                approvalStatusTab === 'pending'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              En attente
+              <Badge variant="secondary" className="bg-white/20 text-current">
+                {approvalStatusCounts.pending}
+              </Badge>
+            </button>
+            
+            <button
+              onClick={() => setApprovalStatusTab('rejected')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-colors ${
+                approvalStatusTab === 'rejected'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <XCircle className="w-4 h-4" />
+              Rejetées
+              <Badge variant="secondary" className="bg-white/20 text-current">
+                {approvalStatusCounts.rejected}
+              </Badge>
+            </button>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {filteredCertifications.length === 0 ? (
@@ -256,7 +420,7 @@ export default function CertificationsPage() {
               <p className="text-slate-500">Aucune certification trouvée avec ces filtres.</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div>
               {filteredCertifications.map((certification) => (
                 <CertificationCard
                   key={certification.id}
@@ -264,6 +428,7 @@ export default function CertificationsPage() {
                   onFindJuries={handleFindJuries}
                   onViewStats={handleViewStats}
                   onManage={handleManage}
+                  onResubmit={handleResubmit}
                 />
               ))}
             </div>

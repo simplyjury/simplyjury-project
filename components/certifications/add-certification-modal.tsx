@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Info, Sparkles, AlertTriangle } from 'lucide-react';
 import RNCPInput from '@/components/ui/rncp-input';
 
 interface CertificationDetails {
@@ -15,6 +15,10 @@ interface CertificationDetails {
   domain: string | null;
   isActive: boolean;
   endDate: string | null;
+  certificateurs?: Array<{
+    siret: string;
+    nom: string;
+  }>;
   warning: string | null;
   replacement?: {
     code: string;
@@ -34,11 +38,41 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [userSiret, setUserSiret] = useState<string | null>(null);
+  const [siretMismatch, setSiretMismatch] = useState(false);
+
+  // Fetch user's SIRET when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchUserSiret();
+    }
+  }, [isOpen]);
+
+  const fetchUserSiret = async () => {
+    try {
+      const response = await fetch('/api/profile/center');
+      if (response.ok) {
+        const result = await response.json();
+        setUserSiret(result.data?.siret || null);
+      }
+    } catch (err) {
+      console.error('Error fetching user SIRET:', err);
+    }
+  };
 
   const handleRNCPChange = (code: string, details?: CertificationDetails) => {
     setRncpCode(code);
     setCertificationDetails(details || null);
     setError(null);
+    
+    // Check SIRET mismatch
+    if (details?.certificateurs && details.certificateurs.length > 0 && userSiret) {
+      const certSirets = details.certificateurs.map(c => c.siret);
+      const matches = certSirets.includes(userSiret);
+      setSiretMismatch(!matches);
+    } else {
+      setSiretMismatch(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -67,11 +101,20 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
 
       setSuccess(true);
       
-      // Wait a bit to show success message
-      setTimeout(() => {
-        onAdd();
-        handleClose();
-      }, 1500);
+      // Show appropriate message based on approval status
+      if (data.certification?.siretMismatch) {
+        // Wait longer to show the pending approval message
+        setTimeout(() => {
+          onAdd();
+          handleClose();
+        }, 3000);
+      } else {
+        // Standard success flow
+        setTimeout(() => {
+          onAdd();
+          handleClose();
+        }, 1500);
+      }
 
     } catch (err) {
       console.error('Error attaching certification:', err);
@@ -86,6 +129,8 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
     setCertificationDetails(null);
     setError(null);
     setSuccess(false);
+    setSiretMismatch(false);
+    setUserSiret(null);
     onClose();
   };
 
@@ -151,6 +196,43 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
                 onChange={handleRNCPChange}
                 required={true}
               />
+            </div>
+          )}
+
+          {/* SIRET Mismatch Warning */}
+          {siretMismatch && certificationDetails?.certificateurs && !success && (
+            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-yellow-900 text-lg mb-2">
+                    ⚠️ Attention : SIRET non concordant
+                  </h4>
+                  <p className="text-sm text-yellow-800 mb-3">
+                    Le SIRET de votre centre ne correspond pas au certificateur de cette certification.
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    <div className="bg-white/70 rounded-lg p-3">
+                      <p className="text-yellow-700 font-medium mb-1">Certificateur(s) de cette certification :</p>
+                      {certificationDetails.certificateurs.map((cert, idx) => (
+                        <div key={idx} className="text-yellow-900 mt-1">
+                          <p className="font-semibold">{cert.nom}</p>
+                          <p className="text-xs">SIRET: {cert.siret}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {userSiret && (
+                      <div className="bg-white/70 rounded-lg p-3">
+                        <p className="text-yellow-700 font-medium">Votre SIRET :</p>
+                        <p className="text-yellow-900 font-semibold">{userSiret}</p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-yellow-700 mt-3 italic">
+                    Vous pouvez toujours rattacher cette certification, mais assurez-vous d'avoir les droits nécessaires.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/drizzle';
-import { users } from '@/lib/db/schema';
+import { users, franceCompetenceCertifications } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { AuthService } from '@/lib/auth/auth-service';
 
@@ -29,14 +29,25 @@ export async function GET(request: NextRequest) {
         )
       );
 
+    // Count pending certifications
+    const pendingCertifications = await db
+      .select({ count: franceCompetenceCertifications.id })
+      .from(franceCompetenceCertifications)
+      .where(eq(franceCompetenceCertifications.approvalStatus, 'pending'));
+
+    // Return total count (profiles + certifications)
+    const totalCount = pendingJuryCount.length + pendingCertifications.length;
+
     return NextResponse.json({
-      count: pendingJuryCount.length
+      count: totalCount,
+      profiles: pendingJuryCount.length,
+      certifications: pendingCertifications.length
     });
 
   } catch (error) {
-    console.error('Error fetching pending jury count:', error);
+    console.error('Error fetching pending count:', error);
     return NextResponse.json(
-      { error: 'Erreur lors de la récupération du nombre de jurys en attente' },
+      { error: 'Erreur lors de la récupération du nombre de tâches en attente' },
       { status: 500 }
     );
   }

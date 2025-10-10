@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/drizzle';
-import { users, juryProfiles, trainingCenters } from '@/lib/db/schema';
+import { users, juryProfiles, trainingCenters, franceCompetenceCertifications } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { AuthService } from '@/lib/auth/auth-service';
 
@@ -55,6 +55,31 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(users.createdAt);
 
+    // Get pending certifications with training center info
+    const pendingCertifications = await db
+      .select({
+        id: franceCompetenceCertifications.id,
+        title: franceCompetenceCertifications.title,
+        code: franceCompetenceCertifications.code,
+        level: franceCompetenceCertifications.level,
+        approvalStatus: franceCompetenceCertifications.approvalStatus,
+        siretMismatch: franceCompetenceCertifications.siretMismatch,
+        certificateurSiret: franceCompetenceCertifications.certificateurSiret,
+        certificateurName: franceCompetenceCertifications.certificateurName,
+        centerSiret: franceCompetenceCertifications.centerSiret,
+        approvalRequestedAt: franceCompetenceCertifications.approvalRequestedAt,
+        createdAt: franceCompetenceCertifications.createdAt,
+        // Training center info
+        centerName: trainingCenters.name,
+        centerCity: trainingCenters.city,
+        centerRegion: trainingCenters.region,
+        centerEmail: trainingCenters.email,
+      })
+      .from(franceCompetenceCertifications)
+      .leftJoin(trainingCenters, eq(franceCompetenceCertifications.trainingCenterId, trainingCenters.id))
+      .where(eq(franceCompetenceCertifications.approvalStatus, 'pending'))
+      .orderBy(franceCompetenceCertifications.approvalRequestedAt);
+
     // Apply filters
     let filteredUsers = pendingUsers;
 
@@ -79,7 +104,9 @@ export async function GET(request: NextRequest) {
 
     // Calculate stats
     const stats = {
-      pending: pendingUsers.length,
+      pending: pendingUsers.length + pendingCertifications.length,
+      pendingProfiles: pendingUsers.length,
+      pendingCertifications: pendingCertifications.length,
       validatedThisMonth: 0, // TODO: Calculate from database
       rejectedThisMonth: 0,  // TODO: Calculate from database
       urgent: pendingUsers.filter(user => {
@@ -132,8 +159,50 @@ export async function GET(request: NextRequest) {
       })()
     }));
 
+    // Format certifications for frontend
+    const formattedCertifications = pendingCertifications.map(cert => ({
+      id: cert.id,
+      type: 'certification' as const,
+      title: cert.title,
+      code: cert.code,
+      level: cert.level,
+      centerName: cert.centerName,
+      centerCity: cert.centerCity,
+      centerRegion: cert.centerRegion,
+      centerEmail: cert.centerEmail,
+      certificateurName: cert.certificateurName,
+      certificateurSiret: cert.certificateurSiret,
+      centerSiret: cert.centerSiret,
+      siretMismatch: cert.siretMismatch,
+      createdAt: cert.approvalRequestedAt || cert.createdAt,
+      isUrgent: (() => {
+        const dateValue = cert.approvalRequestedAt || cert.createdAt;
+        if (!dateValue) return false;
+        const createdAt = new Date(dateValue);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+        return hoursDiff > 48;
+      })(),
+      timeAgo: (() => {
+        const dateValue = cert.approvalRequestedAt || cert.createdAt;
+        if (!dateValue) return 'Récent';
+        const createdAt = new Date(dateValue);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 1) {
+          return `Il y a ${Math.floor(hoursDiff * 60)}min`;
+        } else if (hoursDiff < 24) {
+          return `Il y a ${Math.floor(hoursDiff)}h`;
+        } else {
+          return `Il y a ${Math.floor(hoursDiff / 24)}j`;
+        }
+      })()
+    }));
+
     return NextResponse.json({
       users: formattedUsers,
+      certifications: formattedCertifications,
       stats
     });
 
