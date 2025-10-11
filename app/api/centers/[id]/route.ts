@@ -6,7 +6,7 @@ import { getUser } from '@/lib/db/queries';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get current user and verify they are a jury
@@ -26,7 +26,8 @@ export async function GET(
       );
     }
 
-    const centerId = parseInt(params.id);
+    const resolvedParams = await params;
+    const centerId = parseInt(resolvedParams.id);
     
     if (isNaN(centerId)) {
       return NextResponse.json(
