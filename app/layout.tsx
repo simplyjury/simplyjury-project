@@ -5,8 +5,8 @@ import { getUser, getTeamForUser } from '@/lib/db/queries';
 import { SWRConfig } from 'swr';
 
 export const metadata: Metadata = {
-  title: 'Next.js SaaS Starter',
-  description: 'Get started quickly with Next.js, Postgres, and Stripe.'
+  title: 'SimplyJury - Plateforme de mise en relation jury-centre de formation',
+  description: 'SimplyJury connecte les jurys professionnels avec les centres de formation pour les certifications professionnelles.'
 };
 
 export const viewport: Viewport = {

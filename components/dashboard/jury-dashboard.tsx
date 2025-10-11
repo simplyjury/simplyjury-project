@@ -146,6 +146,9 @@ function RecentRequests() {
 
 
 function QuickActions() {
+  const { data: unreadData } = useSWR('/api/unread-conversations-count', fetcher);
+  const unreadCount = unreadData?.unreadConversationsCount || 0;
+
   return (
     <Card>
       <CardHeader>
@@ -160,9 +163,18 @@ function QuickActions() {
             </Button>
           </Link>
           <Link href="/dashboard/messages">
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" className="w-full justify-start relative">
               <MessageSquare className="mr-2 h-4 w-4" />
               Consulter mes messages
+              {unreadCount > 0 && (
+                <span className="ml-auto flex items-center gap-1.5 text-xs font-medium text-orange-600">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                  </span>
+                  {unreadCount} message{unreadCount > 1 ? 's' : ''} non lu{unreadCount > 1 ? 's' : ''}
+                </span>
+              )}
             </Button>
           </Link>
           <Link href="/dashboard/evaluations">

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/drizzle';
-import { conversations, messages, trainingCenters } from '@/lib/db/schema';
+import { conversations, messages, trainingCenters, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { AuthService } from '@/lib/auth/auth-service';
+import { EmailService } from '@/lib/email/resend-service';
 import { cookies } from 'next/headers';
 
 export async function POST(
@@ -92,6 +93,42 @@ export async function POST(
       .update(conversations)
       .set({ lastMessageAt: new Date() })
       .where(eq(conversations.id, conversationId));
+
+    // Get jury user details to send email notification
+    const [juryUser] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.id, conversation.juryId!))
+      .limit(1);
+
+    // Get center user details for sender name
+    const [centerUser] = await db
+      .select({
+        name: users.name,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    // Send email notification to jury
+    if (juryUser && juryUser.email) {
+      try {
+        await EmailService.sendNewMessageNotification(
+          juryUser.email,
+          juryUser.name || 'Jury',
+          centerUser?.name || 'Centre de formation',
+          trainingCenter.name
+        );
+        console.log(`Email notification sent to ${juryUser.email}`);
+      } catch (emailError) {
+        // Log error but don't fail the request
+        console.error('Failed to send email notification:', emailError);
+      }
+    }
 
     // Format the message for frontend
     const formattedMessage = {

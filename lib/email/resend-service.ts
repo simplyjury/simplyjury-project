@@ -9,6 +9,7 @@ import { JuryRequestResponseCenter } from '@/components/emails/jury-request-resp
 import { JuryRequestResponseJury } from '@/components/emails/jury-request-response-jury';
 import { CenterRatingInvitation } from '@/components/emails/center-rating-invitation';
 import { JuryRatingInvitation } from '@/components/emails/jury-rating-invitation';
+import { NewMessageNotification } from '@/components/emails/new-message-notification';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy-key-for-build');
 
@@ -364,6 +365,37 @@ export class EmailService {
     } catch (error) {
       console.error('Error sending rating invitation emails:', error);
       throw new Error('Failed to send rating invitation emails');
+    }
+  }
+
+  static async sendNewMessageNotification(
+    recipientEmail: string,
+    recipientName: string,
+    senderName: string,
+    centerName: string
+  ) {
+    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/messages`;
+    
+    try {
+      this.checkApiKey();
+      
+      const subject = `Nouveau message de ${centerName} - SimplyJury`;
+        
+      return await resend.emails.send({
+        from: this.FROM_EMAIL,
+        to: recipientEmail,
+        subject,
+        react: NewMessageNotification({
+          recipientName,
+          senderName,
+          centerName,
+          loginUrl,
+        }),
+      });
+      
+    } catch (error) {
+      console.error('Error sending new message notification email:', error);
+      throw new Error('Failed to send new message notification email');
     }
   }
 }
