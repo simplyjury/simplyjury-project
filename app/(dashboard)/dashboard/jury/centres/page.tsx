@@ -160,8 +160,8 @@ export default function CentersPage() {
   };
 
   const handleViewProfile = (center: TrainingCenter) => {
-    // TODO: Implement view profile functionality - could navigate to a detailed center profile page
-    console.log('Voir le profil du centre:', center.name);
+    // Navigate to center profile detail page
+    window.location.href = `/dashboard/jury/centres/${center.id}`;
   };
 
   const handleCloseContactModal = () => {
