@@ -234,6 +234,32 @@ export const messages = pgTable('messages', {
   createdAt: timestamp('created_at'),
 });
 
+export const newsletterSubscriptions = pgTable('newsletter_subscriptions', {
+  id: serial('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  userId: integer('user_id')
+    .references(() => users.id, { onDelete: 'set null' }),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  source: varchar('source', { length: 20 }),
+  userType: varchar('user_type', { length: 20 }),
+  preferences: jsonb('preferences').$type<{
+    productUpdates: boolean;
+    tips: boolean;
+    industryNews: boolean;
+    successStories: boolean;
+  }>().default({
+    productUpdates: true,
+    tips: true,
+    industryNews: true,
+    successStories: true,
+  }),
+  subscriptionToken: text('subscription_token').notNull().unique(),
+  confirmedAt: timestamp('confirmed_at'),
+  unsubscribedAt: timestamp('unsubscribed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 export const teamsRelations = relations(teams, ({ many }) => ({
   teamMembers: many(teamMembers),
   activityLogs: many(activityLogs),
@@ -337,6 +363,8 @@ export type CertificationStats = typeof certificationStats.$inferSelect;
 export type NewCertificationStats = typeof certificationStats.$inferInsert;
 export type SystemSettings = typeof systemSettings.$inferSelect;
 export type NewSystemSettings = typeof systemSettings.$inferInsert;
+export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
+export type NewNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
 
 // Complex types
 export type TeamDataWithMembers = Team & {
