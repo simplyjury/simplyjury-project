@@ -1,11 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Users, CheckCircle, Star, Shield, Search, MessageSquare, MessageCircle, Zap, Trophy, Clock, Award, TrendingUp, HeadphonesIcon, Calendar } from 'lucide-react';
+import { ArrowRight, Users, CheckCircle, Star, Shield, Search, MessageSquare, MessageCircle, Zap, Trophy, Clock, Award, TrendingUp, HeadphonesIcon, Calendar, Mail } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Script from 'next/script';
 import { useEffect } from 'react';
+import { NewsletterSignup } from '@/components/newsletter/newsletter-signup';
 
 export default function HomePage() {
   const openCalendly = () => {
@@ -50,9 +51,9 @@ export default function HomePage() {
               <a href="#pour-qui" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
                 Pour qui
               </a>
-              <a href="#tarif" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
+              <Link href="/pricing" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
                 Tarif
-              </a>
+              </Link>
               <a href="#a-propos" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
                 À propos
               </a>
@@ -521,6 +522,54 @@ export default function HomePage() {
               >
                 S'inscrire à une démo
               </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="py-20 bg-gradient-to-br from-[#f8f9fa] to-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-[#13d090] rounded-full mb-4">
+                <Mail className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-[#0d4a70] mb-4">
+                Restez informé
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Recevez nos actualités, conseils pratiques et nouveautés directement dans votre boîte mail. 
+                Découvrez comment optimiser vos certifications et restez à jour sur les évolutions du secteur.
+              </p>
+            </div>
+
+            <div className="max-w-xl mx-auto">
+              <NewsletterSignup />
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-gray-100">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-[#0d4a70]/10 rounded-full mb-3">
+                  <Zap className="h-6 w-6 text-[#0d4a70]" />
+                </div>
+                <h3 className="font-semibold text-[#0d4a70] mb-1">Nouveautés produit</h3>
+                <p className="text-sm text-gray-600">Découvrez nos nouvelles fonctionnalités</p>
+              </div>
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-[#13d090]/10 rounded-full mb-3">
+                  <Award className="h-6 w-6 text-[#13d090]" />
+                </div>
+                <h3 className="font-semibold text-[#0d4a70] mb-1">Conseils & astuces</h3>
+                <p className="text-sm text-gray-600">Optimisez vos processus de certification</p>
+              </div>
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-[#bea1e5]/10 rounded-full mb-3">
+                  <TrendingUp className="h-6 w-6 text-[#bea1e5]" />
+                </div>
+                <h3 className="font-semibold text-[#0d4a70] mb-1">Actualités secteur</h3>
+                <p className="text-sm text-gray-600">Restez informé des évolutions</p>
+              </div>
             </div>
           </div>
         </div>

@@ -25,7 +25,8 @@ import {
   Activity,
   Building,
   BookOpen,
-  ClipboardList
+  ClipboardList,
+  Mail
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
@@ -74,6 +75,11 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             name: 'Sessions',
             href: '/dashboard/admin/sessions',
             icon: ClipboardList,
+          },
+          {
+            name: 'Newsletter',
+            href: '/dashboard/admin/newsletter',
+            icon: Mail,
           },
         ],
       },
