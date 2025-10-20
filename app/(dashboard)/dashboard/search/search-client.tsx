@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, Grid, List, MapPin, Star, ChevronDown } from 'lucide-react';
+import { Search, Filter, Grid, List, MapPin, Star, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 // Removed unused Select import - using native HTML select elements
@@ -22,6 +22,8 @@ interface JuryProfile {
   reviewCount: number;
   avatar: string;
   expertise: string[];
+  romeCodes?: string[];
+  romeLabels?: string[];
   workModalities: string[];
   status: 'available' | 'busy';
   statusText: string;
@@ -82,6 +84,13 @@ export default function SearchPageClient() {
   const { showToast } = useToast();
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [selectedJuryForRequest, setSelectedJuryForRequest] = useState<JuryProfile | null>(null);
+  
+  // ROME code search state
+  const [romeSearchQuery, setRomeSearchQuery] = useState('');
+  const [romeSearchResults, setRomeSearchResults] = useState<any[]>([]);
+  const [isRomeSearching, setIsRomeSearching] = useState(false);
+  const [showRomeDropdown, setShowRomeDropdown] = useState(false);
+  const [selectedRomeCode, setSelectedRomeCode] = useState<{code: string, label: string} | null>(null);
 
   // Fetch jury data from API
   const fetchJuries = async () => {
@@ -151,8 +160,106 @@ export default function SearchPageClient() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
+  // Handle ROME code search with debouncing
+  useEffect(() => {
+    if (!romeSearchQuery.trim()) {
+      setRomeSearchResults([]);
+      setShowRomeDropdown(false);
+      return;
+    }
+
+    // Don't search if user might be typing an RNCP code
+    // Check if it starts with R, RN, RNC, or RNCP (potential RNCP code)
+    const upperQuery = romeSearchQuery.toUpperCase();
+    const potentialRNCP = ['R', 'RN', 'RNC', 'RNCP'].some(prefix => 
+      upperQuery === prefix || upperQuery.startsWith(prefix + 'P') || upperQuery.startsWith('RNCP')
+    );
+    
+    if (potentialRNCP) {
+      setRomeSearchResults([]);
+      setShowRomeDropdown(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setIsRomeSearching(true);
+      try {
+        const response = await fetch(`/api/rome/search?q=${encodeURIComponent(romeSearchQuery)}&limit=10`);
+        if (response.ok) {
+          const data = await response.json();
+          setRomeSearchResults(data.results || []);
+          setShowRomeDropdown(true);
+        }
+      } catch (error) {
+        console.error('ROME search error:', error);
+      } finally {
+        setIsRomeSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [romeSearchQuery]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.rome-search-container')) {
+        setShowRomeDropdown(false);
+      }
+    };
+
+    if (showRomeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showRomeDropdown]);
+
   const handleFilterChange = (key: keyof SearchFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
+  const handleRomeCodeSelect = (code: any) => {
+    setSelectedRomeCode({ code: code.code, label: code.label });
+    setRomeSearchQuery('');
+    setShowRomeDropdown(false);
+    setFilters(prev => ({ ...prev, certification: code.code }));
+    setCurrentPage(1);
+  };
+  
+  const handleRomeSearchChange = (value: string) => {
+    setRomeSearchQuery(value);
+    
+    // Check if user entered an RNCP code (starts with RNCP)
+    if (value.toUpperCase().startsWith('RNCP')) {
+      // Don't show dropdown for RNCP codes, wait for Enter key
+      setShowRomeDropdown(false);
+    } else {
+      // Continue with ROME code search
+      if (value) {
+        setShowRomeDropdown(true);
+      }
+    }
+  };
+  
+  const handleRomeSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && romeSearchQuery) {
+      // Check if it's an RNCP code
+      if (romeSearchQuery.toUpperCase().startsWith('RNCP')) {
+        const rncpCode = romeSearchQuery.toUpperCase();
+        setSelectedRomeCode({ code: rncpCode, label: 'Certification RNCP' });
+        setFilters(prev => ({ ...prev, certification: rncpCode }));
+        setShowRomeDropdown(false);
+        setCurrentPage(1);
+      }
+    }
+  };
+
+  const handleClearRomeCode = () => {
+    setSelectedRomeCode(null);
+    setRomeSearchQuery('');
+    setFilters(prev => ({ ...prev, certification: '' }));
     setCurrentPage(1);
   };
 
@@ -376,24 +483,87 @@ export default function SearchPageClient() {
           {/* Advanced Filters */}
           {showFilters && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-[#e2e8f0]">
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-semibold text-[#0d4a70] mb-2">
                   Certification/Domaine
                 </label>
-                <select 
-                  className="w-full p-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:border-[#13d090] focus:outline-none"
-                  value={filters.certification}
-                  onChange={(e) => handleFilterChange('certification', e.target.value)}
-                >
-                  <option value="">Toutes les certifications</option>
-                  <option value="Communication">Communication</option>
-                  <option value="Développement Web">Développement Web</option>
-                  <option value="Droit">Droit</option>
-                  <option value="Formation">Formation</option>
-                  <option value="Immobilier">Immobilier</option>
-                  <option value="Management">Management</option>
-                  <option value="Marketing Digital">Marketing Digital</option>
-                </select>
+                
+                {selectedRomeCode ? (
+                  // Display selected ROME code
+                  <div className="w-full p-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-blue-600 text-white text-xs font-mono rounded">
+                        {selectedRomeCode.code}
+                      </span>
+                      <span className="text-gray-700 text-sm">{selectedRomeCode.label}</span>
+                    </div>
+                    <button
+                      onClick={handleClearRomeCode}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  // Search input
+                  <div className="relative rome-search-container">
+                    <input
+                      type="text"
+                      value={romeSearchQuery}
+                      onChange={(e) => handleRomeSearchChange(e.target.value)}
+                      onKeyDown={handleRomeSearchKeyDown}
+                      onFocus={() => romeSearchQuery && setShowRomeDropdown(true)}
+                      placeholder="Code RNCP ou métier (ex: RNCP39266, coiffeur...)"
+                      className={`w-full p-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:border-[#13d090] focus:outline-none ${
+                        romeSearchQuery.toUpperCase().startsWith('RNCP') ? 'pr-24' : ''
+                      }`}
+                    />
+                    
+                    {/* Show "Valider" button when RNCP code is being typed */}
+                    {romeSearchQuery.toUpperCase().startsWith('RNCP') && romeSearchQuery.length >= 4 && (
+                      <button
+                        onClick={() => {
+                          const rncpCode = romeSearchQuery.toUpperCase();
+                          setSelectedRomeCode({ code: rncpCode, label: 'Certification RNCP' });
+                          setFilters(prev => ({ ...prev, certification: rncpCode }));
+                          setShowRomeDropdown(false);
+                          setCurrentPage(1);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-[#13d090] text-white text-xs font-semibold rounded hover:bg-[#0fb378] transition-colors"
+                      >
+                        Valider
+                      </button>
+                    )}
+                    
+                    {/* Dropdown with results */}
+                    {showRomeDropdown && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                        {isRomeSearching ? (
+                          <div className="p-3 text-center text-sm text-gray-500">
+                            Recherche en cours...
+                          </div>
+                        ) : romeSearchResults.length > 0 ? (
+                          romeSearchResults.map((code) => (
+                            <button
+                              key={code.code}
+                              onClick={() => handleRomeCodeSelect(code)}
+                              className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-start gap-2"
+                            >
+                              <span className="px-2 py-0.5 bg-blue-600 text-white text-xs font-mono rounded flex-shrink-0">
+                                {code.code}
+                              </span>
+                              <span className="text-sm text-gray-700">{code.label}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="p-3 text-center text-sm text-gray-500">
+                            Aucun résultat trouvé
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-[#0d4a70] mb-2">
@@ -579,6 +749,8 @@ export default function SearchPageClient() {
             profilePhotoUrl: selectedJuryForRequest.profilePhotoUrl,
             rating: selectedJuryForRequest.rating,
             expertiseDomains: selectedJuryForRequest.expertise,
+            romeCodes: selectedJuryForRequest.romeCodes || [],
+            romeLabels: selectedJuryForRequest.romeLabels || [],
             city: selectedJuryForRequest.location.split(',')[0] || '',
             region: selectedJuryForRequest.location.split(',')[1]?.trim() || ''
           }}

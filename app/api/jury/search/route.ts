@@ -63,7 +63,81 @@ export async function GET(request: NextRequest) {
     }
 
     if (certification) {
-      conditions.push(sql`${juryProfiles.expertiseDomains}::text ILIKE ${'%' + certification + '%'}`);
+      // Check if certification is an RNCP code (starts with "RNCP")
+      if (certification.toUpperCase().startsWith('RNCP')) {
+        console.log('🔍 Filtering by RNCP:', certification);
+        
+        // Fetch ROME codes for this RNCP from Mission Apprentissage API
+        try {
+          const apiToken = process.env.MISSION_APPRENTISSAGE_API_TOKEN;
+          const headers: HeadersInit = {
+            'Accept': 'application/json',
+            'User-Agent': 'SimplyJury/1.0'
+          };
+          
+          // Add authorization if token is available
+          if (apiToken) {
+            headers['Authorization'] = `Bearer ${apiToken}`;
+            console.log('✅ Using Mission Apprentissage API token');
+          } else {
+            console.warn('⚠️ No Mission Apprentissage API token found');
+          }
+          
+          const rncpResponse = await fetch(
+            `https://api.apprentissage.beta.gouv.fr/api/certification/v1?identifiant.rncp=${certification.toUpperCase()}`,
+            {
+              headers,
+              signal: AbortSignal.timeout(5000)
+            }
+          );
+
+          if (rncpResponse.ok) {
+            const certifications = await rncpResponse.json();
+            
+            if (certifications && certifications.length > 0) {
+              // Find active certification
+              const activeCert = certifications.find((cert: any) => 
+                cert.periode_validite?.rncp?.actif === true
+              );
+              const cert = activeCert || certifications[0];
+              
+              // Extract ROME codes
+              const romeCodes = cert.domaines?.rome?.rncp?.map((r: any) => r.code) || [];
+              
+              console.log('📋 RNCP ROME codes:', romeCodes);
+              
+              if (romeCodes.length > 0) {
+                // Filter juries that have at least one matching ROME code
+                // Use sql.raw to properly format the array literal
+                const romeCodesArray = `{${romeCodes.join(',')}}`;
+                conditions.push(sql`
+                  EXISTS (
+                    SELECT 1 FROM unnest(${juryProfiles.romeCodes}) AS jury_rome
+                    WHERE jury_rome = ANY(${romeCodesArray}::text[])
+                  )
+                `);
+              } else {
+                console.log('⚠️ No ROME codes found for RNCP:', certification);
+                // If no ROME codes, return no results
+                conditions.push(sql`false`);
+              }
+            } else {
+              console.log('⚠️ RNCP not found:', certification);
+              // If RNCP not found, return no results
+              conditions.push(sql`false`);
+            }
+          } else {
+            console.error('❌ RNCP API error:', rncpResponse.status);
+            // On API error, don't filter by certification
+          }
+        } catch (error) {
+          console.error('❌ Error fetching RNCP data:', error);
+          // On error, don't filter by certification
+        }
+      } else {
+        // Direct ROME code filtering (legacy support)
+        conditions.push(sql`${certification} = ANY(${juryProfiles.romeCodes})`);
+      }
     }
 
     if (modality) {
@@ -110,6 +184,8 @@ export async function GET(request: NextRequest) {
         region: juryProfiles.region,
         city: juryProfiles.city,
         expertiseDomains: juryProfiles.expertiseDomains,
+        romeCodes: juryProfiles.romeCodes,
+        romeLabels: juryProfiles.romeLabels,
         certifications: juryProfiles.certifications,
         experienceYears: juryProfiles.experienceYears,
         currentPosition: juryProfiles.currentPosition,
@@ -236,9 +312,11 @@ export async function GET(request: NextRequest) {
         location: `${jury.city}, ${jury.region}`,
         rating: ratingsMap[jury.userId]?.averageRating || 0,
         reviewCount: ratingsMap[jury.userId]?.totalRatings || 0,
-        avatar: getAvatarEmoji(jury.expertiseDomains?.[0] || ''),
-        expertise: jury.expertiseDomains || [],
+        avatar: getAvatarEmoji(jury.romeLabels?.[0] || jury.expertiseDomains?.[0] || ''),
+        expertise: jury.romeLabels || jury.expertiseDomains || [], // Use ROME labels, fallback to old expertiseDomains
         expertiseDomains: jury.expertiseDomains || [],
+        romeCodes: jury.romeCodes || [],
+        romeLabels: jury.romeLabels || [],
         workModalities: jury.workModalities || [],
         status: getAvailabilityStatus(jury.availabilityPreferences),
         statusText: getAvailabilityText(jury.availabilityPreferences),

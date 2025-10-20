@@ -41,11 +41,23 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json();
     
+    console.log('PATCH /api/profile/jury - Received body:', {
+      romeCodes: body.romeCodes,
+      romeLabels: body.romeLabels,
+      hasRomeCodes: !!body.romeCodes,
+      romeCodesLength: body.romeCodes?.length
+    });
+    
     // Update profile
     await JuryProfileService.updateProfile(session.userId, body);
     
     // Get updated profile
     const updatedProfile = await JuryProfileService.getByUserId(session.userId);
+    
+    console.log('Updated profile ROME codes:', {
+      romeCodes: updatedProfile?.romeCodes,
+      romeLabels: updatedProfile?.romeLabels
+    });
     
     return NextResponse.json({ success: true, data: updatedProfile });
   } catch (error) {
@@ -86,6 +98,8 @@ export async function POST(request: NextRequest) {
         city: profileData.city || null,
         phone: profileData.phone || null,
         expertiseDomains: Array.isArray(profileData.expertiseDomains) ? profileData.expertiseDomains : [],
+        romeCodes: Array.isArray(profileData.romeCodes) ? profileData.romeCodes : [],
+        romeLabels: Array.isArray(profileData.romeLabels) ? profileData.romeLabels : [],
         certifications: profileData.certifications ? [profileData.certifications] : [],
         experienceYears: profileData.yearsExperience ? parseInt(profileData.yearsExperience) : null,
         currentPosition: profileData.currentPosition || null,

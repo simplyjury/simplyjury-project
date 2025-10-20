@@ -126,6 +126,8 @@ export const juryProfiles = pgTable('jury_profiles', {
   city: varchar('city', { length: 100 }),
   phone: varchar('phone', { length: 20 }),
   expertiseDomains: text('expertise_domains').array().notNull(),
+  romeCodes: varchar('rome_codes', { length: 10 }).array().default([]),
+  romeLabels: text('rome_labels').array().default([]),
   certifications: text('certifications').array(),
   experienceYears: integer('experience_years'),
   currentPosition: varchar('current_position', { length: 200 }),
@@ -399,3 +401,15 @@ export enum ActivityType {
   INVITE_TEAM_MEMBER = 'INVITE_TEAM_MEMBER',
   ACCEPT_INVITATION = 'ACCEPT_INVITATION',
 }
+
+// ROME Codes Reference Table
+export const romeCodes = pgTable('rome_codes', {
+  id: serial('id').primaryKey(),
+  code: varchar('code', { length: 10 }).notNull().unique(),
+  label: text('label').notNull(),
+  categoryCode: varchar('category_code', { length: 3 }).notNull(),
+  domain: varchar('domain', { length: 100 }),
+  active: boolean('active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});

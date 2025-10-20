@@ -37,6 +37,12 @@ interface CertificationResponse {
         intitule: string;
       }>;
     };
+    rome?: {
+      rncp?: Array<{
+        code: string;
+        intitule: string;
+      }>;
+    };
   };
   type?: {
     certificateurs_rncp?: Array<{
@@ -127,6 +133,10 @@ export async function GET(request: NextRequest) {
 
     const certifications: CertificationResponse[] = await response.json();
 
+    // Log the complete API response for debugging
+    console.log('🔍 RNCP API Response for', rncpCode);
+    console.log('📦 Full response:', JSON.stringify(certifications, null, 2));
+
     // No certifications found
     if (!certifications || certifications.length === 0) {
       return NextResponse.json(
@@ -144,6 +154,9 @@ export async function GET(request: NextRequest) {
     );
 
     const cert = activeCert || certifications[0];
+    
+    // Log domaines structure specifically
+    console.log('🎯 Domaines structure:', JSON.stringify(cert.domaines, null, 2));
 
     // Extract certification details
     const title = cert.intitule?.rncp || 'Titre non disponible';
@@ -152,6 +165,12 @@ export async function GET(request: NextRequest) {
     const endDate = cert.periode_validite?.rncp?.fin_enregistrement;
     const domain = cert.domaines?.nsf?.rncp?.[0]?.intitule || null;
     const certificateurs = cert.type?.certificateurs_rncp || [];
+    
+    // Extract ROME codes from the certification
+    const romeCodes = cert.domaines?.rome?.rncp?.map(r => r.code) || [];
+    const romeLabels = cert.domaines?.rome?.rncp?.map(r => r.intitule) || [];
+    
+    console.log('📋 Extracted ROME codes:', romeCodes);
 
     // Find replacement certification (if inactive)
     let replacementCode = null;
@@ -202,6 +221,8 @@ export async function GET(request: NextRequest) {
       isActive,
       endDate,
       certificateurs,
+      romeCodes,
+      romeLabels,
       warning: !isActive ? 'Cette certification n\'est plus active' : null,
       replacement: replacementCode ? {
         code: replacementCode,

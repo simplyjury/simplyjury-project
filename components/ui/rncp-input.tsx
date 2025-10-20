@@ -22,6 +22,8 @@ interface CertificationDetails {
     siret: string;
     nom: string;
   }>;
+  romeCodes?: string[];
+  romeLabels?: string[];
   warning: string | null;
   replacement?: {
     code: string;
