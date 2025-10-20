@@ -11,6 +11,8 @@ import { AvailabilityModal } from '@/components/ui/availability-modal';
 import { Trash2, Upload, Plus, X, Edit, Camera, Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { RomeSearchInput } from '@/components/ui/rome-search-input';
+import { RomeCode } from '@/lib/utils/rome-extractor';
 
 const regions = [
   'Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Bretagne', 'Centre-Val de Loire',
@@ -41,6 +43,7 @@ export default function JuryProfilePage() {
     company: '',
     diploma: '',
     expertiseDomains: [] as string[],
+    romeCodes: [] as RomeCode[],
     certifications: '',
     yearsExperience: '',
     currentPosition: '',
@@ -68,7 +71,7 @@ export default function JuryProfilePage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleInputChange = (field: string, value: string | string[]) => {
+  const handleInputChange = (field: string, value: string | string[] | RomeCode[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -215,11 +218,16 @@ export default function JuryProfilePage() {
         return mode.toLowerCase();
       });
 
+      // Extract ROME codes and labels
+      const { romeCodes, ...restFormData } = formData;
+      
       const submitData = {
-        ...formData,
+        ...restFormData,
         profilePhotoUrl,
         workModes: transformedWorkModes,
-        availabilityPreferences: availabilityPeriods
+        availabilityPreferences: availabilityPeriods,
+        romeCodes: romeCodes.map(r => r.code),
+        romeLabels: romeCodes.map(r => r.label)
       };
       
       const response = await fetch('/api/profile/jury', {
@@ -365,30 +373,16 @@ export default function JuryProfilePage() {
                 </div>
               </div>
               
-              <div>
-                <div className="flex flex-wrap gap-3">
-                  {certificationDomains.map((domain) => (
-                    <button
-                      key={domain}
-                      type="button"
-                      onClick={() => {
-                        if (formData.expertiseDomains.includes(domain)) {
-                          removeDomain(domain);
-                        } else {
-                          handleInputChange('expertiseDomains', [...formData.expertiseDomains, domain]);
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${
-                        formData.expertiseDomains.includes(domain)
-                          ? 'bg-[#0d4a70] text-white border-[#0d4a70]'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-[#0d4a70] hover:text-[#0d4a70]'
-                      }`}
-                    >
-                      {domain}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <RomeSearchInput
+                selectedCodes={formData.romeCodes}
+                onSelect={(code) => {
+                  handleInputChange('romeCodes', [...formData.romeCodes, code]);
+                }}
+                onRemove={(codeToRemove) => {
+                  handleInputChange('romeCodes', formData.romeCodes.filter(c => c.code !== codeToRemove));
+                }}
+                maxSelections={5}
+              />
 
             </div>
 

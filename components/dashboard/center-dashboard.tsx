@@ -58,14 +58,14 @@ function RecentRequests() {
   // Show loading state
   if (!requests && !requestsError) {
     return (
-      <Card>
+      <Card className="h-full flex flex-col">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Send className="h-5 w-5" />
             Demandes récentes
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1">
           <div className="text-center py-8">
             <div className="text-gray-500">Chargement des demandes...</div>
           </div>
@@ -82,14 +82,14 @@ function RecentRequests() {
   const recentRequests = requests?.data || [];
   
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Send className="h-5 w-5" />
           Demandes récentes
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         {recentRequests.length > 0 ? (
           <div className="space-y-4">
             {recentRequests.map((request: any) => (
@@ -147,11 +147,11 @@ function RecentRequests() {
 
 function QuickActions() {
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Actions rapides</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <div className="grid grid-cols-1 gap-3">
           <Link href="/dashboard/search">
             <Button variant="outline" className="w-full justify-start">

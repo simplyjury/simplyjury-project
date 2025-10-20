@@ -52,12 +52,12 @@ function StatsCard({ title, value, icon: Icon, trend, color = "text-[#0d4a70]" }
 }
 
 function RecentRequests() {
-  const { data: requests, error: requestsError } = useSWR('/api/jury/recent-requests', fetcher);
+  const { data: requestsData, error: requestsError } = useSWR('/api/jury/recent-requests', fetcher);
   
   // Show loading state
-  if (!requests && !requestsError) {
+  if (!requestsData && !requestsError) {
     return (
-      <Card>
+      <Card className="h-full flex flex-col">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -78,17 +78,17 @@ function RecentRequests() {
     console.error('Error loading recent requests:', requestsError);
   }
 
-  const recentRequests = requests?.data || [];
+  const recentRequests = requestsData?.data || [];
   
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           Demandes récentes
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         {recentRequests.length > 0 ? (
           <div className="space-y-4">
             {recentRequests.map((request: any) => (
@@ -150,11 +150,11 @@ function QuickActions() {
   const unreadCount = unreadData?.unreadConversationsCount || 0;
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle>Actions rapides</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <div className="grid grid-cols-1 gap-3">
           <Link href="/dashboard/profile">
             <Button variant="outline" className="w-full justify-start">

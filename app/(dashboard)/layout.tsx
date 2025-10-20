@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { use, useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { CircleIcon, Home, LogOut, X, Menu } from 'lucide-react';
+import { CircleIcon, Home, LogOut, X, Menu, CheckCircle, Clock, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import {
   DropdownMenu,
@@ -187,18 +187,27 @@ function UserMenu() {
             {profileName}
           </div>
         )}
-        <div className="text-xs text-gray-500">
-          {user.email}
-        </div>
-        <div className="flex items-center space-x-2 text-xs text-gray-500">
+        <div className="flex items-center justify-end space-x-1 text-xs text-gray-500">
           {user.validationStatus === 'validated' ? (
-            <span>✅ Compte vérifié</span>
+            <>
+              <CheckCircle className="h-3.5 w-3.5 text-[#13d090]" />
+              <span>Compte vérifié</span>
+            </>
           ) : user.validationStatus === 'pending' ? (
-            <span>⏳ Validation en attente</span>
+            <>
+              <Clock className="h-3.5 w-3.5 text-yellow-500" />
+              <span>Validation en attente</span>
+            </>
           ) : user.validationStatus === 'rejected' ? (
-            <span>❌ Compte rejeté</span>
+            <>
+              <XCircle className="h-3.5 w-3.5 text-red-500" />
+              <span>Compte rejeté</span>
+            </>
           ) : (
-            <span>⏳ Statut en cours de vérification</span>
+            <>
+              <Clock className="h-3.5 w-3.5 text-yellow-500" />
+              <span>Statut en cours de vérification</span>
+            </>
           )}
         </div>
       </div>

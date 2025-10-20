@@ -11,6 +11,8 @@ interface JuryProfile {
   profilePhotoUrl?: string;
   rating?: number;
   expertiseDomains: string[];
+  romeCodes?: string[];
+  romeLabels?: string[];
   city?: string;
   region?: string;
 }
@@ -64,6 +66,7 @@ export default function StructuredRequestModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [charCount, setCharCount] = useState(0);
+  const [hasRomeCodeMismatch, setHasRomeCodeMismatch] = useState(false);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -86,14 +89,56 @@ export default function StructuredRequestModal({
   };
 
   const handleRNCPChange = (code: string, certificationDetails?: any) => {
+    console.log('🎯 handleRNCPChange called:', {
+      code,
+      hasCertificationDetails: !!certificationDetails,
+      certificationDetails
+    });
+    
     setFormData(prev => ({
       ...prev,
       certificationType: code,
       certificationTitle: certificationDetails?.title || ''
     }));
-    // Clear error when RNCP is entered
-    if (errors.certificationType) {
-      setErrors(prev => ({ ...prev, certificationType: '' }));
+    
+    // Validate ROME codes if certification details are available
+    if (certificationDetails?.valid && certificationDetails?.romeCodes) {
+      const certRomeCodes = certificationDetails.romeCodes;
+      const juryRomeCodes = jury.romeCodes || [];
+      
+      console.log('🔍 ROME Validation:', {
+        certificationRomeCodes: certRomeCodes,
+        certificationRomeLabels: certificationDetails.romeLabels,
+        juryRomeCodes: juryRomeCodes,
+        juryRomeLabels: jury.romeLabels,
+        juryObject: jury
+      });
+      
+      // Check if jury has at least one matching ROME code
+      const hasMatch = certRomeCodes.some((certCode: string) => 
+        juryRomeCodes.includes(certCode)
+      );
+      
+      if (!hasMatch && juryRomeCodes.length > 0) {
+        // Jury has ROME codes but none match the certification
+        setHasRomeCodeMismatch(true);
+        setErrors(prev => ({
+          ...prev,
+          certificationType: `Ce jury n'est pas qualifié pour cette certification RNCP. Le jury est qualifié pour : ${jury.romeLabels?.join(', ') || 'aucune qualification'}, mais cette certification requiert : ${certificationDetails.romeLabels?.join(', ')}.`
+        }));
+      } else {
+        // Clear error if there's a match or jury has no ROME codes yet
+        setHasRomeCodeMismatch(false);
+        if (errors.certificationType) {
+          setErrors(prev => ({ ...prev, certificationType: '' }));
+        }
+      }
+    } else {
+      // Clear error when RNCP is entered without details
+      setHasRomeCodeMismatch(false);
+      if (errors.certificationType) {
+        setErrors(prev => ({ ...prev, certificationType: '' }));
+      }
     }
   };
 
@@ -235,9 +280,10 @@ export default function StructuredRequestModal({
                       min={today}
                       value={formData.sessionDate}
                       onChange={(e) => handleInputChange('sessionDate', e.target.value)}
+                      disabled={hasRomeCodeMismatch}
                       className={`w-full p-4 border-2 rounded-xl transition-all ${
                         errors.sessionDate ? 'border-red-500' : 'border-slate-200 focus:border-[#13d090]'
-                      } focus:outline-none focus:ring-3 focus:ring-[#13d090]/10`}
+                      } focus:outline-none focus:ring-3 focus:ring-[#13d090]/10 disabled:bg-slate-100 disabled:cursor-not-allowed`}
                     />
                     {errors.sessionDate && (
                       <p className="text-red-500 text-sm mt-1">{errors.sessionDate}</p>
@@ -253,10 +299,11 @@ export default function StructuredRequestModal({
                       max="50"
                       value={formData.candidateCount}
                       onChange={(e) => handleInputChange('candidateCount', parseInt(e.target.value))}
+                      disabled={hasRomeCodeMismatch}
                       placeholder="Ex: 8"
                       className={`w-full p-4 border-2 rounded-xl transition-all ${
                         errors.candidateCount ? 'border-red-500' : 'border-slate-200 focus:border-[#13d090]'
-                      } focus:outline-none focus:ring-3 focus:ring-[#13d090]/10`}
+                      } focus:outline-none focus:ring-3 focus:ring-[#13d090]/10 disabled:bg-slate-100 disabled:cursor-not-allowed`}
                     />
                     {errors.candidateCount && (
                       <p className="text-red-500 text-sm mt-1">{errors.candidateCount}</p>
@@ -273,7 +320,8 @@ export default function StructuredRequestModal({
                         type="time"
                         value={formData.startTime}
                         onChange={(e) => handleInputChange('startTime', e.target.value)}
-                        className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#13d090] focus:outline-none focus:ring-3 focus:ring-[#13d090]/10 transition-all"
+                        disabled={hasRomeCodeMismatch}
+                        className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#13d090] focus:outline-none focus:ring-3 focus:ring-[#13d090]/10 transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
                       />
                     </div>
                     <div>
@@ -282,7 +330,8 @@ export default function StructuredRequestModal({
                         type="time"
                         value={formData.endTime}
                         onChange={(e) => handleInputChange('endTime', e.target.value)}
-                        className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#13d090] focus:outline-none focus:ring-3 focus:ring-[#13d090]/10 transition-all"
+                        disabled={hasRomeCodeMismatch}
+                        className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#13d090] focus:outline-none focus:ring-3 focus:ring-[#13d090]/10 transition-all disabled:bg-slate-100 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -311,8 +360,10 @@ export default function StructuredRequestModal({
                     ].map(({ key, icon: Icon, title, desc }) => (
                       <div
                         key={key}
-                        onClick={() => handleModalitySelect(key as any)}
-                        className={`p-5 border-2 rounded-xl cursor-pointer transition-all text-center ${
+                        onClick={() => !hasRomeCodeMismatch && handleModalitySelect(key as any)}
+                        className={`p-5 border-2 rounded-xl transition-all text-center ${
+                          hasRomeCodeMismatch ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                        } ${
                           formData.modality === key
                             ? 'border-[#13d090] bg-[#13d090]/10 shadow-lg shadow-[#13d090]/15'
                             : 'border-slate-200 hover:border-[#13d090] hover:bg-[#13d090]/5'
@@ -335,10 +386,11 @@ export default function StructuredRequestModal({
                       type="text"
                       value={formData.location}
                       onChange={(e) => handleInputChange('location', e.target.value)}
+                      disabled={hasRomeCodeMismatch}
                       placeholder="Adresse complète du lieu d'examen"
                       className={`w-full p-4 border-2 rounded-xl transition-all ${
                         errors.location ? 'border-red-500' : 'border-slate-200 focus:border-[#13d090]'
-                      } focus:outline-none focus:ring-3 focus:ring-[#13d090]/10`}
+                      } focus:outline-none focus:ring-3 focus:ring-[#13d090]/10 disabled:bg-slate-100 disabled:cursor-not-allowed`}
                     />
                     {errors.location && (
                       <p className="text-red-500 text-sm mt-1">{errors.location}</p>
@@ -354,13 +406,16 @@ export default function StructuredRequestModal({
                       { key: 'mealsCovered', label: 'Restauration', desc: 'Déjeuner inclus' },
                       { key: 'accommodationCovered', label: 'Hébergement', desc: 'Si session de plusieurs jours' }
                     ].map(({ key, label, desc }) => (
-                      <div key={key} className="flex items-start gap-3 p-4 border border-slate-200 rounded-xl hover:border-[#13d090] hover:bg-[#13d090]/2 transition-all cursor-pointer">
+                      <div key={key} className={`flex items-start gap-3 p-4 border border-slate-200 rounded-xl transition-all ${
+                        hasRomeCodeMismatch ? 'opacity-50 cursor-not-allowed' : 'hover:border-[#13d090] hover:bg-[#13d090]/2 cursor-pointer'
+                      }`}>
                         <input
                           type="checkbox"
                           id={key}
                           checked={formData[key as keyof StructuredRequestData] as boolean}
                           onChange={(e) => handleInputChange(key as keyof StructuredRequestData, e.target.checked)}
-                          className="w-5 h-5 text-[#13d090] rounded focus:ring-[#13d090] focus:ring-2"
+                          disabled={hasRomeCodeMismatch}
+                          className="w-5 h-5 text-[#13d090] rounded focus:ring-[#13d090] focus:ring-2 disabled:cursor-not-allowed"
                         />
                         <div>
                           <label htmlFor={key} className="font-semibold text-[#0d4a70] cursor-pointer">{label}</label>
@@ -390,6 +445,7 @@ export default function StructuredRequestModal({
                 <textarea
                   value={formData.customMessage}
                   onChange={(e) => handleMessageChange(e.target.value)}
+                  disabled={hasRomeCodeMismatch}
                   placeholder={`Bonjour ${jury.firstName},
 
 J'espère que vous allez bien. Nous organisons une session d'examen et aimerions faire appel à votre expertise.
@@ -398,7 +454,7 @@ Pouvez-vous nous confirmer votre disponibilité ?
 
 Cordialement,
 [Votre nom]`}
-                  className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#13d090] focus:outline-none focus:ring-3 focus:ring-[#13d090]/10 transition-all resize-none h-40 leading-relaxed"
+                  className="w-full p-4 border-2 border-slate-200 rounded-xl focus:border-[#13d090] focus:outline-none focus:ring-3 focus:ring-[#13d090]/10 transition-all resize-none h-40 leading-relaxed disabled:bg-slate-100 disabled:cursor-not-allowed"
                   maxLength={1000}
                 />
                 <div className={`text-right text-sm mt-2 ${getCharCountClass()}`}>
@@ -422,7 +478,7 @@ Cordialement,
             type="submit"
             form="demandForm"
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || hasRomeCodeMismatch}
             className="px-7 py-3 bg-[#13d090] text-white rounded-xl font-semibold hover:bg-[#0fb378] disabled:bg-slate-300 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#13d090]/30 hover:shadow-xl hover:shadow-[#13d090]/40 hover:-translate-y-0.5 flex items-center gap-2"
           >
             {isSubmitting ? (

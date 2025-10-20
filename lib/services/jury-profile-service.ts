@@ -29,6 +29,8 @@ export class JuryProfileService {
         city: juryProfiles.city,
         phone: juryProfiles.phone,
         expertiseDomains: juryProfiles.expertiseDomains,
+        romeCodes: juryProfiles.romeCodes,
+        romeLabels: juryProfiles.romeLabels,
         certifications: juryProfiles.certifications,
         experienceYears: juryProfiles.experienceYears,
         currentPosition: juryProfiles.currentPosition,

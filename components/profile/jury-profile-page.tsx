@@ -5,6 +5,8 @@ import useSWR from 'swr';
 import { Save, X, Plus, Upload, Trash2, Camera, User, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { AvailabilityModal } from '@/components/ui/availability-modal';
 import JuryRatingsSection from '@/components/profile/jury-ratings-section';
+import { RomeSearchInput } from '@/components/ui/rome-search-input';
+import { RomeCode } from '@/lib/utils/rome-extractor';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -31,6 +33,7 @@ export default function JuryProfilePage() {
     city: '',
     phone: '',
     expertiseDomains: [] as string[],
+    romeCodes: [] as RomeCode[],
     certifications: [] as string[],
     experienceYears: 0,
     currentPosition: '',
@@ -45,6 +48,13 @@ export default function JuryProfilePage() {
 
   useEffect(() => {
     if (profile) {
+      // Map ROME codes from profile
+      const romeCodes: RomeCode[] = (profile.romeCodes || []).map((code: string, index: number) => ({
+        code,
+        label: profile.romeLabels?.[index] || code,
+        categoryCode: code.substring(0, 3)
+      }));
+
       setFormData({
         displayName: profile.displayName || '',
         firstName: profile.firstName || '',
@@ -53,6 +63,7 @@ export default function JuryProfilePage() {
         city: profile.city || '',
         phone: profile.phone || '',
         expertiseDomains: profile.expertiseDomains || [],
+        romeCodes,
         certifications: profile.certifications || [],
         experienceYears: profile.experienceYears || 0,
         currentPosition: profile.currentPosition || '',
@@ -99,6 +110,13 @@ export default function JuryProfilePage() {
     
     // Reset form data to original values
     if (profile) {
+      // Map ROME codes from profile
+      const romeCodes: RomeCode[] = (profile.romeCodes || []).map((code: string, index: number) => ({
+        code,
+        label: profile.romeLabels?.[index] || code,
+        categoryCode: code.substring(0, 3)
+      }));
+
       setFormData({
         displayName: profile.displayName || '',
         firstName: profile.firstName || '',
@@ -107,6 +125,7 @@ export default function JuryProfilePage() {
         city: profile.city || '',
         phone: profile.phone || '',
         expertiseDomains: profile.expertiseDomains || [],
+        romeCodes,
         certifications: profile.certifications || [],
         experienceYears: profile.experienceYears || 0,
         currentPosition: profile.currentPosition || '',
@@ -157,11 +176,15 @@ export default function JuryProfilePage() {
       }
 
       // Then save profile data - map frontend field names to backend field names
-      const { company, ...restFormData } = formData;
+      const { company, romeCodes, ...restFormData } = formData;
       const backendData = {
         ...restFormData,
         currentCompany: company, // Map company to currentCompany
+        romeCodes: romeCodes.map(r => r.code), // Extract just the codes
+        romeLabels: romeCodes.map(r => r.label), // Extract just the labels
       };
+      
+      console.log('Saving ROME codes:', { romeCodes, backendData });
       
       const response = await fetch('/api/profile/jury', {
         method: 'PATCH',
@@ -664,60 +687,25 @@ export default function JuryProfilePage() {
         {expandedSection === 2 && (
           <div className="p-8 pt-0">
             {editingSection === 2 ? (
-              <div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
-                  {expertiseOptions.map((domain) => (
-                    <button
-                      key={domain}
-                      onClick={() => {
-                        if (formData.expertiseDomains.includes(domain)) {
-                          removeExpertiseDomain(domain);
-                        } else {
-                          addExpertiseDomain(domain);
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        formData.expertiseDomains.includes(domain)
-                          ? 'bg-[#13d090] text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {domain}
-                    </button>
-                  ))}
-                </div>
-                
-                {formData.expertiseDomains.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-[#0d4a70] mb-2">Domaines sélectionnés :</p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.expertiseDomains.map((domain) => (
-                        <span
-                          key={domain}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-[#13d090] text-white rounded-full text-sm"
-                        >
-                          {domain}
-                          <button
-                            onClick={() => removeExpertiseDomain(domain)}
-                            className="ml-1 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <RomeSearchInput
+                selectedCodes={formData.romeCodes}
+                onSelect={(code) => {
+                  handleInputChange('romeCodes', [...formData.romeCodes, code]);
+                }}
+                onRemove={(codeToRemove) => {
+                  handleInputChange('romeCodes', formData.romeCodes.filter(c => c.code !== codeToRemove));
+                }}
+                maxSelections={5}
+              />
             ) : (
               <div className="flex flex-wrap gap-2">
-                {profile.expertiseDomains && profile.expertiseDomains.length > 0 ? (
-                  profile.expertiseDomains.map((domain: string) => (
+                {profile.romeCodes && profile.romeCodes.length > 0 ? (
+                  profile.romeCodes.map((code: string, index: number) => (
                     <span
-                      key={domain}
+                      key={code}
                       className="px-3 py-1 bg-[#13d090] text-white rounded-full text-sm"
                     >
-                      {domain}
+                      {code} - {profile.romeLabels?.[index] || code}
                     </span>
                   ))
                 ) : (

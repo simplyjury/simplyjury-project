@@ -26,7 +26,8 @@ import {
   Building,
   BookOpen,
   ClipboardList,
-  Mail
+  Mail,
+  Database
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
@@ -101,6 +102,11 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
       {
         title: 'SYSTÈME',
         items: [
+          {
+            name: 'Codes ROME',
+            href: '/dashboard/admin/codes-rome',
+            icon: Database,
+          },
           {
             name: 'Paramètres',
             href: '/dashboard/admin/parametres',
@@ -343,7 +349,7 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
 
         {/* Logo */}
         <div className="p-6 border-b border-[#0c608a]">
-          <div className="flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-2">
             <Image
               src="https://vbnnjwgfbadvqavqnlhh.supabase.co/storage/v1/object/public/simplyjury-assets/logos/SimplyJury_Logo-Horizontal-Bicolore-Blanc-Jaune.png"
               alt="SimplyJury"
@@ -352,8 +358,18 @@ export function SidebarNavigation({ isOpen = true, onClose, className }: Sidebar
               className="h-10 w-auto"
             />
             {isAdmin && (
-              <span className="ml-2 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
+              <span className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded">
                 ADMIN
+              </span>
+            )}
+            {userType === 'center' && !isAdmin && (
+              <span className="px-2 py-1 bg-[#bea1e5] text-white text-xs font-bold rounded">
+                COMPTE CENTRE
+              </span>
+            )}
+            {userType === 'jury' && !isAdmin && (
+              <span className="px-2 py-1 bg-[#13d090] text-white text-xs font-bold rounded">
+                COMPTE JURY
               </span>
             )}
           </div>

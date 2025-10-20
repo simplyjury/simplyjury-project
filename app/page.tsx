@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Users, CheckCircle, Star, Shield, Search, MessageSquare, MessageCircle, Zap, Trophy, Clock, Award, TrendingUp, HeadphonesIcon, Calendar, Mail } from 'lucide-react';
+import { ArrowRight, Users, CheckCircle, Star, Shield, Search, MessageSquare, MessageCircle, Zap, Trophy, Clock, Award, TrendingUp, HeadphonesIcon, Calendar, Mail, User, Newspaper, Linkedin, Instagram, Youtube } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Script from 'next/script';
@@ -46,7 +46,7 @@ export default function HomePage() {
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-8">
               <a href="#fonctionnalites" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
-                Fonctionnalités / Solution
+                Fonctionnalités
               </a>
               <a href="#pour-qui" className="text-sm font-medium text-gray-700 hover:text-[#0d4a70] transition-colors">
                 Pour qui
@@ -68,16 +68,9 @@ export default function HomePage() {
               </Link>
               <Button 
                 asChild 
-                className="bg-[#ec4899] hover:bg-[#db2777] text-white rounded-full px-6"
+                className="bg-[#bea1e5] hover:bg-[#a888d4] text-white rounded-full px-6 py-3 text-lg font-semibold cursor-pointer"
               >
-                <Link href="/sign-up">Démarrer</Link>
-              </Button>
-              <Button 
-                onClick={openCalendly}
-                variant="outline" 
-                className="border-[#0d4a70] text-[#0d4a70] hover:bg-[#0d4a70] hover:text-white rounded-full px-6"
-              >
-                Prendre rendez-vous
+                <Link href="/sign-up">S'inscrire</Link>
               </Button>
             </div>
           </div>
@@ -85,7 +78,7 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-br from-[#edf6f9] via-white to-[#e8faf5] overflow-hidden">
+      <section className="relative py-20 bg-[#f5f5f5] overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-20 left-10 w-20 h-20 bg-[#fdce0f] rounded-full opacity-20"></div>
         <div className="absolute bottom-20 right-20 w-32 h-32 bg-[#bea1e5] rounded-lg opacity-20"></div>
@@ -99,13 +92,11 @@ export default function HomePage() {
                 Plateforme certifiée et sécurisée
               </div>
               
-              <h1 className="text-4xl font-bold text-[#0d4a70] tracking-tight sm:text-5xl md:text-6xl leading-tight">
-                Trouvez un jury qualifié
-                <span className="block relative">
-                  <span className="relative z-10">n'a jamais été</span>
-                  <div className="absolute -bottom-2 left-0 right-0 h-4 bg-[#fdce0f] opacity-60 -rotate-1"></div>
-                </span>
-                <span className="block text-[#13d090]">aussi simple</span>
+              <h1 className="text-4xl font-bold text-[#0d4a70] tracking-tight sm:text-5xl md:text-6xl leading-tight relative inline-block">
+                <span className="absolute inset-0 bg-[url('/images/hero-section/herosection4-larger.png')] bg-contain bg-no-repeat bg-center left-[114px] -right-6 top-[85px] -bottom-3 w-[80%] h-[75%] z-0"></span>
+                <span className="relative z-10 block">Trouvez un jury qualifié</span>
+                <span className="relative z-10 block">n'a jamais été</span>
+                <span className="relative z-10 block text-[#13d090]">aussi simple</span>
               </h1>
               
               <p className="mt-6 text-lg text-[#0d4a70] sm:mt-8 sm:text-xl lg:text-lg xl:text-xl leading-relaxed">
@@ -117,7 +108,7 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   asChild
-                  className="bg-[#0d4a70] hover:bg-[#0c608a] text-white px-8 py-4 text-lg rounded-full font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="bg-[#0d4a70] hover:bg-[#0c608a] text-white px-8 py-4 text-lg rounded-full font-semibold transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
                 >
                   <Link href="/sign-up">
                     Commencer gratuitement
@@ -127,9 +118,10 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-[#0d4a70] text-[#0d4a70] hover:bg-[#0d4a70] hover:text-white px-8 py-4 text-lg rounded-full font-medium transition-all duration-200"
+                  onClick={openCalendly}
+                  className="border-[#0d4a70] text-[#0d4a70] hover:bg-[#0d4a70] hover:text-white px-8 py-4 text-lg rounded-full font-semibold transition-all duration-200 cursor-pointer"
                 >
-                  Découvrir la plateforme
+                  Prendre rendez-vous
                 </Button>
               </div>
               
@@ -189,19 +181,19 @@ export default function HomePage() {
       </section>
 
       {/* Fonctionnalités/Solution Section */}
-      <section id="fonctionnalites" className="py-20 bg-white">
+      <section id="fonctionnalites" className="py-20 bg-[#0d4a70]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-[#0d4a70] sm:text-4xl mb-4">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl mb-4">
               Fonctionnalités / Solution
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-blue-100 max-w-2xl mx-auto">
               Découvrez comment SimplyJury simplifie la gestion de vos certifications
             </p>
           </div>
 
-          {/* Tabs inspired by Indy */}
-          <div className="bg-[#f8f9fa] rounded-2xl p-8">
+          {/* Features Grid */}
+          <div className="rounded-2xl">
             <div className="grid md:grid-cols-4 gap-6 mb-8">
               <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="w-12 h-12 bg-[#13d090] rounded-xl flex items-center justify-center mb-4">
@@ -240,9 +232,14 @@ export default function HomePage() {
       </section>
 
       {/* Comment ça marche Section */}
-      <section id="pour-qui" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+      <section id="pour-qui" className="py-20 bg-gray-50 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-16 relative">
+            {/* Decorative shapes */}
+            <div className="absolute top-0 right-1/4 w-8 h-8 bg-[#bea1e5] opacity-60 rotate-12"></div>
+            <div className="absolute top-2 right-1/4 translate-x-10 w-6 h-6 bg-[#fdce0f] rounded-full opacity-70"></div>
+            <div className="absolute top-6 right-1/4 translate-x-16 w-5 h-5 bg-[#13d090] opacity-60" style={{borderRadius: '0 8px 0 8px'}}></div>
+            
             <h2 className="text-3xl font-bold text-[#0d4a70] sm:text-4xl mb-4">
               Comment ça marche ?
             </h2>
@@ -430,7 +427,7 @@ export default function HomePage() {
                   <p className="text-blue-100 mb-8">
                     Découvrez SimplyJury sans engagement. Testez toutes nos fonctionnalités pendant 30 jours.
                   </p>
-                  <Button size="lg" asChild className="bg-white text-[#0d4a70] hover:bg-gray-100 px-8 py-3 rounded-xl font-semibold">
+                  <Button size="lg" asChild className="bg-white text-[#0d4a70] hover:bg-gray-100 px-8 py-4 rounded-full text-lg font-semibold cursor-pointer">
                     <Link href="/sign-up">Commencer l'essai gratuit</Link>
                   </Button>
                 </div>
@@ -461,8 +458,8 @@ export default function HomePage() {
               <div className="bg-[#f8f9fa] rounded-xl p-6 mb-6">
                 <div className="space-y-4">
                   <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-medium text-[#0d4a70]">👋</span>
+                    <div className="w-10 h-10 bg-[#13d090] rounded-full flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="h-5 w-5 text-white" />
                     </div>
                     <div className="bg-white rounded-2xl rounded-tl-none p-4 flex-1">
                       <p className="text-sm text-gray-700">Bonjour Pierre, comment puis-je vous aider ?</p>
@@ -470,8 +467,8 @@ export default function HomePage() {
                   </div>
                   
                   <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-medium text-[#0d4a70]">👤</span>
+                    <div className="w-10 h-10 bg-[#0d4a70] rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="h-5 w-5 text-white" />
                     </div>
                     <div className="bg-white rounded-2xl rounded-tl-none p-4 flex-1">
                       <p className="text-sm text-gray-700">Est-ce que je peux passer sur SimplyJury Pro ?</p>
@@ -485,7 +482,7 @@ export default function HomePage() {
                 <p className="text-gray-600 mb-6">
                   La satisfaction de nos clients est notre priorité. Notre équipe est disponible pour vous aider et répondre à vos questions.
                 </p>
-                <Button asChild className="bg-[#13d090] hover:bg-[#10b87a] text-white rounded-full px-6">
+                <Button asChild className="bg-[#13d090] hover:bg-[#10b87a] text-white rounded-full px-6 py-3 text-lg font-semibold cursor-pointer">
                   <Link href="#contact">Contacter l'équipe</Link>
                 </Button>
               </div>
@@ -518,7 +515,7 @@ export default function HomePage() {
               <Button 
                 onClick={openCalendly}
                 size="lg" 
-                className="w-full bg-[#0d4a70] hover:bg-[#0c608a] text-white rounded-full py-6 text-lg font-semibold"
+                className="w-full bg-[#0d4a70] hover:bg-[#0c608a] text-white rounded-full px-8 py-4 text-lg font-semibold cursor-pointer"
               >
                 S'inscrire à une démo
               </Button>
@@ -530,10 +527,18 @@ export default function HomePage() {
       {/* Newsletter Section */}
       <section className="py-20 bg-gradient-to-br from-[#f8f9fa] to-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100">
-            <div className="text-center mb-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-gray-100 relative overflow-hidden">
+            {/* Highlighter background */}
+            <div className="absolute top-[248px] left-1/2 -translate-x-1/2 w-[80%] h-[60%] bg-[url('/images/hero-section/herosection4-larger-whitebckgrnd.png')] bg-contain bg-no-repeat bg-center opacity-90 z-0"></div>
+            
+            <div className="text-center mb-8 relative z-10">
+              {/* Decorative shapes */}
+              <div className="absolute top-12 left-1/4 w-7 h-7 bg-[#fdce0f] opacity-60 rotate-45"></div>
+              <div className="absolute top-16 left-1/4 -translate-x-8 w-5 h-5 bg-[#bea1e5] rounded-full opacity-70"></div>
+              <div className="absolute top-10 left-1/4 translate-x-6 w-6 h-6 bg-[#13d090] opacity-60" style={{borderRadius: '0 10px 0 10px'}}></div>
+              
               <div className="inline-flex items-center justify-center w-16 h-16 bg-[#13d090] rounded-full mb-4">
-                <Mail className="h-8 w-8 text-white" />
+                <Newspaper className="h-8 w-8 text-white" />
               </div>
               <h2 className="text-3xl font-bold text-[#0d4a70] mb-4">
                 Restez informé
@@ -544,7 +549,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="max-w-xl mx-auto">
+            <div className="max-w-xl mx-auto relative z-10">
               <NewsletterSignup />
             </div>
 
@@ -586,7 +591,7 @@ export default function HomePage() {
             Rejoignez les centres de formation qui font confiance à SimplyJury pour trouver leurs jurys qualifiés.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild className="bg-[#ec4899] hover:bg-[#db2777] text-white px-8 py-4 rounded-full font-semibold text-lg">
+            <Button size="lg" asChild className="bg-[#bea1e5] hover:bg-[#a888d4] text-white px-8 py-4 rounded-full font-semibold text-lg cursor-pointer">
               <Link href="/sign-up">
                 Démarrer
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -595,7 +600,7 @@ export default function HomePage() {
             <Button 
               onClick={openCalendly}
               size="lg" 
-              className="bg-white text-[#0d4a70] hover:bg-gray-100 border-2 border-white px-8 py-4 rounded-full font-semibold text-lg"
+              className="bg-white text-[#0d4a70] hover:bg-gray-100 border-2 border-white px-8 py-4 rounded-full font-semibold text-lg cursor-pointer"
             >
               Prendre rendez-vous
             </Button>
@@ -604,6 +609,122 @@ export default function HomePage() {
         <div className="absolute top-10 left-10 w-20 h-20 bg-[#13d090] rounded-full opacity-10"></div>
         <div className="absolute bottom-10 right-10 w-32 h-32 bg-[#fdce0f] rounded-full opacity-10"></div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-[#0d4a70] text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            {/* Logo and Description */}
+            <div className="md:col-span-1">
+              <Link href="/" className="flex items-center mb-4">
+                <Image 
+                  src="/images/logos/SimplyJury_Logo-Horizontal-Bicolore-Bleu-Jaune.svg"
+                  alt="SimplyJury"
+                  width={140}
+                  height={40}
+                  className="h-8 w-auto brightness-0 invert"
+                />
+              </Link>
+              <p className="text-sm text-blue-100 mb-4">
+                La plateforme qui simplifie la mise en relation entre centres de formation et jurys qualifiés.
+              </p>
+              {/* Social Media */}
+              <div className="flex space-x-4">
+                <a href="#" className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                  <Linkedin className="h-5 w-5" />
+                </a>
+                <a href="#" className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                  <Youtube className="h-5 w-5" />
+                </a>
+                <a href="#" className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                  <Instagram className="h-5 w-5" />
+                </a>
+              </div>
+            </div>
+
+            {/* Produit */}
+            <div>
+              <h3 className="font-semibold text-white mb-4">Produit</h3>
+              <ul className="space-y-2 text-sm text-blue-100">
+                <li>
+                  <a href="#fonctionnalites" className="hover:text-white transition-colors">
+                    Fonctionnalités
+                  </a>
+                </li>
+                <li>
+                  <Link href="/pricing" className="hover:text-white transition-colors">
+                    Tarifs
+                  </Link>
+                </li>
+                <li>
+                  <a href="#" onClick={openCalendly} className="hover:text-white transition-colors cursor-pointer">
+                    Démo
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Entreprise */}
+            <div>
+              <h3 className="font-semibold text-white mb-4">Entreprise</h3>
+              <ul className="space-y-2 text-sm text-blue-100">
+                <li>
+                  <a href="#a-propos" className="hover:text-white transition-colors">
+                    À propos
+                  </a>
+                </li>
+                <li>
+                  <a href="#contact" className="hover:text-white transition-colors">
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <Link href="/privacy" className="hover:text-white transition-colors">
+                    Confidentialité
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Ressources */}
+            <div>
+              <h3 className="font-semibold text-white mb-4">Ressources</h3>
+              <ul className="space-y-2 text-sm text-blue-100">
+                <li>
+                  <Link href="/sign-in" className="hover:text-white transition-colors">
+                    Se connecter
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/sign-up" className="hover:text-white transition-colors">
+                    S'inscrire
+                  </Link>
+                </li>
+                <li>
+                  <a href="#contact" className="hover:text-white transition-colors">
+                    Support
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-8 border-t border-white/10">
+            <div className="flex flex-col md:flex-row justify-between items-center text-sm text-blue-100">
+              <p>© {new Date().getFullYear()} SimplyJury. Tous droits réservés.</p>
+              <div className="flex space-x-6 mt-4 md:mt-0">
+                <Link href="/privacy" className="hover:text-white transition-colors">
+                  Mentions légales
+                </Link>
+                <Link href="/privacy" className="hover:text-white transition-colors">
+                  CGU
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       </main>
     </>

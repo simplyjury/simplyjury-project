@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useActionState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -98,7 +99,13 @@ export function SimplyJuryLogin({ mode = 'signin' }: SimplyJuryLoginProps) {
         {/* Logo et titre */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0d4a70] rounded-full mb-4">
-            <div className="text-white text-2xl font-bold">👌</div>
+            <Image 
+              src="/images/logos/SimplyJury_Iconographie-Jaune.png" 
+              alt="SimplyJury" 
+              width={40} 
+              height={40}
+              className="object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-[#0d4a70] font-jakarta mb-2">
             SimplyJury

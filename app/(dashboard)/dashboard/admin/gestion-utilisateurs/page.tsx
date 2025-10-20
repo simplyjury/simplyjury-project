@@ -419,12 +419,14 @@ export default function GestionUtilisateursPage() {
           <h3 className="text-lg font-semibold text-[#0d4a70]">Liste des utilisateurs</h3>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+              <table className="min-w-full divide-y divide-gray-300">
             <thead className="bg-gray-50">
               <tr>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => {
                     if (sortBy === 'name') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -445,7 +447,7 @@ export default function GestionUtilisateursPage() {
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => {
                     if (sortBy === 'userType') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -466,7 +468,7 @@ export default function GestionUtilisateursPage() {
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => {
                     if (sortBy === 'validationStatus') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -487,7 +489,7 @@ export default function GestionUtilisateursPage() {
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => {
                     if (sortBy === 'lastLogin') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -507,7 +509,7 @@ export default function GestionUtilisateursPage() {
                     )}
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -517,7 +519,7 @@ export default function GestionUtilisateursPage() {
                 // Loading skeleton
                 Array.from({ length: 5 }).map((_, index) => (
                   <tr key={index} className="hover:bg-gray-50 animate-pulse">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
                         <div className="ml-4">
@@ -526,16 +528,16 @@ export default function GestionUtilisateursPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <div className="h-6 bg-gray-300 rounded-full w-16"></div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <div className="h-6 bg-gray-300 rounded-full w-20"></div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <div className="h-4 bg-gray-300 rounded w-16"></div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-gray-300 rounded"></div>
                         <div className="w-4 h-4 bg-gray-300 rounded"></div>
@@ -552,7 +554,7 @@ export default function GestionUtilisateursPage() {
                   
                   return (
                     <tr key={userData.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="relative w-10 h-10">
                             {(() => {
@@ -609,22 +611,22 @@ export default function GestionUtilisateursPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs ${userTypeInfo.color} rounded-full`}>
                           <IconComponent className="w-3 h-3" />
                           {userTypeInfo.label}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs ${statusInfo.color} rounded-full`}>
                           <div className={`w-2 h-2 ${statusInfo.dotColor} rounded-full`}></div>
                           {statusInfo.label}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatLastLogin(userData.lastLogin)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
                           <button 
                             onClick={() => {
@@ -670,17 +672,19 @@ export default function GestionUtilisateursPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-3 sm:px-6 py-8 text-center text-gray-500">
                     {usersError ? 'Erreur lors du chargement des utilisateurs' : 'Aucun utilisateur trouvé'}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+            </div>
+          </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-200">
-          <div className="flex items-center justify-between">
+        <div className="px-3 sm:px-6 py-4 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-sm text-gray-500">
               {usersData?.pagination ? (
                 `Affichage de ${((usersData.pagination.currentPage - 1) * usersData.pagination.limit) + 1} à ${Math.min(usersData.pagination.currentPage * usersData.pagination.limit, usersData.pagination.totalCount)} sur ${usersData.pagination.totalCount} utilisateurs`
@@ -1101,18 +1105,25 @@ function JuryProfileDetails({ user }: { user: any }) {
         </div>
       </div>
 
-      {/* Expertise */}
-      {user.juryExpertiseDomains && user.juryExpertiseDomains.length > 0 && (
-        <div className="bg-purple-50 rounded-lg p-4">
+      {/* ROME Codes & Expertise */}
+      {user.juryRomeCodes && user.juryRomeCodes.length > 0 && (
+        <div className="bg-blue-50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
             <Award className="w-4 h-4" />
-            Domaines d'expertise
+            Codes ROME et domaines d'expertise
           </h4>
           <div className="flex flex-wrap gap-2">
-            {user.juryExpertiseDomains.map((domain: string, index: number) => (
-              <span key={index} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                {domain}
-              </span>
+            {user.juryRomeCodes.map((code: string, index: number) => (
+              <div key={index} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-blue-200 rounded-lg">
+                <span className="px-2 py-0.5 bg-blue-600 text-white text-xs font-mono rounded">
+                  {code}
+                </span>
+                {user.juryRomeLabels && user.juryRomeLabels[index] && (
+                  <span className="text-sm text-gray-700">
+                    {user.juryRomeLabels[index]}
+                  </span>
+                )}
+              </div>
             ))}
           </div>
         </div>

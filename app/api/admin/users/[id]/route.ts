@@ -72,6 +72,8 @@ export async function GET(
         juryCity: juryProfiles.city,
         juryPhone: juryProfiles.phone,
         juryExpertiseDomains: juryProfiles.expertiseDomains,
+        juryRomeCodes: juryProfiles.romeCodes,
+        juryRomeLabels: juryProfiles.romeLabels,
         juryCertifications: juryProfiles.certifications,
         juryExperienceYears: juryProfiles.experienceYears,
         juryCurrentPosition: juryProfiles.currentPosition,
