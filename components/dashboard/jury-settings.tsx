@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, Shield, Download, Trash2, Crown, Lock, AlertCircle } from 'lucide-react';
+import { Bell, Shield, Download, Trash2, AlertCircle } from 'lucide-react';
 
 export default function JurySettings() {
   const [notifications, setNotifications] = useState({
@@ -144,79 +144,6 @@ export default function JurySettings() {
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#13d090]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#13d090]"></div>
             </label>
-          </div>
-        </div>
-      </div>
-
-      {/* Preferences Section - PREMIUM */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden relative">
-        {/* Premium Overlay */}
-        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
-          <div className="text-center px-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-[#fdce0f] to-[#bea1e5] rounded-full flex items-center justify-center mx-auto mb-4">
-              <Crown className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-[#0d4a70] mb-2">Fonctionnalité Premium</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Personnalisez vos préférences de missions avec le plan Pro
-            </p>
-            <button className="px-6 py-2 bg-[#13d090] text-white font-semibold rounded-lg hover:bg-[#11b87d] transition-colors">
-              Passer au Pro
-            </button>
-          </div>
-        </div>
-
-        <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <Lock className="w-5 h-5 text-gray-400" />
-            <div>
-              <h2 className="text-lg font-semibold text-gray-400">Préférences de missions</h2>
-              <p className="text-sm text-gray-400">Définissez vos critères de missions préférées</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-6 space-y-6 opacity-50">
-          {/* Preferred Regions */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-6 border-b border-gray-200">
-            <div className="flex-1">
-              <h4 className="font-semibold text-[#0d4a70] mb-1">Régions préférées</h4>
-              <p className="text-sm text-gray-600">Zones géographiques où vous souhaitez intervenir</p>
-            </div>
-            <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white w-full sm:w-auto sm:min-w-[200px]" disabled>
-              <option>PACA</option>
-              <option>Île-de-France</option>
-              <option>Auvergne-Rhône-Alpes</option>
-            </select>
-          </div>
-
-          {/* Preferred Modalities */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-6 border-b border-gray-200">
-            <div className="flex-1">
-              <h4 className="font-semibold text-[#0d4a70] mb-1">Modalités préférées</h4>
-              <p className="text-sm text-gray-600">Mode de travail par défaut</p>
-            </div>
-            <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white w-full sm:w-auto sm:min-w-[200px]" disabled>
-              <option>Présentiel</option>
-              <option>Visioconférence</option>
-              <option>Hybride</option>
-            </select>
-          </div>
-
-          {/* Minimum Rate */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="flex-1">
-              <h4 className="font-semibold text-[#0d4a70] mb-1">Tarif horaire minimum</h4>
-              <p className="text-sm text-gray-600">Tarif minimum accepté pour vos missions</p>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <input 
-                type="number" 
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white w-full sm:w-24" 
-                placeholder="50"
-                disabled
-              />
-              <span className="text-sm text-gray-600">€/h</span>
-            </div>
           </div>
         </div>
       </div>

@@ -19,6 +19,7 @@ interface CertificationValidationRequestProps {
   certificateurName: string;
   certificateurSiret: string;
   validationUrl: string;
+  resubmissionComment?: string;
 }
 
 export const CertificationValidationRequest = ({
@@ -29,6 +30,7 @@ export const CertificationValidationRequest = ({
   certificateurName,
   certificateurSiret,
   validationUrl,
+  resubmissionComment,
 }: CertificationValidationRequestProps) => {
   return (
     <Html>
@@ -45,7 +47,10 @@ export const CertificationValidationRequest = ({
           </Text>
           
           <Text style={text}>
-            Un centre de formation a ajouté une certification RNCP à son profil qui nécessite une validation administrative.
+            {resubmissionComment 
+              ? 'Un centre de formation a redemandé la validation d\'une certification RNCP précédemment rejetée.'
+              : 'Un centre de formation a ajouté une certification RNCP à son profil qui nécessite une validation administrative.'
+            }
           </Text>
 
           <Section style={infoBox}>
@@ -73,6 +78,15 @@ export const CertificationValidationRequest = ({
               <strong>SIRET du certificateur :</strong> {certificateurSiret}
             </Text>
           </Section>
+
+          {resubmissionComment && (
+            <Section style={commentBox}>
+              <Text style={commentTitle}>💬 Commentaire du centre</Text>
+              <Text style={commentText}>
+                {resubmissionComment}
+              </Text>
+            </Section>
+          )}
 
           <Section style={alertBox}>
             <Text style={alertText}>
@@ -153,6 +167,29 @@ const alertBox = {
   borderRadius: '8px',
   margin: '24px 40px',
   padding: '20px',
+};
+
+const commentBox = {
+  backgroundColor: '#f0fdf4',
+  border: '1px solid #86efac',
+  borderRadius: '8px',
+  margin: '24px 40px',
+  padding: '20px',
+};
+
+const commentTitle = {
+  color: '#166534',
+  fontSize: '16px',
+  fontWeight: 'bold',
+  margin: '0 0 12px 0',
+};
+
+const commentText = {
+  color: '#333',
+  fontSize: '14px',
+  lineHeight: '22px',
+  margin: '8px 0',
+  fontStyle: 'italic' as const,
 };
 
 const infoTitle = {

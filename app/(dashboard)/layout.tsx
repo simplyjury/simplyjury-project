@@ -281,18 +281,10 @@ function HeaderContent({ onMenuToggle }: { onMenuToggle: () => void }) {
             </button>
             
             <div className="flex-1">
-              <h1 className="text-xl font-semibold text-[#0d4a70] mb-1">{title}</h1>
-              {subtitle && (
-                <p className="text-sm text-gray-600">{subtitle}</p>
-              )}
+              <h1 className="text-xl font-semibold text-[#0d4a70]">{title}</h1>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {!isFreemium && (
-              <Button className="bg-[#0d4a70] hover:bg-[#0c608a] text-white hidden sm:block">
-                Passer au Pro
-              </Button>
-            )}
             <Suspense fallback={<div className="h-10" />}>
               <UserMenu />
             </Suspense>

@@ -124,12 +124,12 @@ export function ChatArea({
                 }`}>
                   {message.senderType === 'jury' ? 'MD' : conversation.centerInitials.substring(0, 2)}
                 </div>
-                <div className={`flex-1 max-w-xs lg:max-w-md ${message.senderType === 'jury' ? 'text-right' : ''}`}>
+                <div className={`flex flex-col max-w-[75%] ${message.senderType === 'jury' ? 'items-end' : 'items-start'}`}>
                   <div className="flex items-center space-x-2 mb-1">
                     <span className="text-xs font-semibold text-gray-600">{message.senderName}</span>
                     <span className="text-xs text-gray-400">{message.timestamp}</span>
                   </div>
-                  <div className={`rounded-lg px-4 py-3 ${
+                  <div className={`inline-block rounded-lg px-4 py-3 ${
                     message.senderType === 'jury'
                       ? 'bg-[#13d090] text-white'
                       : 'bg-white border border-gray-200 text-gray-900'

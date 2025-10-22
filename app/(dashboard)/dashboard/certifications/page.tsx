@@ -50,6 +50,8 @@ export default function CertificationsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [resubmissionMode, setResubmissionMode] = useState(false);
+  const [resubmissionRncpCode, setResubmissionRncpCode] = useState('');
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -225,9 +227,13 @@ export default function CertificationsPage() {
   };
 
   const handleResubmit = (certificationId: number) => {
-    // Handle resubmission of rejected certification
-    // This will be implemented later
-    console.log('Resubmitting certification:', certificationId);
+    // Find the rejected certification
+    const certification = certifications.find(cert => cert.id === certificationId);
+    if (certification) {
+      setResubmissionMode(true);
+      setResubmissionRncpCode(certification.code);
+      setIsModalOpen(true);
+    }
   };
 
   if (loading) {
@@ -439,12 +445,20 @@ export default function CertificationsPage() {
       {/* Add Certification Modal */}
       <AddCertificationModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setResubmissionMode(false);
+          setResubmissionRncpCode('');
+        }}
         onAdd={() => {
           // Reload certifications after adding
           setIsModalOpen(false);
+          setResubmissionMode(false);
+          setResubmissionRncpCode('');
           window.location.reload();
         }}
+        resubmissionMode={resubmissionMode}
+        prefilledRncpCode={resubmissionRncpCode}
       />
     </div>
   );

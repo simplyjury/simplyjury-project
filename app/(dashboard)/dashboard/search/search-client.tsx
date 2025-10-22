@@ -50,13 +50,22 @@ interface SearchFilters {
   availability: string;
 }
 
-export default function SearchPageClient() {
+interface SearchPageClientProps {
+  userType?: string | null;
+}
+
+export default function SearchPageClient({ userType }: SearchPageClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const { updateRequestCount } = useJuryRequestCount();
   
-  // Responsive default view: grid for mobile (< 768px), list for desktop
+  // Default view mode: grid for training centers, list for others
   const getInitialViewMode = (): 'list' | 'grid' => {
+    // For training centers (user_type='centre'), default to grid view
+    if (userType === 'centre') {
+      return 'grid';
+    }
+    // For other user types, use responsive default: grid for mobile (< 768px), list for desktop
     if (typeof window !== 'undefined') {
       return window.innerWidth < 768 ? 'grid' : 'list';
     }
@@ -100,7 +109,7 @@ export default function SearchPageClient() {
       
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '10',
+        limit: '12',
         ...(filters.query && { q: filters.query }),
         ...(filters.region && { region: filters.region }),
         ...(filters.certification && { certification: filters.certification }),
@@ -136,8 +145,13 @@ export default function SearchPageClient() {
     fetchJuries();
   }, [currentPage, filters]);
 
-  // Effect to handle responsive view mode on window resize
+  // Effect to handle responsive view mode on window resize (only for non-centre users)
   useEffect(() => {
+    // Skip responsive behavior for training centers - they always start with grid
+    if (userType === 'centre') {
+      return;
+    }
+
     const handleResize = () => {
       const newViewMode = window.innerWidth < 768 ? 'grid' : 'list';
       setViewMode(newViewMode);
@@ -148,7 +162,7 @@ export default function SearchPageClient() {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [userType]);
 
   // Handle search input with debouncing
   useEffect(() => {

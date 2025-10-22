@@ -341,7 +341,7 @@ export default function CentersPage() {
                     })()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-[#0d4a70] text-lg mb-1 break-words leading-tight">
+                    <h3 className="font-semibold text-[#0d4a70] text-lg mb-1 leading-tight line-clamp-2">
                       {center.name}
                     </h3>
                     {center.city && center.region && (
@@ -373,25 +373,29 @@ export default function CentersPage() {
                 </div>
 
                 {/* Certification Domains */}
-                {center.certificationDomains && center.certificationDomains.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                      Domaines de certifications
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {center.certificationDomains.slice(0, 3).map((domain, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {domain}
-                        </Badge>
-                      ))}
-                      {center.certificationDomains.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{center.certificationDomains.length - 3}
-                        </Badge>
-                      )}
-                    </div>
+                <div className="mb-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    Domaines de certifications
+                  </p>
+                  <div className="flex flex-wrap gap-1 h-[52px] overflow-hidden">
+                    {center.certificationDomains && center.certificationDomains.length > 0 ? (
+                      <>
+                        {center.certificationDomains.slice(0, 4).map((domain, index) => (
+                          <Badge key={index} variant="outline" className="text-xs h-6 flex items-center">
+                            {domain}
+                          </Badge>
+                        ))}
+                        {center.certificationDomains.length > 4 && (
+                          <span className="text-xs text-gray-600 px-2 py-1 h-6 flex items-center">
+                            et {center.certificationDomains.length - 4} autres
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-400">Aucun domaine</span>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* Contact Information - Only show website, no confidential contact details */}
                 {center.website && (

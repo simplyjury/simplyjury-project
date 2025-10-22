@@ -8,6 +8,7 @@ interface CenterConversation {
   juryName: string;
   juryEmail: string;
   juryInitials: string;
+  profilePhotoUrl?: string | null;
   lastMessage: string;
   timestamp: string;
   unreadCount?: number;
@@ -43,9 +44,17 @@ export function CenterConversationList({ conversations, onConversationSelect, ac
           >
             <div className="flex items-start space-x-3">
               {/* Avatar */}
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0d4a70] to-[#1e5a7a] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                {conversation.juryInitials}
-              </div>
+              {conversation.profilePhotoUrl ? (
+                <img 
+                  src={conversation.profilePhotoUrl} 
+                  alt={conversation.juryName}
+                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0d4a70] to-[#1e5a7a] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                  {conversation.juryInitials}
+                </div>
+              )}
 
               {/* Content */}
               <div className="flex-1 min-w-0">
@@ -57,10 +66,6 @@ export function CenterConversationList({ conversations, onConversationSelect, ac
                     <div className="w-2 h-2 rounded-full bg-red-500" />
                   )}
                 </div>
-                
-                <p className="text-xs text-gray-600 mb-2 truncate">
-                  {conversation.juryEmail}
-                </p>
                 
                 <div className="text-xs text-gray-600 mb-2 overflow-hidden" style={{
                   display: '-webkit-box',
