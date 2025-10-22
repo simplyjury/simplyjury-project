@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/drizzle';
-import { conversations, messages, users, trainingCenters } from '@/lib/db/schema';
+import { conversations, messages, users, trainingCenters, juryProfiles } from '@/lib/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { AuthService } from '@/lib/auth/auth-service';
 import { cookies } from 'next/headers';
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         // Jury info - use display name
         juryName: users.name, // Display name from users table
         juryEmail: users.email,
+        profilePhotoUrl: juryProfiles.profilePhotoUrl,
         // Last message info
         lastMessageContent: sql<string>`(
           SELECT content 
@@ -68,6 +69,7 @@ export async function GET(request: NextRequest) {
       })
       .from(conversations)
       .innerJoin(users, eq(conversations.juryId, users.id))
+      .leftJoin(juryProfiles, eq(juryProfiles.userId, users.id))
       .where(eq(conversations.trainingCenterId, trainingCenter.id))
       .orderBy(desc(conversations.lastMessageAt));
 
@@ -120,6 +122,7 @@ export async function GET(request: NextRequest) {
         juryName: conv.juryName || 'Jury',
         juryEmail: conv.juryEmail,
         juryInitials,
+        profilePhotoUrl: conv.profilePhotoUrl,
         lastMessage: messagePreview,
         timestamp,
         unreadCount: conv.unreadCount > 0 ? conv.unreadCount : undefined,

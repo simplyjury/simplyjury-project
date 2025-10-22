@@ -5,6 +5,7 @@ import { CertificationApprovalNotification } from '@/components/emails/certifica
 import { CertificationRejectionNotification } from '@/components/emails/certification-rejection-notification';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = `${process.env.FROM_NAME || 'SimplyJury'} <${process.env.FROM_EMAIL || 'onboarding@resend.dev'}>`;
 
 interface SendCertificationDecisionEmailParams {
   centerName: string;
@@ -56,7 +57,7 @@ export async function sendCertificationDecisionEmail(
 
     // Send email
     const { data, error } = await resend.emails.send({
-      from: 'SimplyJury <notifications@simplyjury.com>',
+      from: FROM_EMAIL,
       to: centerEmail,
       subject,
       react: emailComponent,

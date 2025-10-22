@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { CertificationValidationRequest } from '@/components/emails/certification-validation-request';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = `${process.env.FROM_NAME || 'SimplyJury'} <${process.env.FROM_EMAIL || 'onboarding@resend.dev'}>`;
 
 interface SendCertificationValidationEmailParams {
   centerName: string;
@@ -15,6 +16,7 @@ interface SendCertificationValidationEmailParams {
   centerSiret: string;
   certificateurName: string;
   certificateurSiret: string;
+  resubmissionComment?: string;
 }
 
 export async function sendCertificationValidationEmail(
@@ -42,9 +44,11 @@ export async function sendCertificationValidationEmail(
     const emailPromises = adminUsers.map(async (admin) => {
       try {
         const { data, error } = await resend.emails.send({
-          from: 'SimplyJury <notifications@simplyjury.com>',
+          from: FROM_EMAIL,
           to: admin.email,
-          subject: `🔔 Nouvelle certification à valider - ${params.centerName}`,
+          subject: params.resubmissionComment 
+            ? `🔄 Redemande de validation - ${params.centerName}`
+            : `🔔 Nouvelle certification à valider - ${params.centerName}`,
           react: CertificationValidationRequest({
             centerName: params.centerName,
             certificationTitle: params.certificationTitle,
@@ -53,6 +57,7 @@ export async function sendCertificationValidationEmail(
             certificateurName: params.certificateurName,
             certificateurSiret: params.certificateurSiret,
             validationUrl,
+            resubmissionComment: params.resubmissionComment,
           }),
         });
 

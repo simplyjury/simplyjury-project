@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Loader2, CheckCircle, AlertCircle, Info, Sparkles, AlertTriangle } from 'lucide-react';
 import RNCPInput from '@/components/ui/rncp-input';
 
@@ -30,9 +31,11 @@ interface AddCertificationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: () => void;
+  resubmissionMode?: boolean;
+  prefilledRncpCode?: string;
 }
 
-export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificationModalProps) {
+export function AddCertificationModal({ isOpen, onClose, onAdd, resubmissionMode = false, prefilledRncpCode = '' }: AddCertificationModalProps) {
   const [rncpCode, setRncpCode] = useState('');
   const [certificationDetails, setCertificationDetails] = useState<CertificationDetails | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,13 +43,19 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
   const [success, setSuccess] = useState(false);
   const [userSiret, setUserSiret] = useState<string | null>(null);
   const [siretMismatch, setSiretMismatch] = useState(false);
+  const [resubmissionComment, setResubmissionComment] = useState('');
 
-  // Fetch user's SIRET when modal opens
+  // Fetch user's SIRET and set prefilled code when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchUserSiret();
+      if (resubmissionMode && prefilledRncpCode) {
+        setRncpCode(prefilledRncpCode);
+        // Trigger validation for prefilled code
+        // The RNCPInput component will handle the validation
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, resubmissionMode, prefilledRncpCode]);
 
   const fetchUserSiret = async () => {
     try {
@@ -76,9 +85,32 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
   };
 
   const handleSubmit = async () => {
-    if (!rncpCode || !certificationDetails?.valid) {
+    // In resubmission mode, we only need the RNCP code (already validated)
+    // In normal mode, we need full certification details validation
+    if (!rncpCode) {
       setError('Veuillez saisir un code RNCP valide');
       return;
+    }
+
+    if (!resubmissionMode && !certificationDetails?.valid) {
+      setError('Veuillez saisir un code RNCP valide');
+      return;
+    }
+
+    // Validate comment for resubmission mode
+    if (resubmissionMode) {
+      if (!resubmissionComment.trim()) {
+        setError('Le commentaire est obligatoire pour redemander la validation');
+        return;
+      }
+      if (resubmissionComment.trim().length < 10) {
+        setError('Le commentaire doit contenir au moins 10 caractères');
+        return;
+      }
+      if (resubmissionComment.trim().length > 150) {
+        setError('Le commentaire ne peut pas dépasser 150 caractères');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -90,7 +122,11 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ rncpCode })
+        body: JSON.stringify({ 
+          rncpCode,
+          resubmission: resubmissionMode,
+          resubmissionComment: resubmissionMode ? resubmissionComment.trim() : undefined
+        })
       });
 
       const data = await response.json();
@@ -131,6 +167,7 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
     setSuccess(false);
     setSiretMismatch(false);
     setUserSiret(null);
+    setResubmissionComment('');
     onClose();
   };
 
@@ -140,10 +177,13 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[#0d4a70] flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-[#13d090]" />
-            Rattacher une certification RNCP
+            {resubmissionMode ? 'Redemander la validation' : 'Rattacher une certification RNCP'}
           </DialogTitle>
           <DialogDescription className="text-slate-600">
-            Recherchez et rattachez une certification professionnelle à votre centre de formation
+            {resubmissionMode 
+              ? 'Ajoutez un commentaire pour expliquer votre demande de réexamen'
+              : 'Recherchez et rattachez une certification professionnelle à votre centre de formation'
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -191,11 +231,53 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
               <Label className="text-base font-semibold text-[#0d4a70]">
                 Code RNCP de la certification <span className="text-red-500">*</span>
               </Label>
-              <RNCPInput
-                value={rncpCode}
-                onChange={handleRNCPChange}
-                required={true}
+              {resubmissionMode ? (
+                <div className="bg-slate-100 border border-slate-300 rounded-lg p-3">
+                  <p className="text-lg font-semibold text-slate-700">{prefilledRncpCode}</p>
+                  <p className="text-xs text-slate-500 mt-1">Ce code ne peut pas être modifié</p>
+                </div>
+              ) : (
+                <RNCPInput
+                  value={rncpCode}
+                  onChange={handleRNCPChange}
+                  required={true}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Resubmission Comment Field */}
+          {resubmissionMode && !success && (
+            <div className="space-y-2">
+              <Label className="text-base font-semibold text-[#0d4a70]">
+                Commentaire <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                value={resubmissionComment}
+                onChange={(e) => setResubmissionComment(e.target.value)}
+                placeholder="Expliquez pourquoi vous redemandez la validation de cette certification (10-150 caractères)..."
+                className="min-h-[100px] resize-none"
+                maxLength={150}
               />
+              <div className="flex justify-between items-center text-xs">
+                <span className={`${
+                  resubmissionComment.length < 10 
+                    ? 'text-red-500' 
+                    : resubmissionComment.length > 150 
+                    ? 'text-red-500' 
+                    : 'text-green-600'
+                }`}>
+                  {resubmissionComment.length < 10 
+                    ? `Minimum 10 caractères (${resubmissionComment.length}/10)` 
+                    : 'Commentaire valide'
+                  }
+                </span>
+                <span className={`${
+                  resubmissionComment.length > 150 ? 'text-red-500' : 'text-slate-500'
+                }`}>
+                  {resubmissionComment.length}/150
+                </span>
+              </div>
             </div>
           )}
 
@@ -278,21 +360,25 @@ export function AddCertificationModal({ isOpen, onClose, onAdd }: AddCertificati
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={!certificationDetails?.valid || isSubmitting || success}
+            disabled={
+              isSubmitting || 
+              success || 
+              (resubmissionMode ? (!prefilledRncpCode || resubmissionComment.trim().length < 10 || resubmissionComment.trim().length > 150) : !certificationDetails?.valid)
+            }
             className="bg-[#13d090] hover:bg-[#0ea574] text-white min-w-[140px]"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Rattachement...
+                {resubmissionMode ? 'Envoi...' : 'Rattachement...'}
               </>
             ) : success ? (
               <>
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Rattachée
+                {resubmissionMode ? 'Envoyée' : 'Rattachée'}
               </>
             ) : (
-              'Rattacher'
+              resubmissionMode ? 'Envoyer la demande' : 'Rattacher'
             )}
           </Button>
         </div>

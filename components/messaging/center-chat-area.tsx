@@ -21,6 +21,7 @@ interface CenterChatAreaProps {
     juryName: string;
     juryEmail: string;
     juryInitials: string;
+    profilePhotoUrl?: string | null;
   };
   messages: Message[];
   onSendMessage: (message: string) => void;
@@ -66,13 +67,21 @@ export function CenterChatArea({
       {/* Chat Header */}
       <div className="p-5 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0d4a70] to-[#1e5a7a] flex items-center justify-center text-white font-semibold">
-            {conversation.juryInitials}
-          </div>
+          {conversation.profilePhotoUrl ? (
+            <img 
+              src={conversation.profilePhotoUrl} 
+              alt={conversation.juryName}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0d4a70] to-[#1e5a7a] flex items-center justify-center text-white font-semibold">
+              {conversation.juryInitials}
+            </div>
+          )}
           <div>
             <h3 className="text-lg font-bold text-[#0d4a70]">{conversation.juryName}</h3>
             <p className="text-sm text-gray-600">
-              {conversation.juryEmail} • Jury professionnel
+              Jury professionnel
             </p>
           </div>
         </div>
@@ -94,19 +103,27 @@ export function CenterChatArea({
               </div>
             ) : (
               <div className={`flex space-x-3 ${message.senderType === 'center' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
-                  message.senderType === 'center' 
-                    ? 'bg-[#0d4a70]' 
-                    : 'bg-gradient-to-br from-[#13d090] to-[#0fb378]'
-                }`}>
-                  {message.senderType === 'center' ? 'CF' : conversation.juryInitials.substring(0, 2)}
-                </div>
-                <div className={`flex-1 max-w-xs lg:max-w-md ${message.senderType === 'center' ? 'text-right' : ''}`}>
+                {message.senderType === 'center' ? (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm bg-[#0d4a70]">
+                    CF
+                  </div>
+                ) : conversation.profilePhotoUrl ? (
+                  <img 
+                    src={conversation.profilePhotoUrl} 
+                    alt={conversation.juryName}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm bg-gradient-to-br from-[#13d090] to-[#0fb378]">
+                    {conversation.juryInitials.substring(0, 2)}
+                  </div>
+                )}
+                <div className={`flex flex-col max-w-[75%] ${message.senderType === 'center' ? 'items-end' : 'items-start'}`}>
                   <div className="flex items-center space-x-2 mb-1">
                     <span className="text-xs font-semibold text-gray-600">{message.senderName}</span>
                     <span className="text-xs text-gray-400">{message.timestamp}</span>
                   </div>
-                  <div className={`rounded-lg px-4 py-3 ${
+                  <div className={`inline-block rounded-lg px-4 py-3 ${
                     message.senderType === 'center'
                       ? 'bg-[#0d4a70] text-white'
                       : 'bg-white border border-gray-200 text-gray-900'

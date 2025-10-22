@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { signUpAction, ActionState } from './simplyjury-actions';
 import { useState, useEffect } from 'react';
 
@@ -96,6 +96,17 @@ export function SimplyJuryLogin({ mode = 'signin' }: SimplyJuryLoginProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#edf6f9] via-white to-[#e8faf5] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Back to Homepage Link */}
+        <div className="mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm text-[#0d4a70] hover:text-[#13d090] transition-colors font-jakarta font-medium"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Retour à l'accueil
+          </Link>
+        </div>
+
         {/* Logo et titre */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0d4a70] rounded-full mb-4">

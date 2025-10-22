@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/drizzle';
-import { conversations, messages, users, trainingCenters } from '@/lib/db/schema';
+import { conversations, messages, users, trainingCenters, juryProfiles } from '@/lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import { AuthService } from '@/lib/auth/auth-service';
 import { cookies } from 'next/headers';
@@ -61,14 +61,16 @@ export async function GET(
       return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
     }
 
-    // Get jury user details
+    // Get jury user details with profile photo
     const [juryUser] = await db
       .select({
         id: users.id,
         name: users.name,
         email: users.email,
+        profilePhotoUrl: juryProfiles.profilePhotoUrl,
       })
       .from(users)
+      .leftJoin(juryProfiles, eq(juryProfiles.userId, users.id))
       .where(eq(users.id, conversation.juryId!))
       .limit(1);
 
@@ -145,6 +147,7 @@ export async function GET(
       juryName: juryUser.name || 'Jury', // Display name from users table
       juryEmail: juryUser.email,
       juryInitials,
+      profilePhotoUrl: juryUser.profilePhotoUrl,
     };
 
     return NextResponse.json({

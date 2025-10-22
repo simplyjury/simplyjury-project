@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import RatingModal from '@/components/ratings/rating-modal';
+import { JuryProfileModal } from '@/components/ui/jury-profile-modal';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -27,7 +28,7 @@ function JuryAvatar({ profilePhoto, juryName }: JuryAvatarProps) {
 
   if (!profilePhoto || imageError) {
     return (
-      <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+      <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
         {getInitials(juryName)}
       </div>
     );
@@ -37,7 +38,7 @@ function JuryAvatar({ profilePhoto, juryName }: JuryAvatarProps) {
     <img 
       src={profilePhoto} 
       alt={juryName || 'Jury'} 
-      className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+      className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
       onError={() => setImageError(true)}
     />
   );
@@ -90,6 +91,11 @@ function CenterSessionsPage() {
   }>({ isOpen: false, session: null, juryId: null });
   const [sessionRatings, setSessionRatings] = useState<Record<number, boolean>>({});
   const [juryRatings, setJuryRatings] = useState<Record<number, { averageRating: number; totalRatings: number }>>({});
+  const [juryProfileModal, setJuryProfileModal] = useState<{
+    isOpen: boolean;
+    juryProfile: any | null;
+  }>({ isOpen: false, juryProfile: null });
+  const [loadingJuryProfile, setLoadingJuryProfile] = useState(false);
 
   useEffect(() => {
     fetchCenterSessions();
@@ -238,6 +244,32 @@ function CenterSessionsPage() {
 
   const closeRatingModal = () => {
     setRatingModal({ isOpen: false, session: null, juryId: null });
+  };
+
+  const handleViewJuryProfile = async (juryUserId: number) => {
+    try {
+      setLoadingJuryProfile(true);
+      const response = await fetch(`/api/jury/${juryUserId}`);
+      const result = await response.json();
+
+      if (result.success) {
+        setJuryProfileModal({
+          isOpen: true,
+          juryProfile: result.data,
+        });
+      } else {
+        alert('Erreur lors du chargement du profil');
+      }
+    } catch (error) {
+      console.error('Error loading jury profile:', error);
+      alert('Erreur lors du chargement du profil');
+    } finally {
+      setLoadingJuryProfile(false);
+    }
+  };
+
+  const closeJuryProfileModal = () => {
+    setJuryProfileModal({ isOpen: false, juryProfile: null });
   };
 
   const calculateStats = (sessionsData: Session[]) => {
@@ -516,30 +548,76 @@ function CenterSessionsPage() {
         ) : (
           <div className="divide-y divide-gray-200">
             {filteredSessions.map((session, index) => (
-              <div key={session.id || index} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start mb-4">
+              <div key={session.id || index} className="p-4 hover:bg-gray-50 transition-colors">
+                <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-[#0d4a70]">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-base font-semibold text-[#0d4a70]">
                         {session.certification_title || 'Certification'}
                       </h3>
                       {getStatusBadge(session.status)}
                     </div>
-                    <p className="text-sm text-gray-600 mb-1">
+                    <p className="text-xs text-gray-600">
                       {session.certification_code && `${session.certification_code} - `}Session du {formatDate(session.session_date)}
                     </p>
+                  </div>
+                  
+                  {/* Actions moved to header row */}
+                  <div className="flex gap-2 ml-4">
+                    <Button size="sm" variant="outline">
+                      <Eye className="w-4 h-4 mr-1" />
+                      Voir détails
+                    </Button>
+                    
+                    {/* Mark as completed button - only for accepted sessions with past dates */}
+                    {session.status === 'accepted' && new Date(session.session_date) < new Date() && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="border-green-500 text-green-600 hover:bg-green-50"
+                        onClick={() => handleMarkAsCompleted(session.id)}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Marquer comme terminée
+                      </Button>
+                    )}
+                    
+                    {/* Rating button - only for completed sessions */}
+                    {session.status === 'completed' && (
+                      sessionRatings[session.id] ? (
+                        <Button size="sm" variant="outline" disabled className="text-green-600">
+                          <Star className="w-4 h-4 mr-1 fill-current" />
+                          Évalué
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          className="bg-[#0d4a70] hover:bg-[#0d4a70]/90"
+                          onClick={() => handleOpenRatingModal(session)}
+                        >
+                          <Star className="w-4 h-4 mr-1" />
+                          Donner un avis
+                        </Button>
+                      )
+                    )}
                   </div>
                 </div>
 
                 {/* Jury Info */}
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-2 mb-3">
                   <JuryAvatar 
                     profilePhoto={session.jury_profile_photo} 
                     juryName={session.jury_name} 
                   />
                   <div>
-                    <div className="font-semibold text-[#0d4a70]">{session.jury_name}</div>
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <button
+                      onClick={() => handleViewJuryProfile(session.jury_id)}
+                      className="font-medium text-sm text-[#0d4a70] hover:text-[#13d090] hover:underline cursor-pointer transition-colors"
+                      disabled={loadingJuryProfile}
+                    >
+                      {session.jury_name}
+                    </button>
+                    <div className="flex items-center gap-1 text-xs text-gray-600">
                       {juryRatings[session.jury_id] && juryRatings[session.jury_id].totalRatings > 0 ? (
                         <>
                           <span className="text-yellow-500">
@@ -557,80 +635,40 @@ function CenterSessionsPage() {
                 </div>
 
                 {/* Session Details Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  <div className="bg-gray-50 p-3 rounded-lg text-center">
-                    <div className="font-semibold text-[#0d4a70] text-sm">Candidats</div>
-                    <div className="text-gray-600 text-sm">{session.candidate_count}</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                  <div className="bg-gray-50 p-2 rounded text-center">
+                    <div className="font-medium text-[#0d4a70] text-xs">Candidats</div>
+                    <div className="text-gray-600 text-xs">{session.candidate_count}</div>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-lg text-center">
-                    <div className="font-semibold text-[#0d4a70] text-sm">Modalité</div>
-                    <div className="text-gray-600 text-sm">
+                  <div className="bg-gray-50 p-2 rounded text-center">
+                    <div className="font-medium text-[#0d4a70] text-xs">Modalité</div>
+                    <div className="text-gray-600 text-xs">
                       {session.modality === 'presentiel' ? 'Présentiel' : 
                        session.modality === 'visio' ? 'Visioconférence' : 'Hybride'}
                     </div>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-lg text-center">
-                    <div className="font-semibold text-[#0d4a70] text-sm">Horaires</div>
-                    <div className="text-gray-600 text-sm">
+                  <div className="bg-gray-50 p-2 rounded text-center">
+                    <div className="font-medium text-[#0d4a70] text-xs">Horaires</div>
+                    <div className="text-gray-600 text-xs">
                       {session.session_start_time && session.session_end_time 
                         ? `${formatTime(session.session_start_time)} - ${formatTime(session.session_end_time)}`
                         : 'Non défini'}
                     </div>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-lg text-center">
-                    <div className="font-semibold text-[#0d4a70] text-sm">Lieu</div>
-                    <div className="text-gray-600 text-sm">{session.session_location || 'À distance'}</div>
+                  <div className="bg-gray-50 p-2 rounded text-center">
+                    <div className="font-medium text-[#0d4a70] text-xs">Lieu</div>
+                    <div className="text-gray-600 text-xs">{session.session_location || 'À distance'}</div>
                   </div>
                 </div>
 
                 {/* Jury Response if available */}
                 {session.jury_response && (
-                  <div className="bg-gray-50 p-3 rounded-lg border-l-4 border-blue-500 mb-4">
-                    <div className="text-sm text-[#0d4a70] italic">
+                  <div className="bg-gray-50 p-2 rounded border-l-4 border-blue-500">
+                    <div className="text-xs text-[#0d4a70] italic">
                       💬 "{session.jury_response}" - {session.jury_name}
                     </div>
                   </div>
                 )}
-
-                {/* Actions */}
-                <div className="flex gap-2 justify-end">
-                  <Button size="sm" variant="outline">
-                    <Eye className="w-4 h-4 mr-1" />
-                    Voir détails
-                  </Button>
-                  
-                  {/* Mark as completed button - only for accepted sessions with past dates */}
-                  {session.status === 'accepted' && new Date(session.session_date) < new Date() && (
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="border-green-500 text-green-600 hover:bg-green-50"
-                      onClick={() => handleMarkAsCompleted(session.id)}
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Marquer comme terminée
-                    </Button>
-                  )}
-                  
-                  {/* Rating button - only for completed sessions */}
-                  {session.status === 'completed' && (
-                    sessionRatings[session.id] ? (
-                      <Button size="sm" variant="outline" disabled className="text-green-600">
-                        <Star className="w-4 h-4 mr-1 fill-current" />
-                        Évalué
-                      </Button>
-                    ) : (
-                      <Button 
-                        size="sm" 
-                        className="bg-[#0d4a70] hover:bg-[#0d4a70]/90"
-                        onClick={() => handleOpenRatingModal(session)}
-                      >
-                        <Star className="w-4 h-4 mr-1" />
-                        Donner un avis
-                      </Button>
-                    )
-                  )}
-                </div>
               </div>
             ))}
           </div>
@@ -651,6 +689,15 @@ function CenterSessionsPage() {
           }}
           userType="centre"
           ratedUserId={ratingModal.juryId}
+        />
+      )}
+
+      {/* Jury Profile Modal */}
+      {juryProfileModal.juryProfile && (
+        <JuryProfileModal
+          isOpen={juryProfileModal.isOpen}
+          onClose={closeJuryProfileModal}
+          jury={juryProfileModal.juryProfile}
         />
       )}
     </section>

@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import useSWR from 'swr';
 import { Save, X, Plus, Upload, Trash2, Building2, ChevronDown, ChevronUp } from 'lucide-react';
-import CenterRatingsSection from './center-ratings-section';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -17,7 +16,6 @@ export default function CenterProfilePage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [signedLogoUrl, setSignedLogoUrl] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<number>(1);
-  const [ratingsExpanded, setRatingsExpanded] = useState<boolean>(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -359,8 +357,8 @@ export default function CenterProfilePage() {
               <input
                 type="text"
                 value={formData.siret}
-                onChange={(e) => handleInputChange('siret', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+                disabled
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
                 placeholder="14 chiffres"
               />
             ) : (
@@ -676,12 +674,6 @@ export default function CenterProfilePage() {
           </div>
         )}
       </div>
-
-      {/* Ratings Section */}
-      <CenterRatingsSection 
-        isExpanded={ratingsExpanded}
-        onToggle={() => setRatingsExpanded(!ratingsExpanded)}
-      />
     </section>
   );
 }

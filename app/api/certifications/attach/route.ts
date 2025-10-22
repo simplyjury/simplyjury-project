@@ -53,10 +53,71 @@ export async function POST(request: NextRequest) {
 
     // Get RNCP code from request
     const body = await request.json();
-    const { rncpCode } = body;
+    const { rncpCode, resubmission, resubmissionComment } = body;
 
     if (!rncpCode) {
       return NextResponse.json({ error: 'Code RNCP requis' }, { status: 400 });
+    }
+
+    // Handle resubmission flow
+    if (resubmission) {
+      if (!resubmissionComment || resubmissionComment.trim().length < 10 || resubmissionComment.trim().length > 150) {
+        return NextResponse.json({ 
+          error: 'Le commentaire doit contenir entre 10 et 150 caractères' 
+        }, { status: 400 });
+      }
+
+      // Find the rejected certification
+      const existingCertification = await db.query.franceCompetenceCertifications.findFirst({
+        where: (cert, { and, eq }) => and(
+          eq(cert.trainingCenterId, trainingCenter.id),
+          eq(cert.fcCertificationId, rncpCode),
+          eq(cert.approvalStatus, 'rejected')
+        )
+      });
+
+      if (!existingCertification) {
+        return NextResponse.json({ 
+          error: 'Certification rejetée non trouvée' 
+        }, { status: 404 });
+      }
+
+      // Update the certification status to pending
+      await db
+        .update(franceCompetenceCertifications)
+        .set({
+          approvalStatus: 'pending',
+          approvalRequestedAt: new Date(),
+          approvalComment: resubmissionComment.trim(),
+          lastUpdated: new Date()
+        })
+        .where(eq(franceCompetenceCertifications.id, existingCertification.id));
+
+      // Send validation email to admins
+      const { sendCertificationValidationEmail } = await import('@/lib/actions/send-certification-validation-email');
+      
+      sendCertificationValidationEmail({
+        centerName: trainingCenter.name,
+        certificationTitle: existingCertification.title,
+        certificationCode: rncpCode,
+        centerSiret: trainingCenter.siret || 'Non renseigné',
+        certificateurName: existingCertification.certificateurName || 'Non renseigné',
+        certificateurSiret: existingCertification.certificateurSiret || 'Non renseigné',
+        resubmissionComment: resubmissionComment.trim(),
+      }).catch((error) => {
+        console.error('Failed to send certification validation email:', error);
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Demande de validation envoyée avec succès',
+        certification: {
+          id: existingCertification.id,
+          code: existingCertification.code,
+          title: existingCertification.title,
+          approvalStatus: 'pending'
+        }
+      });
     }
 
     // Validate RNCP format
@@ -137,10 +198,13 @@ export async function POST(request: NextRequest) {
 
     // Check if certification already exists for this training center
     const existing = await db.query.franceCompetenceCertifications.findFirst({
-      where: eq(franceCompetenceCertifications.fcCertificationId, rncpCode)
+      where: (cert, { and, eq }) => and(
+        eq(cert.trainingCenterId, trainingCenter.id),
+        eq(cert.fcCertificationId, rncpCode)
+      )
     });
 
-    if (existing && existing.trainingCenterId === trainingCenter.id) {
+    if (existing) {
       return NextResponse.json({ 
         error: 'Cette certification est déjà rattachée à votre centre' 
       }, { status: 409 });

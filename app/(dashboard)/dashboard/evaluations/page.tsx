@@ -45,7 +45,7 @@ function StarRating({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md
   const starSize = size === 'md' ? 'w-5 h-5' : 'w-4 h-4';
   
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center justify-center gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
@@ -106,7 +106,7 @@ function RatingsReceivedTab() {
       {/* Average Ratings Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-[#0d4a70] mb-2">{averages?.overall}/5</div>
             <div className="text-sm text-gray-600 mb-2">Note globale</div>
             <StarRating rating={averages?.overall || 0} size="md" />
@@ -115,26 +115,23 @@ function RatingsReceivedTab() {
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-600 mb-2">{averages?.communication}/5</div>
-            <div className="text-sm text-gray-600 mb-2">Communication</div>
-            <StarRating rating={averages?.communication || 0} />
+            <div className="text-sm text-gray-600">Communication</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600 mb-2">{averages?.punctuality}/5</div>
-            <div className="text-sm text-gray-600 mb-2">Ponctualité</div>
-            <StarRating rating={averages?.punctuality || 0} />
+            <div className="text-sm text-gray-600">Ponctualité</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-purple-600 mb-2">{averages?.expertise}/5</div>
-            <div className="text-sm text-gray-600 mb-2">Expertise</div>
-            <StarRating rating={averages?.expertise || 0} />
+            <div className="text-sm text-gray-600">Expertise</div>
           </CardContent>
         </Card>
       </div>
@@ -171,17 +168,17 @@ function RatingsReceivedTab() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
-                  <div>
+                  <div className="flex items-center justify-between">
                     <span className="text-gray-600">Communication:</span>
-                    <StarRating rating={rating.communicationRating} />
+                    <span className="font-semibold text-gray-900">{rating.communicationRating}/5</span>
                   </div>
-                  <div>
+                  <div className="flex items-center justify-between">
                     <span className="text-gray-600">Ponctualité:</span>
-                    <StarRating rating={rating.punctualityRating} />
+                    <span className="font-semibold text-gray-900">{rating.punctualityRating}/5</span>
                   </div>
-                  <div>
+                  <div className="flex items-center justify-between">
                     <span className="text-gray-600">Expertise:</span>
-                    <StarRating rating={rating.expertiseRating} />
+                    <span className="font-semibold text-gray-900">{rating.expertiseRating}/5</span>
                   </div>
                 </div>
 
@@ -291,17 +288,17 @@ function RatingsGivenTab() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
-                  <div>
+                  <div className="flex items-center justify-between">
                     <span className="text-gray-600">Communication:</span>
-                    <StarRating rating={rating.communicationRating} />
+                    <span className="font-semibold text-gray-900">{rating.communicationRating}/5</span>
                   </div>
-                  <div>
+                  <div className="flex items-center justify-between">
                     <span className="text-gray-600">Ponctualité:</span>
-                    <StarRating rating={rating.punctualityRating} />
+                    <span className="font-semibold text-gray-900">{rating.punctualityRating}/5</span>
                   </div>
-                  <div>
+                  <div className="flex items-center justify-between">
                     <span className="text-gray-600">Expertise:</span>
-                    <StarRating rating={rating.expertiseRating} />
+                    <span className="font-semibold text-gray-900">{rating.expertiseRating}/5</span>
                   </div>
                 </div>
 

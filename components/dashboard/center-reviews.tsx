@@ -61,7 +61,7 @@ function StarRating({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md
   const sizeClasses = size === 'md' ? 'h-5 w-5' : 'h-4 w-4';
   
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center justify-center gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
@@ -229,7 +229,7 @@ function RatingsGivenTab() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-[#0d4a70] mb-2">{reviewsData?.stats.averageRating}/5</div>
             <div className="text-sm text-gray-600 mb-2">Note moyenne donnée</div>
             <StarRating rating={reviewsData?.stats.averageRating || 0} size="md" />
@@ -238,21 +238,21 @@ function RatingsGivenTab() {
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-600 mb-2">{reviewsData?.stats.uniqueJuries}</div>
             <div className="text-sm text-gray-600 mb-2">Jurys évalués</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600 mb-2">{reviewsData?.stats.uniqueSessions}</div>
             <div className="text-sm text-gray-600 mb-2">Sessions évaluées</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-purple-600 mb-2">{totalRatings}</div>
             <div className="text-sm text-gray-600 mb-2">Total évaluations</div>
           </CardContent>
@@ -320,7 +320,7 @@ function RatingsReceivedTab() {
       {/* Average Ratings Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-[#0d4a70] mb-2">{ratingsData?.averages?.overall}/5</div>
             <div className="text-sm text-gray-600 mb-2">Note globale</div>
             <StarRating rating={ratingsData?.averages?.overall || 0} size="md" />
@@ -329,7 +329,7 @@ function RatingsReceivedTab() {
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-blue-600 mb-2">{ratingsData?.averages?.communication}/5</div>
             <div className="text-sm text-gray-600 mb-2">Communication</div>
             <StarRating rating={ratingsData?.averages?.communication || 0} />
@@ -337,7 +337,7 @@ function RatingsReceivedTab() {
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-green-600 mb-2">{ratingsData?.averages?.punctuality}/5</div>
             <div className="text-sm text-gray-600 mb-2">Ponctualité</div>
             <StarRating rating={ratingsData?.averages?.punctuality || 0} />
@@ -345,7 +345,7 @@ function RatingsReceivedTab() {
         </Card>
 
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-purple-600 mb-2">{ratingsData?.averages?.expertise}/5</div>
             <div className="text-sm text-gray-600 mb-2">Expertise</div>
             <StarRating rating={ratingsData?.averages?.expertise || 0} />
