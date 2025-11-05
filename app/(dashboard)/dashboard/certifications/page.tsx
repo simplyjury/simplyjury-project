@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Download, Search, Calendar, Users, Star, Settings, BarChart3, AlertTriangle, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Plus, Download, Search, AlertTriangle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { CertificationCard } from '@/components/certifications/certification-card';
 import { AddCertificationModal } from '@/components/certifications/add-certification-modal';
 import { CertificationStats } from '@/components/certifications/certification-stats';
+import { DeleteCertificationModal } from '@/components/certifications/delete-certification-modal';
 
 interface CertificationData {
   id: number;
@@ -52,6 +53,9 @@ export default function CertificationsPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [resubmissionMode, setResubmissionMode] = useState(false);
   const [resubmissionRncpCode, setResubmissionRncpCode] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [certificationToDelete, setCertificationToDelete] = useState<CertificationData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -96,7 +100,7 @@ export default function CertificationsPage() {
         const statsResponse = await fetch('/api/certifications/stats');
         if (statsResponse.ok) {
           const statsData = await statsResponse.json();
-          setStats(statsData);
+          setStats(statsData.stats);
         }
         
         setLoading(false);
@@ -233,6 +237,50 @@ export default function CertificationsPage() {
       setResubmissionMode(true);
       setResubmissionRncpCode(certification.code);
       setIsModalOpen(true);
+    }
+  };
+
+  const handleDelete = (certificationId: number) => {
+    // Find the certification to delete
+    const certification = certifications.find(cert => cert.id === certificationId);
+    if (certification) {
+      setCertificationToDelete(certification);
+      setIsDeleteModalOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!certificationToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/certifications/${certificationToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erreur lors de la suppression');
+      }
+
+      // Remove the certification from the list
+      setCertifications(prev => prev.filter(cert => cert.id !== certificationToDelete.id));
+      
+      // Reload stats
+      const statsResponse = await fetch('/api/certifications/stats');
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        setStats(statsData.stats);
+      }
+
+      // Close modal and reset state
+      setIsDeleteModalOpen(false);
+      setCertificationToDelete(null);
+    } catch (error) {
+      console.error('Error deleting certification:', error);
+      alert('Erreur lors de la suppression de la certification. Veuillez réessayer.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -435,6 +483,7 @@ export default function CertificationsPage() {
                   onViewStats={handleViewStats}
                   onManage={handleManage}
                   onResubmit={handleResubmit}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>
@@ -460,6 +509,21 @@ export default function CertificationsPage() {
         resubmissionMode={resubmissionMode}
         prefilledRncpCode={resubmissionRncpCode}
       />
+
+      {/* Delete Certification Modal */}
+      {certificationToDelete && (
+        <DeleteCertificationModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setCertificationToDelete(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          certificationTitle={certificationToDelete.title}
+          certificationCode={certificationToDelete.code}
+          isDeleting={isDeleting}
+        />
+      )}
     </div>
   );
 }

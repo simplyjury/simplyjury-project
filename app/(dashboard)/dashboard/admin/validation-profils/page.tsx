@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Filter, CheckCircle, XCircle, User, Clock, MapPin, Briefcase, Shield } from 'lucide-react';
+import { Search, Filter, CheckCircle, XCircle, User, Clock, MapPin, Briefcase, Shield, ArrowUpDown } from 'lucide-react';
 import useSWR, { mutate } from 'swr';
 import { ValidationConfirmationModal } from '@/components/admin/validation-confirmation-modal';
 import { JuryProfileDetailsModal } from '@/components/admin/jury-profile-details-modal';
@@ -68,6 +68,7 @@ export default function ValidationProfilsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     action: 'validate' | 'reject';
@@ -87,6 +88,7 @@ export default function ValidationProfilsPage() {
     if (searchTerm) params.append('search', searchTerm);
     if (selectedType) params.append('type', selectedType);
     if (selectedRegion) params.append('region', selectedRegion);
+    params.append('sort', sortOrder);
     return `/api/admin/validation-profils?${params.toString()}`;
   };
 
@@ -301,9 +303,17 @@ export default function ValidationProfilsPage() {
               <option value="Corse">Corse</option>
               <option value="Auvergne-Rhône-Alpes">Auvergne-Rhône-Alpes</option>
             </select>
+            <select 
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent text-sm"
+            >
+              <option value="desc">Plus récents d'abord</option>
+              <option value="asc">Plus anciens d'abord</option>
+            </select>
             <button className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm sm:w-auto w-full">
-              <Filter className="w-4 h-4" />
-              <span className="sm:inline hidden">Filtres</span>
+              <ArrowUpDown className="w-4 h-4" />
+              <span className="sm:inline hidden">Trier</span>
             </button>
           </div>
         </div>
@@ -402,6 +412,12 @@ export default function ValidationProfilsPage() {
                           )}
                         </div>
                         <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Clock className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-500">Créé {profile.timeAgo}</span>
+                            <span className="text-xs text-gray-400">•</span>
+                            <span className="text-xs text-gray-500">{new Date(profile.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                             <span className="break-words">{profile.currentPosition}</span>
                             <span className="break-words">{profile.city}, {profile.region}</span>
@@ -470,6 +486,12 @@ export default function ValidationProfilsPage() {
                             )}
                           </div>
                           <div className="text-xs sm:text-sm text-gray-600 space-y-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Clock className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">Créé {cert.timeAgo}</span>
+                              <span className="text-xs text-gray-400">•</span>
+                              <span className="text-xs text-gray-500">{new Date(cert.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                               <span className="font-medium">Code: {cert.code}</span>
                               <span>Niveau: {cert.level}</span>

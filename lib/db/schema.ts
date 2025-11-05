@@ -201,6 +201,9 @@ export const systemSettings = pgTable('system_settings', {
   id: serial('id').primaryKey(),
   maintenanceMode: boolean('maintenance_mode').default(false).notNull(),
   maintenanceMessage: text('maintenance_message'),
+  linkedinUrl: varchar('linkedin_url', { length: 500 }),
+  youtubeUrl: varchar('youtube_url', { length: 500 }),
+  instagramUrl: varchar('instagram_url', { length: 500 }),
   lastModifiedBy: integer('last_modified_by')
     .references(() => users.id),
   createdAt: timestamp('created_at').defaultNow(),

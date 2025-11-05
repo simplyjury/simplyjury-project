@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchFromFranceCompetences } from '@/lib/utils/france-competences-fallback';
 
 /**
  * API Route: Validate RNCP Code
  * 
  * Validates an RNCP code against Mission Apprentissage API
- * with France Compétences fallback when no results found
+ * and returns certification details if valid
  */
 
 const API_URL = 'https://api.apprentissage.beta.gouv.fr/api';
@@ -138,19 +137,8 @@ export async function GET(request: NextRequest) {
     console.log('🔍 RNCP API Response for', rncpCode);
     console.log('📦 Full response:', JSON.stringify(certifications, null, 2));
 
-    // No certifications found - try France Compétences fallback
+    // No certifications found
     if (!certifications || certifications.length === 0) {
-      console.log('⚠️  Mission Apprentissage returned empty - trying France Compétences fallback...');
-      
-      const fallbackResult = await fetchFromFranceCompetences(rncpCode);
-      
-      if (fallbackResult) {
-        console.log('✅ Fallback successful - returning France Compétences data');
-        return NextResponse.json(fallbackResult);
-      }
-      
-      // Both sources failed
-      console.log('❌ Both Mission Apprentissage and France Compétences failed');
       return NextResponse.json(
         { 
           error: 'Code RNCP non trouvé',

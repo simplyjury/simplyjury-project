@@ -1,6 +1,6 @@
 'use client';
 
-import { Settings, Shield, Bell, Database, Mail, Key, Globe } from 'lucide-react';
+import { Settings, Shield, Bell, Database, Mail, Key, Globe, Share2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
@@ -20,6 +20,9 @@ export default function ParametresPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingMaintenanceState, setPendingMaintenanceState] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [instagramUrl, setInstagramUrl] = useState('');
 
   // Handle client-side mounting to prevent hydration issues
   useEffect(() => {
@@ -49,14 +52,25 @@ export default function ParametresPage() {
     
     const loadSettings = async () => {
       try {
-        const response = await fetch('/api/admin/maintenance');
-        if (response.ok) {
-          const data = await response.json();
+        const [maintenanceResponse, socialResponse] = await Promise.all([
+          fetch('/api/admin/maintenance'),
+          fetch('/api/admin/social-networks')
+        ]);
+        
+        if (maintenanceResponse.ok) {
+          const data = await maintenanceResponse.json();
           setMaintenanceMode(data.maintenanceMode);
           setMaintenanceMessage(data.maintenanceMessage || '');
         }
+        
+        if (socialResponse.ok) {
+          const data = await socialResponse.json();
+          setLinkedinUrl(data.linkedinUrl || '');
+          setYoutubeUrl(data.youtubeUrl || '');
+          setInstagramUrl(data.instagramUrl || '');
+        }
       } catch (error) {
-        console.error('Error loading maintenance settings:', error);
+        console.error('Error loading settings:', error);
       } finally {
         setLoading(false);
       }
@@ -130,6 +144,37 @@ export default function ParametresPage() {
   const cancelMaintenanceToggle = () => {
     setShowConfirmModal(false);
     setPendingMaintenanceState(false);
+  };
+
+  // Handle social network URLs save
+  const handleSaveSocialNetworks = async () => {
+    setSaving(true);
+    
+    try {
+      const response = await fetch('/api/admin/social-networks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          linkedinUrl: linkedinUrl || null,
+          youtubeUrl: youtubeUrl || null,
+          instagramUrl: instagramUrl || null,
+        }),
+      });
+
+      if (response.ok) {
+        alert('URLs des réseaux sociaux mises à jour avec succès');
+      } else {
+        const error = await response.json();
+        alert(`Erreur: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error updating social network URLs:', error);
+      alert('Erreur lors de la mise à jour des URLs');
+    } finally {
+      setSaving(false);
+    }
   };
   return (
     <section className="flex-1 p-4 lg:p-8">
@@ -378,11 +423,64 @@ export default function ParametresPage() {
           </div>
         </div>
 
+        {/* Social Networks Settings */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Share2 className="w-6 h-6 text-[#0d4a70]" />
+            <h3 className="text-lg font-semibold text-[#0d4a70]">Réseaux sociaux</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-[#0d4a70] mb-2">LinkedIn</label>
+              <input
+                type="url"
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+                placeholder="https://www.linkedin.com/company/simplyjury"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+                disabled={saving}
+              />
+              <p className="text-xs text-gray-500 mt-1">URL complète de votre page LinkedIn</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[#0d4a70] mb-2">YouTube</label>
+              <input
+                type="url"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://www.youtube.com/@simplyjury"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+                disabled={saving}
+              />
+              <p className="text-xs text-gray-500 mt-1">URL complète de votre chaîne YouTube</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[#0d4a70] mb-2">Instagram</label>
+              <input
+                type="url"
+                value={instagramUrl}
+                onChange={(e) => setInstagramUrl(e.target.value)}
+                placeholder="https://www.instagram.com/simplyjury"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#13d090] focus:border-transparent"
+                disabled={saving}
+              />
+              <p className="text-xs text-gray-500 mt-1">URL complète de votre profil Instagram</p>
+            </div>
+          </div>
+        </div>
+
         {/* Save Button */}
         <div className="flex justify-end">
-          <button className="flex items-center gap-2 px-6 py-3 bg-[#13d090] text-white rounded-lg hover:bg-[#10b87a]">
+          <button 
+            onClick={handleSaveSocialNetworks}
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-3 bg-[#13d090] text-white rounded-lg hover:bg-[#10b87a] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Settings className="w-4 h-4" />
-            Sauvegarder les paramètres
+            {saving ? 'Enregistrement...' : 'Sauvegarder les paramètres'}
           </button>
         </div>
       </div>

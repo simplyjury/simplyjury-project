@@ -55,6 +55,8 @@ export async function GET(request: NextRequest) {
         status: franceCompetenceCertifications.status,
         validity_start: franceCompetenceCertifications.validityStart,
         validity_end: franceCompetenceCertifications.validityEnd,
+        // Calculate if expired using SQL
+        is_expired: sql<boolean>`${franceCompetenceCertifications.validityEnd} < NOW()`,
         created_at: franceCompetenceCertifications.createdAt,
         certification_details: franceCompetenceCertifications.certificationDetails,
         // Approval workflow fields
@@ -87,15 +89,27 @@ export async function GET(request: NextRequest) {
     const certificationsWithStats = certifications.map(cert => {
       const certStats = stats.find(s => s.france_competence_certification_id === cert.id);
       
-      // Calculate status based on validity_end
-      const now = new Date();
-      const validityEnd = cert.validity_end ? new Date(cert.validity_end) : null;
+      // Calculate status based on SQL is_expired field
       let calculatedStatus = 'active';
       
-      if (validityEnd && validityEnd < now) {
+      // Debug logging for RNCP35007
+      if (cert.code === 'RNCP35007') {
+        console.log('🔍 RNCP35007 Status Calculation:', {
+          code: cert.code,
+          is_expired: cert.is_expired,
+          db_status: cert.status
+        });
+      }
+      
+      if (cert.is_expired) {
         calculatedStatus = 'expired';
       } else if (cert.status === 'inactive') {
         calculatedStatus = 'inactive';
+      }
+      
+      // Debug logging for RNCP35007
+      if (cert.code === 'RNCP35007') {
+        console.log('✅ RNCP35007 Final Status:', calculatedStatus);
       }
 
       // Extract competency blocks from certification_details JSONB
