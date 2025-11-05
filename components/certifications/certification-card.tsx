@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, Star, Search, BarChart3, Settings, Clock, AlertTriangle, XCircle, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
+import { Calendar, Search, Clock, AlertTriangle, XCircle, RefreshCw, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 
 interface CertificationData {
   id: number;
@@ -28,6 +28,7 @@ interface CertificationCardProps {
   onViewStats: (id: number) => void;
   onManage: (id: number) => void;
   onResubmit?: (id: number) => void;
+  onDelete?: (id: number) => void;
 }
 
 export function CertificationCard({ 
@@ -35,7 +36,8 @@ export function CertificationCard({
   onFindJuries, 
   onViewStats, 
   onManage,
-  onResubmit 
+  onResubmit,
+  onDelete
 }: CertificationCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -130,18 +132,6 @@ export function CertificationCard({
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="hidden md:flex items-center gap-4 text-sm text-slate-600 flex-shrink-0">
-            <span className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              {certification.candidates_count}
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="w-4 h-4" />
-              {certification.success_rate}%
-            </span>
-          </div>
-
           {/* RNCP Status Badge */}
           <Badge className={`${getStatusColor(certification.status)} border flex-shrink-0`}>
             <div className="w-2 h-2 rounded-full bg-current mr-2"></div>
@@ -204,14 +194,6 @@ export function CertificationCard({
                 <Calendar className="w-4 h-4" />
                 <span>Actif jusqu'au {formatDate(certification.validity_end)}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-600">
-                <Users className="w-4 h-4" />
-                <span>{certification.candidates_count} candidats cette année</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-slate-600">
-                <Star className="w-4 h-4" />
-                <span>{certification.success_rate}% de réussite</span>
-              </div>
             </div>
 
             {/* Tags */}
@@ -260,17 +242,31 @@ export function CertificationCard({
           {/* Actions */}
           <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-200">
             {certification.approval_status === 'rejected' ? (
-              <Button 
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onResubmit?.(certification.id);
-                }}
-                className="bg-[#13d090] hover:bg-[#0c9e73] text-white"
-              >
-                <RefreshCw className="w-4 h-4 mr-1" />
-                Redemander la validation
-              </Button>
+              <>
+                <Button 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onResubmit?.(certification.id);
+                  }}
+                  className="bg-[#13d090] hover:bg-[#0c9e73] text-white"
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  Redemander la validation
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.(certification.id);
+                  }}
+                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Supprimer
+                </Button>
+              </>
             ) : (
               <>
                 <Button 
@@ -284,30 +280,20 @@ export function CertificationCard({
                   <Search className="w-4 h-4 mr-1" />
                   Trouver des jurys
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onViewStats(certification.id);
-                  }}
-                  className="border-slate-200 text-[#0d4a70]"
-                >
-                  <BarChart3 className="w-4 h-4 mr-1" />
-                  Statistiques
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onManage(certification.id);
-                  }}
-                  className="border-slate-200 text-[#0d4a70]"
-                >
-                  <Settings className="w-4 h-4 mr-1" />
-                  Gérer
-                </Button>
+                {certification.approval_status === 'approved' && (
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete?.(certification.id);
+                    }}
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Supprimer
+                  </Button>
+                )}
               </>
             )}
           </div>

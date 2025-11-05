@@ -101,4 +101,61 @@ export class SystemSettingsService {
       return false;
     }
   }
+
+  static async updateSocialNetworkUrls(
+    linkedinUrl: string | null,
+    youtubeUrl: string | null,
+    instagramUrl: string | null,
+    adminUserId: number
+  ): Promise<SystemSettings> {
+    try {
+      // Check if admin user exists and has admin user_type
+      const adminUser = await db
+        .select({ userType: users.userType })
+        .from(users)
+        .where(eq(users.id, adminUserId))
+        .limit(1);
+
+      if (!adminUser[0] || adminUser[0].userType !== 'admin') {
+        throw new Error('Unauthorized: Only admin users can modify social network URLs');
+      }
+
+      // Get current settings or create new ones
+      const currentSettings = await this.getSystemSettings();
+
+      if (currentSettings) {
+        // Update existing settings
+        const updated = await db
+          .update(systemSettings)
+          .set({
+            linkedinUrl,
+            youtubeUrl,
+            instagramUrl,
+            lastModifiedBy: adminUserId,
+            updatedAt: new Date(),
+          })
+          .where(eq(systemSettings.id, currentSettings.id))
+          .returning();
+
+        return updated[0];
+      } else {
+        // Create new settings
+        const created = await db
+          .insert(systemSettings)
+          .values({
+            maintenanceMode: false,
+            linkedinUrl,
+            youtubeUrl,
+            instagramUrl,
+            lastModifiedBy: adminUserId,
+          })
+          .returning();
+
+        return created[0];
+      }
+    } catch (error) {
+      console.error('Error updating social network URLs:', error);
+      throw error;
+    }
+  }
 }

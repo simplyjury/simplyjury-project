@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { db } from '@/lib/db/drizzle';
 import { franceCompetenceCertifications, certificationStats, trainingCenters } from '@/lib/db/schema';
 import { eq, and, sql, sum, avg, count } from 'drizzle-orm';
 import { AuthService } from '@/lib/auth/auth-service';
 
-async function getCurrentUser(request: NextRequest) {
+async function getCurrentUser() {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+    
+    if (!sessionCookie?.value) {
       return null;
     }
 
-    const token = authHeader.split(' ')[1];
-    const payload = await AuthService.verifyJWT(token);
+    const payload = await AuthService.verifyJWT(sessionCookie.value);
     const userId = payload.userId;
 
     if (!userId) {
@@ -40,7 +42,7 @@ async function getCurrentUser(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

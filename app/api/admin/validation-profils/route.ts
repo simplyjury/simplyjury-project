@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/drizzle';
 import { users, juryProfiles, trainingCenters, franceCompetenceCertifications } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, asc, desc } from 'drizzle-orm';
 import { AuthService } from '@/lib/auth/auth-service';
 
 export async function GET(request: NextRequest) {
@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const userType = searchParams.get('type') || '';
     const region = searchParams.get('region') || '';
+    const sortOrder = searchParams.get('sort') || 'desc';
 
     // Base query to get pending jury users with their profiles
     const pendingUsers = await db
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
           eq(users.userType, 'jury')
         )
       )
-      .orderBy(users.createdAt);
+      .orderBy(sortOrder === 'asc' ? asc(users.createdAt) : desc(users.createdAt));
 
     // Get pending certifications with training center info
     const pendingCertifications = await db
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
       .from(franceCompetenceCertifications)
       .leftJoin(trainingCenters, eq(franceCompetenceCertifications.trainingCenterId, trainingCenters.id))
       .where(eq(franceCompetenceCertifications.approvalStatus, 'pending'))
-      .orderBy(franceCompetenceCertifications.approvalRequestedAt);
+      .orderBy(sortOrder === 'asc' ? asc(franceCompetenceCertifications.approvalRequestedAt) : desc(franceCompetenceCertifications.approvalRequestedAt));
 
     // Apply filters
     let filteredUsers = pendingUsers;
@@ -102,19 +103,31 @@ export async function GET(request: NextRequest) {
       filteredUsers = filteredUsers.filter(user => user.region === region);
     }
 
+    // Calculate urgent count for both profiles and certifications
+    const urgentProfiles = filteredUsers.filter(user => {
+      const createdAt = new Date(user.createdAt);
+      const now = new Date();
+      const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      return hoursDiff > 48;
+    }).length;
+
+    const urgentCertifications = pendingCertifications.filter(cert => {
+      const dateValue = cert.approvalRequestedAt || cert.createdAt;
+      if (!dateValue) return false;
+      const createdAt = new Date(dateValue);
+      const now = new Date();
+      const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      return hoursDiff > 48;
+    }).length;
+
     // Calculate stats
     const stats = {
-      pending: pendingUsers.length + pendingCertifications.length,
-      pendingProfiles: pendingUsers.length,
+      pending: filteredUsers.length + pendingCertifications.length,
+      pendingProfiles: filteredUsers.length,
       pendingCertifications: pendingCertifications.length,
       validatedThisMonth: 0, // TODO: Calculate from database
       rejectedThisMonth: 0,  // TODO: Calculate from database
-      urgent: pendingUsers.filter(user => {
-        const createdAt = new Date(user.createdAt);
-        const now = new Date();
-        const hoursDiff = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
-        return hoursDiff > 48;
-      }).length
+      urgent: urgentProfiles + urgentCertifications
     };
 
     // Format users for frontend

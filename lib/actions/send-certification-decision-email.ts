@@ -36,8 +36,8 @@ export async function sendCertificationDecisionEmail(
     // Prepare email content based on decision
     const isApproved = decision === 'approved';
     const subject = isApproved
-      ? `✅ Certification approuvée - ${certificationCode}`
-      : `❌ Certification non approuvée - ${certificationCode}`;
+      ? `Certification approuvée - ${certificationCode}`
+      : `Certification non approuvée - ${certificationCode}`;
 
     const emailComponent = isApproved
       ? CertificationApprovalNotification({

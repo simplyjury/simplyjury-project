@@ -5,7 +5,7 @@ import { ArrowRight, Users, CheckCircle, Star, Shield, Search, MessageSquare, Me
 import Image from 'next/image';
 import Link from 'next/link';
 import Script from 'next/script';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { NewsletterSignup } from '@/components/newsletter/newsletter-signup';
 import { CookieBanner } from '@/components/cookie-consent';
 import { CookieSettingsButton } from '@/components/cookie-consent/cookie-settings-button';
@@ -13,6 +13,26 @@ import { motion } from 'framer-motion';
 import { FadeInUp, ParallaxSection, FloatingElement, StaggerContainer, CounterAnimation } from '@/components/animations';
 
 export default function HomePage() {
+  const [socialUrls, setSocialUrls] = useState({
+    linkedinUrl: '#',
+    youtubeUrl: '#',
+    instagramUrl: '#'
+  });
+
+  useEffect(() => {
+    // Fetch social network URLs from API
+    fetch('/api/settings/social-networks')
+      .then(res => res.json())
+      .then(data => {
+        setSocialUrls({
+          linkedinUrl: data.linkedinUrl || '#',
+          youtubeUrl: data.youtubeUrl || '#',
+          instagramUrl: data.instagramUrl || '#'
+        });
+      })
+      .catch(err => console.error('Error fetching social URLs:', err));
+  }, []);
+
   const openCalendly = () => {
     if (typeof window !== 'undefined' && (window as any).Calendly) {
       (window as any).Calendly.initPopupWidget({
@@ -1010,13 +1030,31 @@ export default function HomePage() {
               </p>
               {/* Social Media */}
               <div className="flex space-x-4">
-                <a href="#" className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                <a 
+                  href={socialUrls.linkedinUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                  aria-label="LinkedIn"
+                >
                   <Linkedin className="h-5 w-5" />
                 </a>
-                <a href="#" className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                <a 
+                  href={socialUrls.youtubeUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                  aria-label="YouTube"
+                >
                   <Youtube className="h-5 w-5" />
                 </a>
-                <a href="#" className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                <a 
+                  href={socialUrls.instagramUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                  aria-label="Instagram"
+                >
                   <Instagram className="h-5 w-5" />
                 </a>
               </div>
