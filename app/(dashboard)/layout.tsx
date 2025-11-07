@@ -14,10 +14,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarNavigation } from '@/components/ui/sidebar-navigation';
-import { ToastProvider } from '@/components/ui/toast';
 import { signOut } from '@/app/(login)/actions';
 import { usePathname, useSearchParams } from 'next/navigation';
 import useSWR, { mutate } from 'swr';
+import type { SubscriptionStatus } from '@/lib/types/subscription';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -67,30 +67,78 @@ const getPageTitle = (pathname: string, isJury: boolean = false, isAdmin: boolea
   return routes[pathname as keyof typeof routes] || { title: 'Dashboard', subtitle: '' };
 };
 
-function FreemiumBanner({ onClose }: { onClose: () => void }) {
+function FreemiumBanner({ onClose, subscriptionStatus }: { onClose: () => void; subscriptionStatus: SubscriptionStatus | null }) {
+  if (!subscriptionStatus) return null;
+  
+  const tierNames = {
+    gratuit: 'Plan Gratuit',
+    basic: 'Plan Basic',
+    pro: 'Plan Pro'
+  };
+  
+  const tierName = tierNames[subscriptionStatus.tier] || 'Plan Gratuit';
+  const isAtLimit = subscriptionStatus.isAtLimit;
+  const hasPremium = subscriptionStatus.hasPremiumAccess;
+  
+  // Don't show banner for Pro tier (unless they want to see it)
+  if (subscriptionStatus.tier === 'pro' && !hasPremium) {
+    return null;
+  }
+  
   return (
-    <div className="bg-[#fdce0f] border-l-4 border-[#f4b942] px-4 py-3 flex items-center justify-between">
+    <div className={`border-l-4 px-4 py-3 flex items-center justify-between ${
+      isAtLimit 
+        ? 'bg-red-50 border-red-400' 
+        : hasPremium 
+        ? 'bg-purple-50 border-purple-400'
+        : 'bg-[#fdce0f] border-[#f4b942]'
+    }`}>
       <div className="flex items-center space-x-3">
-        <div className="text-[#0d4a70]">⭐</div>
+        <div className={isAtLimit ? 'text-red-600' : hasPremium ? 'text-purple-600' : 'text-[#0d4a70]'}>
+          {hasPremium ? '✨' : isAtLimit ? '⚠️' : '⭐'}
+        </div>
         <div>
-          <div className="text-[#0d4a70] font-semibold text-sm">
-            Plan Gratuit - 1 mise en relation restante
+          <div className={`font-semibold text-sm ${
+            isAtLimit ? 'text-red-700' : hasPremium ? 'text-purple-700' : 'text-[#0d4a70]'
+          }`}>
+            {hasPremium ? (
+              `Accès Premium Actif - ${subscriptionStatus.contactsRemaining}/${subscriptionStatus.contactsLimit} contacts restants`
+            ) : (
+              `${tierName} - ${subscriptionStatus.contactsRemaining}/${subscriptionStatus.contactsLimit} contact${subscriptionStatus.contactsLimit > 1 ? 's' : ''} restant${subscriptionStatus.contactsRemaining > 1 ? 's' : ''}`
+            )}
           </div>
-          <div className="text-[#0d4a70] text-xs">
-            Débloquez tous les contacts avec le plan Pro
+          <div className={`text-xs ${
+            isAtLimit ? 'text-red-600' : hasPremium ? 'text-purple-600' : 'text-[#0d4a70]'
+          }`}>
+            {isAtLimit 
+              ? 'Limite atteinte - Passez au plan supérieur pour continuer' 
+              : hasPremium
+              ? `Expire le ${new Date(subscriptionStatus.premiumAccessExpiresAt!).toLocaleDateString('fr-FR')}`
+              : 'Débloquez plus de contacts avec le plan Pro'
+            }
           </div>
         </div>
       </div>
       <div className="flex items-center space-x-2">
-        <Button 
-          size="sm" 
-          className="bg-[#0d4a70] hover:bg-[#0c608a] text-white text-xs px-3 py-1"
-        >
-          Découvrir Pro
-        </Button>
+        {!hasPremium && subscriptionStatus.tier !== 'pro' && (
+          <Link href="/pricing">
+            <Button 
+              size="sm" 
+              className={`text-white text-xs px-3 py-1 ${
+                isAtLimit 
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-[#0d4a70] hover:bg-[#0c608a]'
+              }`}
+            >
+              {isAtLimit ? 'Upgrade maintenant' : 'Découvrir Pro'}
+            </Button>
+          </Link>
+        )}
         <button
           onClick={onClose}
-          className="text-[#0d4a70] hover:text-[#0c608a] p-1"
+          className={`p-1 ${
+            isAtLimit ? 'text-red-600 hover:text-red-700' : hasPremium ? 'text-purple-600 hover:text-purple-700' : 'text-[#0d4a70] hover:text-[#0c608a]'
+          }`}
         >
           <X className="h-4 w-4" />
         </button>
@@ -257,6 +305,12 @@ function HeaderContent({ onMenuToggle }: { onMenuToggle: () => void }) {
     fetcher
   );
   
+  // Epic 07: Fetch subscription status for training centers
+  const { data: subscriptionData } = useSWR(
+    user?.userType === 'centre' ? '/api/subscription/status' : null,
+    fetcher
+  );
+  
   // Determine user type based on URL parameter or user.userType
   const isJury = searchParams.get('profile') === 'jury' || 
                  (user?.userType === 'jury' && !searchParams.get('profile'));
@@ -264,7 +318,8 @@ function HeaderContent({ onMenuToggle }: { onMenuToggle: () => void }) {
   const isAdmin = user?.userType === 'admin';
   
   const { title, subtitle } = getPageTitle(pathname, isJury, isAdmin);
-  const isFreemium = centerProfile?.data?.subscriptionTier === 'gratuit';
+  const subscriptionStatus = subscriptionData?.data || null;
+  const showSubscriptionBanner = user?.userType === 'centre' && subscriptionStatus;
   
 
   return (
@@ -291,8 +346,11 @@ function HeaderContent({ onMenuToggle }: { onMenuToggle: () => void }) {
           </div>
         </div>
       </header>
-      {isFreemium && showBanner && (
-        <FreemiumBanner onClose={() => setShowBanner(false)} />
+      {showSubscriptionBanner && showBanner && (
+        <FreemiumBanner 
+          onClose={() => setShowBanner(false)} 
+          subscriptionStatus={subscriptionStatus}
+        />
       )}
     </>
   );
@@ -310,24 +368,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ToastProvider>
-      <div className="flex min-h-screen bg-gray-50">
-        <Suspense fallback={<div className="w-64 bg-white border-r border-gray-200" />}>
-          <SidebarNavigation 
-            isOpen={isMobileMenuOpen} 
-            onClose={closeMobileMenu}
-            className="lg:block"
-          />
+    <div className="flex min-h-screen bg-gray-50">
+      <Suspense fallback={<div className="w-64 bg-white border-r border-gray-200" />}>
+        <SidebarNavigation 
+          isOpen={isMobileMenuOpen} 
+          onClose={closeMobileMenu}
+          className="lg:block"
+        />
+      </Suspense>
+      <div className="flex-1 flex flex-col lg:ml-0">
+        <Suspense fallback={<div className="h-16 border-b border-gray-200 bg-white" />}>
+          <HeaderContent onMenuToggle={toggleMobileMenu} />
         </Suspense>
-        <div className="flex-1 flex flex-col lg:ml-0">
-          <Suspense fallback={<div className="h-16 border-b border-gray-200 bg-white" />}>
-            <HeaderContent onMenuToggle={toggleMobileMenu} />
-          </Suspense>
-          <main className="flex-1">
-            {children}
-          </main>
-        </div>
+        <main className="flex-1">
+          {children}
+        </main>
       </div>
-    </ToastProvider>
+    </div>
   );
 }

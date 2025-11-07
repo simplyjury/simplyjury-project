@@ -27,7 +27,9 @@ import {
   BookOpen,
   ClipboardList,
   Mail,
-  Database
+  Database,
+  CreditCard,
+  Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useSWR from 'swr';
@@ -81,6 +83,16 @@ function getNavigationSections(userType: 'jury' | 'center' | 'admin', isCertific
             name: 'Newsletter',
             href: '/dashboard/admin/newsletter',
             icon: Mail,
+          },
+          {
+            name: 'Abonnements',
+            href: '/dashboard/admin/subscriptions',
+            icon: CreditCard,
+          },
+          {
+            name: 'Liste d\'attente',
+            href: '/dashboard/admin/waiting-list',
+            icon: Clock,
           },
         ],
       },

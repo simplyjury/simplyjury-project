@@ -12,6 +12,8 @@ import { JuryProfileModal } from '@/components/ui/jury-profile-modal';
 import { useToast } from '@/components/ui/toast';
 import StructuredRequestModal from '@/components/jury/structured-request-modal';
 import { useJuryRequestCount } from '@/lib/hooks/use-jury-request-count';
+import { ContactLimitBadge, UpgradePromptModal } from '@/components/subscription';
+import type { SubscriptionStatus } from '@/lib/types/subscription';
 
 interface JuryProfile {
   id: number;
@@ -75,6 +77,11 @@ export default function SearchPageClient({ userType }: SearchPageClientProps) {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(getInitialViewMode);
   const [contactsRemaining, setContactsRemaining] = useState(1);
   const [hasUsedFreeContact, setHasUsedFreeContact] = useState(false);
+  
+  // Epic 07: Subscription state
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
   const [juries, setJuries] = useState<JuryProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +105,30 @@ export default function SearchPageClient({ userType }: SearchPageClientProps) {
   const [romeSearchQuery, setRomeSearchQuery] = useState('');
   const [romeSearchResults, setRomeSearchResults] = useState<any[]>([]);
   const [isRomeSearching, setIsRomeSearching] = useState(false);
+  
+  // Epic 07: Fetch subscription status
+  useEffect(() => {
+    const fetchSubscriptionStatus = async () => {
+      if (userType !== 'centre') {
+        setIsLoadingSubscription(false);
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/subscription/status');
+        if (response.ok) {
+          const data = await response.json();
+          setSubscriptionStatus(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription status:', error);
+      } finally {
+        setIsLoadingSubscription(false);
+      }
+    };
+    
+    fetchSubscriptionStatus();
+  }, [userType]);
   const [showRomeDropdown, setShowRomeDropdown] = useState(false);
   const [selectedRomeCode, setSelectedRomeCode] = useState<{code: string, label: string} | null>(null);
 
@@ -278,12 +309,14 @@ export default function SearchPageClient({ userType }: SearchPageClientProps) {
   };
 
   const handleContact = (jury: JuryProfile) => {
-    if (!hasUsedFreeContact && contactsRemaining > 0) {
-      setSelectedJuryForRequest(jury);
-      setIsRequestModalOpen(true);
-    } else {
-      alert('Limite freemium atteinte. Passez au plan Pro pour plus de contacts.');
+    // Epic 07: Check subscription limits
+    if (subscriptionStatus && subscriptionStatus.isAtLimit) {
+      setShowUpgradeModal(true);
+      return;
     }
+    
+    setSelectedJuryForRequest(jury);
+    setIsRequestModalOpen(true);
   };
 
   const handleViewProfile = (jury: JuryProfile) => {
@@ -324,8 +357,13 @@ export default function SearchPageClient({ userType }: SearchPageClientProps) {
       console.log('Response data:', result);
 
       if (result.success) {
-        setHasUsedFreeContact(true);
-        setContactsRemaining(0);
+        // Epic 07: Refresh subscription status after successful request
+        const statusResponse = await fetch('/api/subscription/status');
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          setSubscriptionStatus(statusData.data);
+        }
+        
         // Trigger real-time update of jury request count
         updateRequestCount();
         showToast({
@@ -336,6 +374,12 @@ export default function SearchPageClient({ userType }: SearchPageClientProps) {
         });
         handleCloseRequestModal();
       } else {
+        // Epic 07: Check if it's a contact limit error
+        if (result.code === 'CONTACT_LIMIT_REACHED') {
+          setShowUpgradeModal(true);
+          handleCloseRequestModal();
+          return;
+        }
         throw new Error(result.error);
       }
     } catch (error) {
@@ -769,6 +813,46 @@ export default function SearchPageClient({ userType }: SearchPageClientProps) {
             region: selectedJuryForRequest.location.split(',')[1]?.trim() || ''
           }}
           onSubmit={handleSubmitRequest}
+        />
+      )}
+
+      {/* Epic 07: Upgrade Prompt Modal */}
+      {subscriptionStatus && (
+        <UpgradePromptModal
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+          status={subscriptionStatus}
+          onJoinWaitingList={async (tier) => {
+            try {
+              const response = await fetch('/api/subscription/waiting-list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  desiredTier: tier,
+                  triggeredBy: 'limit_reached',
+                  currentContactsUsed: subscriptionStatus.contactsUsed
+                })
+              });
+              
+              if (response.ok) {
+                showToast({
+                  type: 'success',
+                  title: 'Inscription réussie !',
+                  message: 'Nous vous contacterons bientôt concernant votre upgrade.',
+                  duration: 4000
+                });
+                setShowUpgradeModal(false);
+              }
+            } catch (error) {
+              console.error('Error joining waiting list:', error);
+              showToast({
+                type: 'error',
+                title: 'Erreur',
+                message: 'Impossible de rejoindre la liste d\'attente.',
+                duration: 4000
+              });
+            }
+          }}
         />
       )}
     </div>
