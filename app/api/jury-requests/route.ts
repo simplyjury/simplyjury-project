@@ -87,32 +87,28 @@ export async function POST(request: NextRequest) {
     console.log('Full request data:', requestData);
     console.log('Jury ID from request:', requestData.juryId);
 
-    // Check if freemium user has already contacted this specific jury
-    if (trainingCenter.subscription_tier === 'gratuit') {
-      const { data: existingRequests, error: requestsError } = await supabase
-        .from('jury_requests')
-        .select('id')
-        .eq('training_center_id', trainingCenter.id)
-        .eq('jury_id', requestData.juryId)
-        .limit(1);
+    // Epic 07: Check contact limits before allowing request
+    const { ContactLimitService } = await import('@/lib/services/contact-limit-service');
+    const limitCheck = await ContactLimitService.canContactJury(trainingCenter.id);
 
-      if (requestsError) {
-        console.error('Error checking existing requests:', requestsError);
-        return NextResponse.json(
-          { error: 'Erreur lors de la vérification des demandes existantes' },
-          { status: 500 }
-        );
-      }
+    if (!limitCheck.success) {
+      return NextResponse.json(
+        { error: limitCheck.error },
+        { status: 500 }
+      );
+    }
 
-      if (existingRequests && existingRequests.length > 0) {
-        return NextResponse.json(
-          { 
-            error: 'Vous avez déjà contacté ce jury avec votre compte gratuit. Passez au plan Pro pour des contacts illimités.',
-            code: 'FREEMIUM_LIMIT_REACHED'
-          },
-          { status: 403 }
-        );
-      }
+    if (!limitCheck.data?.canContact) {
+      return NextResponse.json(
+        { 
+          error: limitCheck.data?.reason || 'Limite de contacts atteinte',
+          code: 'CONTACT_LIMIT_REACHED',
+          needsUpgrade: limitCheck.data?.needsUpgrade,
+          suggestedTier: limitCheck.data?.suggestedTier,
+          contactsRemaining: limitCheck.data?.contactsRemaining || 0
+        },
+        { status: 403 }
+      );
     }
 
     // Validate required fields

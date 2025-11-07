@@ -111,6 +111,24 @@ export const trainingCenters = pgTable('training_centers', {
   qualiopiLastChecked: timestamp('qualiopi_last_checked'),
   franceCompetenceSyncEnabled: boolean('france_competence_sync_enabled').default(false),
   franceCompetenceLastSync: timestamp('france_competence_last_sync'),
+  
+  // Epic 07 - Subscription Management
+  subscriptionStartDate: timestamp('subscription_start_date').defaultNow(),
+  subscriptionEndDate: timestamp('subscription_end_date'),
+  contactsUsedCurrentPeriod: integer('contacts_used_current_period').default(0),
+  contactsLimit: integer('contacts_limit').default(1),
+  lastContactResetDate: timestamp('last_contact_reset_date'),
+  firstAcceptedContactDate: timestamp('first_accepted_contact_date'),
+  
+  // Epic 07 - Admin Override Capabilities
+  manualContactLimitOverride: integer('manual_contact_limit_override'),
+  manualLimitOverrideReason: text('manual_limit_override_reason'),
+  manualLimitOverrideExpires: timestamp('manual_limit_override_expires'),
+  premiumAccessGrantedUntil: timestamp('premium_access_granted_until'),
+  premiumAccessGrantedBy: integer('premium_access_granted_by')
+    .references(() => users.id),
+  premiumAccessReason: text('premium_access_reason'),
+  
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -265,6 +283,46 @@ export const newsletterSubscriptions = pgTable('newsletter_subscriptions', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+// Epic 07 - Subscription System Tables
+export const subscriptionWaitingList = pgTable('subscription_waiting_list', {
+  id: serial('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull(),
+  userId: integer('user_id')
+    .references(() => users.id, { onDelete: 'set null' }),
+  trainingCenterId: integer('training_center_id')
+    .references(() => trainingCenters.id, { onDelete: 'cascade' }),
+  desiredTier: varchar('desired_tier', { length: 20 }).notNull(),
+  status: varchar('status', { length: 20 }).default('pending'),
+  contactedAt: timestamp('contacted_at'),
+  contactedBy: integer('contacted_by')
+    .references(() => users.id),
+  contactNotes: text('contact_notes'),
+  convertedAt: timestamp('converted_at'),
+  triggeredBy: varchar('triggered_by', { length: 50 }),
+  currentContactsUsed: integer('current_contacts_used'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const contactLimitHistory = pgTable('contact_limit_history', {
+  id: serial('id').primaryKey(),
+  trainingCenterId: integer('training_center_id').notNull()
+    .references(() => trainingCenters.id, { onDelete: 'cascade' }),
+  juryRequestId: integer('jury_request_id'),
+  eventType: varchar('event_type', { length: 50 }).notNull(),
+  contactsUsedBefore: integer('contacts_used_before'),
+  contactsUsedAfter: integer('contacts_used_after'),
+  contactsLimitBefore: integer('contacts_limit_before'),
+  contactsLimitAfter: integer('contacts_limit_after'),
+  subscriptionTierBefore: varchar('subscription_tier_before', { length: 20 }),
+  subscriptionTierAfter: varchar('subscription_tier_after', { length: 20 }),
+  performedBy: integer('performed_by')
+    .references(() => users.id),
+  reason: text('reason'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 export const teamsRelations = relations(teams, ({ many }) => ({
   teamMembers: many(teamMembers),
   activityLogs: many(activityLogs),
@@ -370,6 +428,12 @@ export type SystemSettings = typeof systemSettings.$inferSelect;
 export type NewSystemSettings = typeof systemSettings.$inferInsert;
 export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 export type NewNewsletterSubscription = typeof newsletterSubscriptions.$inferInsert;
+
+// Epic 07 - Subscription System Types
+export type SubscriptionWaitingList = typeof subscriptionWaitingList.$inferSelect;
+export type NewSubscriptionWaitingList = typeof subscriptionWaitingList.$inferInsert;
+export type ContactLimitHistory = typeof contactLimitHistory.$inferSelect;
+export type NewContactLimitHistory = typeof contactLimitHistory.$inferInsert;
 
 // Complex types
 export type TeamDataWithMembers = Team & {

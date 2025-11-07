@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import useSWR from 'swr';
 import Link from 'next/link';
+import { SubscriptionWidget } from '@/components/subscription';
+import { useRouter } from 'next/navigation';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -178,6 +180,7 @@ function QuickActions() {
 }
 
 export default function CenterDashboard() {
+  const router = useRouter();
   const { data: stats, error: statsError } = useSWR('/api/center/stats', fetcher);
   const { data: profile } = useSWR('/api/profile/center', fetcher);
 
@@ -251,11 +254,16 @@ export default function CenterDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
           <RecentRequests />
         </div>
-        <div>
+        <div className="space-y-6">
+          {/* Epic 07: Subscription Widget */}
+          <SubscriptionWidget
+            onUpgradeClick={() => router.push('/pricing')}
+            onViewDetails={() => router.push('/dashboard/subscription')}
+          />
           <QuickActions />
         </div>
       </div>

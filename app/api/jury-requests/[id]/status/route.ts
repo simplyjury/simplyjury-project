@@ -147,6 +147,37 @@ export async function PATCH(
     // Log the status change for audit purposes
     console.log(`Jury request ${requestId} status changed to ${status} by user ${user.id}`);
 
+    // Epic 07: Increment contact usage if jury accepted
+    if (status === 'accepted' && result.training_centers) {
+      try {
+        const { ContactLimitService } = await import('@/lib/services/contact-limit-service');
+        
+        // Get training center ID from the result
+        const { data: juryRequest } = await supabase
+          .from('jury_requests')
+          .select('training_center_id')
+          .eq('id', requestId)
+          .single();
+
+        if (juryRequest?.training_center_id) {
+          const incrementResult = await ContactLimitService.incrementContactUsage(
+            juryRequest.training_center_id,
+            requestId
+          );
+
+          if (!incrementResult.success) {
+            console.error('Failed to increment contact usage:', incrementResult.error);
+            // Don't fail the request - the acceptance was successful
+          } else {
+            console.log(`Contact usage incremented for center ${juryRequest.training_center_id}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error incrementing contact usage:', error);
+        // Don't fail the request - the acceptance was successful
+      }
+    }
+
     // Send notification emails to both parties
     try {
       console.log(`Sending notification emails for request ${requestId} with status: ${status}`);
